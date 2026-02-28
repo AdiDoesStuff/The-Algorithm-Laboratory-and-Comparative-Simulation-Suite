@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="lab-container">
+        <h1>Algorithm Laboratory: Sorting Duel</h1>
+        
+        <div class="controls">
+            <button onclick="startComparison()">Start Race</button>
+            <button onclick="resetLab()">Reset</button>
+        </div>
+        
+        <div class="duel-floor">
+            <div class="arena" id="arena-left">
+                <h3>Bubble Sort</h3>
+                <div id="visualizer-bubble" class="bar-container"></div>
+                <p>Comparisons: <span id="count-bubble">0</span></p>
+            </div>
+            
+            <div class="arena" id="arena-right">
+                <h3>Selection Sort</h3>
+                <div id="visualizer-selection" class="bar-container"></div>
+                <p>Comparisons: <span id="count-selection">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
