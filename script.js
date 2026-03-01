@@ -1,5 +1,11 @@
 let currentLabArray = [];
+let isPaused = false;
 
+function togglePause() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('pause-btn');
+    btn.innerText = isPaused ? 'Resume' : 'Pause';
+}
 
 // 1. Initial Setup: Draw bars as soon as the page loads
 window.onload = () => {
@@ -27,6 +33,11 @@ async function animateSort(algoType, steps) {
     const countSpan = document.getElementById(`count-${algoType}`);
     
     for (let step of steps) {
+
+        while (isPaused) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
         updateBars(container, step.current_state, step.indices, step.type);
         
         if (step.type === 'compare') {

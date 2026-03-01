@@ -1,28 +1,63 @@
-* { 
-    background-color: black;
-    color : white;
+/* 1. Base Styles - Apply to the Body, not '*' */
+body {
+    background-color: #121212; /* A softer, professional dark mode black */
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    text-align: center;
 }
 
-
+/* 2. Layout for the Duel Floor */
 .duel-floor {
     display: flex;
     justify-content: space-around;
-    padding: 20px;
+    padding: 50px 20px; /* Added 50px top/bottom padding to move away from titles */
+    gap: 20px;
 }
 
+.arena {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px; /* This creates the gap between the "Bubble Sort" text and the bars */
+}
+
+/* 3. The Visualizer Container */
 .bar-container {
     display: flex;
     align-items: flex-end;
-    height: 200px;
-    border-bottom: 2px solid #333;
-    gap: 2px;
+    height: 250px; /* Increased height slightly */
+    border-bottom: 3px solid #555;
+    gap: 4px; /* Space between bars */
+    padding: 20px;
+    background-color: #1e1e1e; /* Slightly lighter black to see the arena bounds */
+    border-radius: 8px;
 }
 
+/* 4. Individual Bars */
 .bar {
     background-color: #3498db;
     width: 20px;
-    transition: height 0.2s, background-color 0.2s; 
+    transition: height 0.2s ease, background-color 0.2s; 
+    border-radius: 2px 2px 0 0; /* Rounds the top of the bars for a sleeker look */
 }
 
-.bar.comparing { background-color: #e74c3c; }
-.bar.swapping { background-color: #f1c40f; }
+/* 5. Animation States */
+.bar.comparing { background-color: #e74c3c; } /* Red */
+.bar.swapping { background-color: #f1c40f; }  /* Yellow */
+
+/* 6. Controls Styling (Optional but looks nice) */
+button {
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 0 5px;
+}
+
+button:hover {
+    background-color: #444;
+}
