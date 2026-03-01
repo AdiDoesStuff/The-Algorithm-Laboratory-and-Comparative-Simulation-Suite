@@ -2,7 +2,7 @@
 body {
     background-color: #121212; /* A softer, professional dark mode black */
     color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Courier New', Courier, monospace;
     margin: 0;
     text-align: center;
 }
