@@ -1,6 +1,7 @@
 let currentLabArray = [];
 let isPaused = false;
 let isRunning = false;
+let currentGeneration = 0;
 
 function togglePause() {
     isPaused = !isPaused;
@@ -32,10 +33,15 @@ async function fetchSortSteps(algorithm, array) {
 async function animateSort(algoType, steps) {
     const container = document.getElementById(`visualizer-${algoType}`);
     const countSpan = document.getElementById(`count-${algoType}`);
+
+    const myGeneration = currentGeneration;
     
     for (let step of steps) {
 
+        if (myGeneration !== currentGeneration) return;
+
         while (isPaused) {
+            if (myGeneration !== currentGeneration) return;
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
@@ -94,13 +100,16 @@ async function startComparison() {
 
 // 6. Reset function
 function resetLab() {
-    generateNewArray();
+    
     isPaused = false;
     isRunning = false;
     document.getElementById('pause-btn').innerText = 'Pause';
+    generateNewArray();
 }
 
 function generateNewArray() {
+    currentGeneration++;
+
     currentLabArray = Array.from({length: 20}, () => Math.floor(Math.random() *  50) + 10);
     // now we update em and draw em on screen
     updateBars(document.getElementById('visualizer-bubble'), currentLabArray, [], '');
