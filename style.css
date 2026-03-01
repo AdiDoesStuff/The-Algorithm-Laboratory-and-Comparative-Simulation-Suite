@@ -1,3 +1,9 @@
+* { 
+    background-color: black;
+    color : white;
+}
+
+
 .duel-floor {
     display: flex;
     justify-content: space-around;
@@ -15,7 +21,7 @@
 .bar {
     background-color: #3498db;
     width: 20px;
-    transition: height 0.2s, background-color 0.2s; /* Unit 2 UI transitions */
+    transition: height 0.2s, background-color 0.2s; 
 }
 
 .bar.comparing { background-color: #e74c3c; }

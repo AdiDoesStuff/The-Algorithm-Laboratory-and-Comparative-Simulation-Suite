@@ -1,8 +1,9 @@
+let currentLabArray = [];
+
+
 // 1. Initial Setup: Draw bars as soon as the page loads
 window.onload = () => {
-    const initialArray = Array.from({length: 20}, () => Math.floor(Math.random() * 50) + 10);
-    updateBars(document.getElementById('visualizer-bubble'), initialArray, [], '');
-    updateBars(document.getElementById('visualizer-selection'), initialArray, [], '');
+    generateNewArray();
 };
 
 // 2. Fetch Logic: Talk to your Flask Backend
@@ -52,15 +53,14 @@ function updateBars(container, state, highlightIndices, type) {
 // 5. The Trigger: What happens when you click "Start Race"
 async function startComparison() {
     // Generate ONE random array for both to ensure a fair race
-    const randomArray = Array.from({length: 20}, () => Math.floor(Math.random() * 50) + 10);
     
     // Reset the counters on screen
     document.getElementById('count-bubble').innerText = '0';
     document.getElementById('count-selection').innerText = '0';
 
     // Get the data from Python
-    const bubbleSteps = await fetchSortSteps('bubble', randomArray);
-    const selectionSteps = await fetchSortSteps('selection', randomArray);
+    const bubbleSteps = await fetchSortSteps('bubble', currentLabArray);
+    const selectionSteps = await fetchSortSteps('selection', currentLabArray);
     
     // Start the race!
     animateSort('bubble', bubbleSteps);
@@ -69,5 +69,15 @@ async function startComparison() {
 
 // 6. Reset function
 function resetLab() {
-    location.reload();
+    generateNewArray();
+}
+
+function generateNewArray() {
+    currentLabArray = Array.from({length: 20}, () => Math.floor(Math.random() *  50) + 10);
+    // now we update em and draw em on screen
+    updateBars(document.getElementById('visualizer-bubble'), currentLabArray, [], '');
+    updateBars(document.getElementById('visualizer-selection'), currentLabArray, [], '');
+
+    document.getElementById('count-bubble').innerText = '0';
+    document.getElementById('count-selection').innerText = '0';
 }
