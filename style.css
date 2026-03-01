@@ -21,6 +21,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 30px; /* This creates the gap between the "Bubble Sort" text and the bars */
+  
 }
 
 /* 3. The Visualizer Container */
@@ -33,6 +34,7 @@ body {
     padding: 20px;
     background-color: #1e1e1e; /* Slightly lighter black to see the arena bounds */
     border-radius: 8px;
+    border: 1px solid #333;
 }
 
 /* 4. Individual Bars */
@@ -45,7 +47,7 @@ body {
 
 /* 5. Animation States */
 .bar.comparing { background-color: #e74c3c; } /* Red */
-.bar.swapping { background-color: #f1c40f; }  /* Yellow */
+.bar.swapping { background-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }  /* Yellow */
 
 /* 6. Controls Styling (Optional but looks nice) */
 button {
@@ -61,3 +63,14 @@ button {
 button:hover {
     background-color: #444;
 }
+
+/* Styling for when the button is busy */
+button:disabled {
+    background-color: #222;    /* Darken it further */
+    color: #666;               /* Grey out the text */
+    border-color: #444;
+    cursor: not-allowed;       /* Changes the mouse pointer to a 'blocked' sign */
+    opacity: 0.6;
+    transform: scale(0.98);    /* Makes it look slightly 'pressed' or recessed */
+}
+

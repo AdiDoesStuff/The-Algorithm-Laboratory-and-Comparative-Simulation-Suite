@@ -1,5 +1,6 @@
 let currentLabArray = [];
 let isPaused = false;
+let isRunning = false;
 
 function togglePause() {
     isPaused = !isPaused;
@@ -64,6 +65,14 @@ function updateBars(container, state, highlightIndices, type) {
 // 5. The Trigger: What happens when you click "Start Race"
 async function startComparison() {
     // Generate ONE random array for both to ensure a fair race
+    if (isRunning) {
+        alert("Race is already running!");
+        return;
+    }
+    isRunning = true;
+
+    const startBtn = document.querySelector("button[onclick='startComparison()']");
+    startBtn.disabled = true;
     
     // Reset the counters on screen
     document.getElementById('count-bubble').innerText = '0';
@@ -74,13 +83,21 @@ async function startComparison() {
     const selectionSteps = await fetchSortSteps('selection', currentLabArray);
     
     // Start the race!
-    animateSort('bubble', bubbleSteps);
-    animateSort('selection', selectionSteps);
+    await Promise.all([
+        animateSort('bubble', bubbleSteps),
+        animateSort('selection', selectionSteps)
+    ]);
+
+    isRunning = false;
+    startBtn.disabled = false;
 }
 
 // 6. Reset function
 function resetLab() {
     generateNewArray();
+    isPaused = false;
+    isRunning = false;
+    document.getElementById('pause-btn').innerText = 'Pause';
 }
 
 function generateNewArray() {
