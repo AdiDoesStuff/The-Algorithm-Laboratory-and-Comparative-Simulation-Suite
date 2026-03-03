@@ -188,3 +188,4 @@ def bogo_sort_steps(arr):
         # because it generates MILLIONS of steps. 
         if len(steps) > 5000: 
             break
+    return steps
