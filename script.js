@@ -38,7 +38,6 @@ async function animateSort(algoType, steps) {
     
     for (let step of steps) {
 
-        if (myGeneration !== currentGeneration) return;
 
         while (isPaused) {
             if (myGeneration !== currentGeneration) return;
@@ -86,7 +85,7 @@ async function startComparison() {
 
     // Get the data from Python
     const bubbleSteps = await fetchSortSteps('bubble', currentLabArray);
-    const selectionSteps = await fetchSortSteps('selection', currentLabArray);
+    const selectionSteps = await fetchSortSteps('quick', currentLabArray);
     
     // Start the race!
     await Promise.all([

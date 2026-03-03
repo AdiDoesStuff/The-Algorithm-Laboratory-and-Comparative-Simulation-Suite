@@ -73,3 +73,93 @@ def insertion_sort_steps(arr):
         steps.append({'type': 'swap', 'indices': [j + 1, j + 1], 'current_state': temp_arr.copy()})
 
     return steps
+
+
+def merge_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+
+    def mergesort(start,end):
+        if (end - start) <= 1:
+            return temp_arr[start:end]
+        
+        mid = (start + end) // 2
+        left = mergesort(start,mid)
+        right = mergesort(mid,end)
+        
+        return merge(left,right,start,end)
+    
+    def merge(l,r,start,end):
+        merged = []
+        i = j = 0
+        while i < len(l) and j < len(r):
+            steps.append({'type': 'compare', 'indices': [start + i, mid + j], 'current_state': temp_arr.copy()})
+            if l[i] <= r[j]:
+                merged.append(l[i])
+                i += 1
+            else:
+                merged.append(r[j])
+                j += 1
+        
+        while i < len(l):
+            merged.append(l[i])
+            i += 1
+        
+        while j < len(r):
+            merged.append(r[j])
+            j += 1
+        
+        for k in range(len(merged)):
+            temp_arr[start + k] = merged[k]
+            steps.append({'type': 'swap', 'indices': [start + k, start + k], 'current_state': temp_arr.copy()})
+        
+        return merged
+    mergesort(0, len(temp_arr))
+    return steps
+
+
+def heap_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+    n = len(temp_arr)
+
+    def heapify(n, i):
+        largest = i
+        left = 2 * i + 1
+        right = 2 * i + 2
+
+        # Record Comparison: Root vs Left Child
+        if left < n:
+            steps.append({'type': 'compare', 'indices': [largest, left], 'current_state': temp_arr.copy()})
+            if temp_arr[left] > temp_arr[largest]:
+                largest = left
+
+        # Record Comparison: Largest vs Right Child
+        if right < n:
+            steps.append({'type': 'compare', 'indices': [largest, right], 'current_state': temp_arr.copy()})
+            if temp_arr[right] > temp_arr[largest]:
+                largest = right
+
+        # If root is not largest, swap and keep heapifying
+        if largest != i:
+            temp_arr[i], temp_arr[largest] = temp_arr[largest], temp_arr[i]
+            # Record Swap
+            steps.append({'type': 'swap', 'indices': [i, largest], 'current_state': temp_arr.copy()})
+            
+            # Recursively heapify the affected sub-tree
+            heapify(n, largest)
+
+    # 1. Build a maxheap.
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(n, i)
+
+    # 2. One by one extract elements
+    for i in range(n - 1, 0, -1):
+        # Move current root to end (largest element to sorted position)
+        temp_arr[i], temp_arr[0] = temp_arr[0], temp_arr[i]
+        steps.append({'type': 'swap', 'indices': [0, i], 'current_state': temp_arr.copy()})
+        
+        # Call max heapify on the reduced heap
+        heapify(i, 0)
+
+    return steps
