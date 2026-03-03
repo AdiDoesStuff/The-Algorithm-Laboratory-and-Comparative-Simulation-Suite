@@ -1,3 +1,5 @@
+import random
+
 def bubble_sort_steps(arr):
     steps = [] 
     n = len(arr)
@@ -163,3 +165,26 @@ def heap_sort_steps(arr):
         heapify(i, 0)
 
     return steps
+
+def bogo_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+    n = len(temp_arr)
+
+    def isSorted(now):
+        for i in range(len(now) - 1):
+            steps.append({'type': 'compare', 'indices': [i, i+1], 'current_state': now.copy()})
+            if not now[i] < now[i+1]:
+                break
+        else:
+            return True
+        return False
+    
+    while not is_sorted(temp_arr):
+        random.shuffle(temp_arr)
+        # Record the shuffle as a giant "swap" of all indices
+        steps.append({'type': 'swap', 'indices': list(range(n)), 'current_state': temp_arr.copy()})
+        
+        # because it generates MILLIONS of steps. 
+        if len(steps) > 5000: 
+            break
