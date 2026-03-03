@@ -49,7 +49,17 @@ async function animateSort(algoType, steps) {
         if (step.type === 'compare') {
             countSpan.innerText = parseInt(countSpan.innerText) + 1;
         }
-        await new Promise(resolve => setTimeout(resolve, 50)); 
+
+        const speedMultiplier = parseFloat(document.getElementById('speed-slider').value);
+        const dynamicDelay = 50 / speedMultiplier;
+        await new Promise(resolve => setTimeout(resolve, dynamicDelay)); 
+    }
+
+    const finalBars = container.getElementsByClassName('bar');
+    for (let bar of finalBars) {
+        if (myGeneration !== currentGeneration) return;
+        bar.classList.add('sorted');
+        await new Promise(resolve => setTimeout(resolve, 10)); 
     }
 }
 
@@ -135,11 +145,24 @@ function resetLab() {
 
 function generateNewArray() {
     currentGeneration++;
-    currentLabArray = Array.from({length: 20}, () => Math.floor(Math.random() * 50) + 10);
+    const count = parseInt(document.getElementById('element-slider').value);
+    currentLabArray = Array.from({length: count}, () => Math.floor(Math.random() * 50) + 10);
     
     updateBars(document.getElementById('visualizer-left'), currentLabArray, [], '');
     updateBars(document.getElementById('visualizer-right'), currentLabArray, [], '');
 
     document.getElementById('count-left').innerText = '0';
     document.getElementById('count-right').innerText = '0';
+}
+
+
+function updateElementCount() {
+    const val = document.getElementById('element-slider').value;
+    document.getElementById('element-val').innerText = val;
+    generateNewArray(); // Automatically regenerates the array when slider moves
+}
+
+function updateSpeedDisplay() {
+    const val = document.getElementById('speed-slider').value;
+    document.getElementById('speed-val').innerText = val + 'x';
 }

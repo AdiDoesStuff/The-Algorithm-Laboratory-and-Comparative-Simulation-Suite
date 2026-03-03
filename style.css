@@ -26,7 +26,7 @@ body {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    height: 250px;
+    height: 275px;
     width: 100%;
     padding: 10px;
     background-color: #1e1e1e;
@@ -72,6 +72,24 @@ body {
 .algo-selector:hover {
     border-color: #3498db;
 }
+
+.slider-group {
+    display: inline-block;
+    margin-left: 20px;
+    vertical-align: middle;
+}
+
+.slider-group label {
+    font-size: 0.9rem;
+    margin-right: 5px;
+}
+
+.bar.sorted {
+    background-color: #2ecc71 !important; /* Emerald Green */
+    box-shadow: 0 0 15px #2ecc71;
+    transition: background-color 0.3s ease;
+}
+
 
 button {
     background-color: #333;

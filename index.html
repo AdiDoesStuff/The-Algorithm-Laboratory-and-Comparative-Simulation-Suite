@@ -15,6 +15,16 @@
             <button onclick="startComparison()">Start Race</button>
             <button id="pause-btn" onclick="togglePause()">Pause</button>
             <button onclick="resetLab()">Reset</button>
+        
+            <div class="slider-group">
+            <label>Elements: <span id="element-val">20</span></label>
+            <input type="range" id="element-slider" min="5" max="70" value="20" oninput="updateElementCount()">
+            
+            <label>Speed: <span id="speed-val">1x</span></label>
+            <input type="range" id="speed-slider" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeedDisplay()">
+        </div>
+        
+        
         </div>
         
         <div class="duel-floor">
