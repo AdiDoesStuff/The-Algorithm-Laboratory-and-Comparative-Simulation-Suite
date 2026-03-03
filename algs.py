@@ -1,21 +1,27 @@
 import random
+import time
 
 def bubble_sort_steps(arr):
     steps = [] 
     n = len(arr)
     temp_arr = arr.copy()
+    start_time = time.perf_counter()
     for i in range(n):
         for j in range(0, n-i-1):
             steps.append({'type' : 'compare' , 'indices' : [j , j+1], 'current_state' : temp_arr.copy()})
             if temp_arr[j] > temp_arr[j+1]:
                 temp_arr[j], temp_arr[j+1] = temp_arr[j+1], temp_arr[j]
                 steps.append({'type': 'swap', 'indices': [j, j+1], 'current_state': temp_arr.copy()})
-    return steps
+    
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 def selection_sort_steps(arr):
     steps = []
     n = len(arr)
     temp_arr = arr.copy()
+    start_time = time.perf_counter()
     for i in range(n):
         min_idx = i
         for j in range(i+1, n):
@@ -26,13 +32,16 @@ def selection_sort_steps(arr):
         # Record swap
         temp_arr[i], temp_arr[min_idx] = temp_arr[min_idx], temp_arr[i]
         steps.append({'type': 'swap', 'indices': [i, min_idx], 'current_state': temp_arr.copy()})
-    return steps
+    
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 
 def quick_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
-
+    start_time = time.perf_counter()
     def partition(low, high):
         pivot = temp_arr[high]
         i = low - 1
@@ -56,12 +65,15 @@ def quick_sort_steps(arr):
             quick_sort(pi + 1, high)
 
     quick_sort(0, len(temp_arr) - 1)
-    return steps
 
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 def insertion_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
+    start_time = time.perf_counter()
     for i in range(1,len(arr)):
         com = temp_arr[i]
         j = i - 1
@@ -74,12 +86,14 @@ def insertion_sort_steps(arr):
         temp_arr[j + 1] = com
         steps.append({'type': 'swap', 'indices': [j + 1, j + 1], 'current_state': temp_arr.copy()})
 
-    return steps
-
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 def merge_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
+    start_time = time.perf_counter()
 
     def mergesort(start,end):
         if (end - start) <= 1:
@@ -117,13 +131,16 @@ def merge_sort_steps(arr):
         
         return merged
     mergesort(0, len(temp_arr))
-    return steps
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 
 def heap_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
+    start_time = time.perf_counter()
 
     def heapify(n, i):
         largest = i
@@ -164,12 +181,15 @@ def heap_sort_steps(arr):
         # Call max heapify on the reduced heap
         heapify(i, 0)
 
-    return steps
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 def bogo_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
+    start_time = time.perf_counter()
 
     def isSorted(now):
         for i in range(len(now) - 1):
@@ -188,13 +208,16 @@ def bogo_sort_steps(arr):
         # because it generates MILLIONS of steps. 
         if len(steps) > 5000: 
             break
-    return steps
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
 
 def optimized_bogo_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
     start = 0
+    start_time = time.perf_counter()
 
     def isSorted(now):
         nonlocal start
@@ -228,4 +251,6 @@ def optimized_bogo_sort_steps(arr):
         if len(steps) > 5000: 
             break
             
-    return steps
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}

@@ -33,28 +33,41 @@ async function fetchSortSteps(algorithm, array) {
 async function animateSort(algoType, steps) {
     const container = document.getElementById(`visualizer-${algoType}`);
     const countSpan = document.getElementById(`count-${algoType}`);
-
     const myGeneration = currentGeneration;
-    
+
+    // Safety check: Ensure steps is an array
+    if (!Array.isArray(steps)) {
+        console.error("animateSort expected an array but got:", steps);
+        return;
+    }
+
     for (let step of steps) {
+        // KILL SWITCH: Stops old animations if Reset is clicked
+        if (myGeneration !== currentGeneration) return;
 
-
+        // PAUSE LOGIC
         while (isPaused) {
             if (myGeneration !== currentGeneration) return;
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
+        // 1. Update the bars with the 'current_state' from Python
         updateBars(container, step.current_state, step.indices, step.type);
         
-        if (step.type === 'compare') {
+        // 2. Increment the comparison counter
+        if (step.type === 'compare' && countSpan) {
             countSpan.innerText = parseInt(countSpan.innerText) + 1;
         }
 
-        const speedMultiplier = parseFloat(document.getElementById('speed-slider').value);
+        // 3. Dynamic Delay based on speed slider
+        const speedSlider = document.getElementById('speed-slider');
+        const speedMultiplier = speedSlider ? parseFloat(speedSlider.value) : 1;
         const dynamicDelay = 50 / speedMultiplier;
+        
         await new Promise(resolve => setTimeout(resolve, dynamicDelay)); 
     }
 
+    // VICTORY LAP: All bars turn green
     const finalBars = container.getElementsByClassName('bar');
     for (let bar of finalBars) {
         if (myGeneration !== currentGeneration) return;
@@ -62,7 +75,6 @@ async function animateSort(algoType, steps) {
         await new Promise(resolve => setTimeout(resolve, 10)); 
     }
 }
-
 // 4. Update Bars (The visual part)
 function updateBars(container, state, highlightIndices, type) {
     if (!container) return; // Safety check
@@ -86,49 +98,49 @@ function updateBars(container, state, highlightIndices, type) {
 
 // 5. The Trigger: What happens when you click "Start Race"
 async function startComparison() {
-    if (isRunning) {
-        alert("Race is already running!");
-        return;
-    }
+    if (isRunning) return;
 
-    // 1. Get the algorithms chosen by the user from the <select> menus
     const leftAlgo = document.getElementById('algo-left').value;
     const rightAlgo = document.getElementById('algo-right').value;
 
     isRunning = true;
-    
-    // Select the button more reliably
     const startBtn = document.querySelector("button[onclick='startComparison()']");
     if (startBtn) startBtn.disabled = true;
     
-    // Reset the counters to 0
+    // Reset Counters
     document.getElementById('count-left').innerText = '0';
     document.getElementById('count-right').innerText = '0';
 
     try {
-        // 2. Fetch data based on user choices
-        // We do these in parallel so the user doesn't wait twice as long
-        const [leftSteps, rightSteps] = await Promise.all([
+        const [leftData, rightData] = await Promise.all([
             fetchSortSteps(leftAlgo, currentLabArray),
             fetchSortSteps(rightAlgo, currentLabArray)
         ]);
 
-        // If either fetch failed (returned undefined), we stop here
-        if (!leftSteps || !rightSteps) {
-            throw new Error("Failed to get steps from server.");
+        // DEBUG 1: If Python crashed, these will be null
+        if (!leftData || !rightData) {
+            throw new Error("Backend returned null. Check your Python terminal for errors!");
         }
+
+        // DEBUG 2: Ensure the dictionary keys exist
+        if (!leftData.steps || !rightData.steps) {
+            throw new Error("Data received, but '.steps' key is missing! Check your algs.py return statements.");
+        }
+
+        // Logic Time Update
+        document.getElementById('time-left').innerText = leftData.execution_time.toFixed(4);
+        document.getElementById('time-right').innerText = rightData.execution_time.toFixed(4);
         
-        // 3. Start the race using generic IDs ('left' and 'right')
+        // Start visual race
         await Promise.all([
-            animateSort('left', leftSteps),
-            animateSort('right', rightSteps)
+            animateSort('left', leftData.steps),
+            animateSort('right', rightData.steps)
         ]);
 
     } catch (error) {
-        console.error("Race interrupted:", error);
+        console.error("CRITICAL RACE ERROR:", error);
+        alert("The race crashed! Open the browser console (F12 -> Console) to see why.");
     } finally {
-        // This 'finally' block runs NO MATTER WHAT (even if there was an error)
-        // It ensures the button is clickable again so you can try again
         isRunning = false;
         if (startBtn) startBtn.disabled = false;
     }
