@@ -18,17 +18,35 @@
         </div>
         
         <div class="duel-floor">
-            <div class="arena" id="arena-left">
-                <h3>Bubble Sort</h3>
-                <div id="visualizer-bubble" class="bar-container"></div>
-                <p>Comparisons: <span id="count-bubble">0</span></p>
-            </div>
-            
-            <div class="arena" id="arena-right">
-                <h3>Selection Sort</h3>
-                <div id="visualizer-selection" class="bar-container"></div>
-                <p>Comparisons: <span id="count-selection">0</span></p>
-            </div>
+    <div class="arena" id="arena-left">
+        <select id="algo-left" class="algo-selector">
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection">Selection Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="quick">Quick Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="heap">Heap Sort</option>
+            <option value="bogo">Bogo Sort</option>
+            <option value="optbogo">Optimized Bogo</option>
+        </select>
+        <div id="visualizer-left" class="bar-container"></div>
+        <p>Comparisons: <span id="count-left">0</span></p>
+    </div>
+    
+    <div class="arena" id="arena-right">
+        <select id="algo-right" class="algo-selector">
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection" selected>Selection Sort</option> <option value="insertion">Insertion Sort</option>
+            <option value="quick">Quick Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="heap">Heap Sort</option>
+            <option value="bogo">Bogo Sort</option>
+            <option value="optbogo">Optimized Bogo</option>
+        </select>
+        <div id="visualizer-right" class="bar-container"></div>
+        <p>Comparisons: <span id="count-right">0</span></p>
+    </div>
+</div>
         </div>
     </div>
 

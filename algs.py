@@ -89,9 +89,9 @@ def merge_sort_steps(arr):
         left = mergesort(start,mid)
         right = mergesort(mid,end)
         
-        return merge(left,right,start,end)
+        return merge(left,right,start,mid,end)
     
-    def merge(l,r,start,end):
+    def merge(l,r,start,mid,end):
         merged = []
         i = j = 0
         while i < len(l) and j < len(r):
@@ -174,13 +174,13 @@ def bogo_sort_steps(arr):
     def isSorted(now):
         for i in range(len(now) - 1):
             steps.append({'type': 'compare', 'indices': [i, i+1], 'current_state': now.copy()})
-            if not now[i] < now[i+1]:
+            if not now[i] <= now[i+1]:
                 break
         else:
             return True
         return False
     
-    while not is_sorted(temp_arr):
+    while not isSorted(temp_arr):
         random.shuffle(temp_arr)
         # Record the shuffle as a giant "swap" of all indices
         steps.append({'type': 'swap', 'indices': list(range(n)), 'current_state': temp_arr.copy()})
@@ -188,4 +188,44 @@ def bogo_sort_steps(arr):
         # because it generates MILLIONS of steps. 
         if len(steps) > 5000: 
             break
+    return steps
+
+def optimized_bogo_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+    n = len(temp_arr)
+    start = 0
+
+    def isSorted(now):
+        nonlocal start
+        # IMPORTANT: We always start checking from 0 to ensure 
+        # the shuffle didn't break previous order
+        for i in range(len(now) - 1):
+            steps.append({'type': 'compare', 'indices': [i, i+1], 'current_state': now.copy()})
+            if now[i] <= now[i+1]:
+                # If these two are fine, we might be able to 'lock' more
+                if i >= start:
+                    start = i + 1
+            else:
+                # ORDER BROKEN! We found where the mess starts
+                start = i
+                return False
+        return True
+    
+    while not isSorted(temp_arr):
+        # We only shuffle the part that is NOT sorted yet
+        to_shuffle = temp_arr[start:] 
+        random.shuffle(to_shuffle)
+        temp_arr[start:] = to_shuffle
+        
+        # Highlight the bars that just got scrambled
+        steps.append({
+            'type': 'swap', 
+            'indices': list(range(start, n)), 
+            'current_state': temp_arr.copy()
+        })
+        
+        if len(steps) > 5000: 
+            break
+            
     return steps

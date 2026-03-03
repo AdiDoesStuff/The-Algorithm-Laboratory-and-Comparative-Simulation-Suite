@@ -55,46 +55,73 @@ async function animateSort(algoType, steps) {
 
 // 4. Update Bars (The visual part)
 function updateBars(container, state, highlightIndices, type) {
-    container.innerHTML = ''; 
-    state.forEach((val, idx) => {
+    if (!container) return; // Safety check
+
+    const newBars = state.map((val, idx) => {
         const bar = document.createElement('div');
         bar.className = 'bar';
-        bar.style.height = `${val * 4}px`; // Increased scale so bars look bigger
-        if (highlightIndices.includes(idx)) {
+        // Ensure val exists and is a number
+        bar.style.height = `${(val || 0) * 4}px`; 
+        
+        if (highlightIndices && highlightIndices.includes(idx)) {
             bar.classList.add(type === 'compare' ? 'comparing' : 'swapping');
         }
-        container.appendChild(bar);
+        return bar;
     });
+
+    // This updates the entire container in one go, preventing the "black void"
+    container.replaceChildren(...newBars);
+
 }
 
 // 5. The Trigger: What happens when you click "Start Race"
 async function startComparison() {
-    // Generate ONE random array for both to ensure a fair race
     if (isRunning) {
         alert("Race is already running!");
         return;
     }
+
+    // 1. Get the algorithms chosen by the user from the <select> menus
+    const leftAlgo = document.getElementById('algo-left').value;
+    const rightAlgo = document.getElementById('algo-right').value;
+
     isRunning = true;
-
+    
+    // Select the button more reliably
     const startBtn = document.querySelector("button[onclick='startComparison()']");
-    startBtn.disabled = true;
+    if (startBtn) startBtn.disabled = true;
     
-    // Reset the counters on screen
-    document.getElementById('count-bubble').innerText = '0';
-    document.getElementById('count-selection').innerText = '0';
+    // Reset the counters to 0
+    document.getElementById('count-left').innerText = '0';
+    document.getElementById('count-right').innerText = '0';
 
-    // Get the data from Python
-    const bubbleSteps = await fetchSortSteps('bubble', currentLabArray);
-    const selectionSteps = await fetchSortSteps('quick', currentLabArray);
-    
-    // Start the race!
-    await Promise.all([
-        animateSort('bubble', bubbleSteps),
-        animateSort('selection', selectionSteps)
-    ]);
+    try {
+        // 2. Fetch data based on user choices
+        // We do these in parallel so the user doesn't wait twice as long
+        const [leftSteps, rightSteps] = await Promise.all([
+            fetchSortSteps(leftAlgo, currentLabArray),
+            fetchSortSteps(rightAlgo, currentLabArray)
+        ]);
 
-    isRunning = false;
-    startBtn.disabled = false;
+        // If either fetch failed (returned undefined), we stop here
+        if (!leftSteps || !rightSteps) {
+            throw new Error("Failed to get steps from server.");
+        }
+        
+        // 3. Start the race using generic IDs ('left' and 'right')
+        await Promise.all([
+            animateSort('left', leftSteps),
+            animateSort('right', rightSteps)
+        ]);
+
+    } catch (error) {
+        console.error("Race interrupted:", error);
+    } finally {
+        // This 'finally' block runs NO MATTER WHAT (even if there was an error)
+        // It ensures the button is clickable again so you can try again
+        isRunning = false;
+        if (startBtn) startBtn.disabled = false;
+    }
 }
 
 // 6. Reset function
@@ -108,12 +135,11 @@ function resetLab() {
 
 function generateNewArray() {
     currentGeneration++;
+    currentLabArray = Array.from({length: 20}, () => Math.floor(Math.random() * 50) + 10);
+    
+    updateBars(document.getElementById('visualizer-left'), currentLabArray, [], '');
+    updateBars(document.getElementById('visualizer-right'), currentLabArray, [], '');
 
-    currentLabArray = Array.from({length: 20}, () => Math.floor(Math.random() *  50) + 10);
-    // now we update em and draw em on screen
-    updateBars(document.getElementById('visualizer-bubble'), currentLabArray, [], '');
-    updateBars(document.getElementById('visualizer-selection'), currentLabArray, [], '');
-
-    document.getElementById('count-bubble').innerText = '0';
-    document.getElementById('count-selection').innerText = '0';
+    document.getElementById('count-left').innerText = '0';
+    document.getElementById('count-right').innerText = '0';
 }

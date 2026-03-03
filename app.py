@@ -22,6 +22,14 @@ def sort_handler():
         result = algs.quick_sort_steps(array)
     elif algo == 'insertion':
         result = algs.insertion_sort_steps(array)
+    elif algo == 'bogo':
+        result = algs.bogo_sort_steps(array)
+    elif algo == 'merge':
+        result = algs.merge_sort_steps(array)
+    elif algo == 'heap':
+        result = algs.heap_sort_steps(array)
+    elif algo == "optbogo":
+        result = algs.optimized_bogo_sort_steps(array)
     else:
         return jsonify({"error": "Invalid algorithm"}), 400
     

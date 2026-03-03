@@ -1,76 +1,97 @@
-/* 1. Base Styles - Apply to the Body, not '*' */
 body {
-    background-color: #121212; /* A softer, professional dark mode black */
+    background-color: #121212;
     color: white;
     font-family: 'Courier New', Courier, monospace;
     margin: 0;
     text-align: center;
 }
 
-/* 2. Layout for the Duel Floor */
 .duel-floor {
     display: flex;
     justify-content: space-around;
-    padding: 50px 20px; /* Added 50px top/bottom padding to move away from titles */
+    padding: 50px 20px;
     gap: 20px;
 }
 
 .arena {
     flex: 1;
+    min-width: 300px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px; /* This creates the gap between the "Bubble Sort" text and the bars */
-  
+    gap: 30px;
 }
 
-/* 3. The Visualizer Container */
 .bar-container {
     display: flex;
     align-items: flex-end;
-    height: 250px; /* Increased height slightly */
-    border-bottom: 3px solid #555;
-    gap: 4px; /* Space between bars */
-    padding: 20px;
-    background-color: #1e1e1e; /* Slightly lighter black to see the arena bounds */
-    border-radius: 8px;
+    justify-content: center;
+    height: 250px;
+    width: 100%;
+    padding: 10px;
+    background-color: #1e1e1e;
     border: 1px solid #333;
+    border-bottom: 3px solid #555;
+    border-radius: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
-/* 4. Individual Bars */
 .bar {
+    display: inline-block;
     background-color: #3498db;
-    width: 20px;
-    transition: height 0.2s ease, background-color 0.2s; 
-    border-radius: 2px 2px 0 0; /* Rounds the top of the bars for a sleeker look */
+    width: 15px;
+    margin: 0 2px;
+    vertical-align: bottom;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.1s ease, background-color 0.1s;
 }
 
-/* 5. Animation States */
-.bar.comparing { background-color: #e74c3c; } /* Red */
-.bar.swapping { background-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }  /* Yellow */
+.bar.comparing {
+    background-color: #e74c3c !important;
+}
 
-/* 6. Controls Styling (Optional but looks nice) */
+.bar.swapping {
+    background-color: #f1c40f !important;
+    box-shadow: 0 0 10px #f1c40f;
+}
+
+.algo-selector {
+    background-color: #222;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.1rem;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.algo-selector:hover {
+    border-color: #3498db;
+}
+
 button {
     background-color: #333;
     color: white;
-    border: 1px solid #555;
     padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
     margin: 0 5px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 button:hover {
     background-color: #444;
 }
 
-/* Styling for when the button is busy */
 button:disabled {
-    background-color: #222;    /* Darken it further */
-    color: #666;               /* Grey out the text */
+    background-color: #222;
+    color: #666;
     border-color: #444;
-    cursor: not-allowed;       /* Changes the mouse pointer to a 'blocked' sign */
     opacity: 0.6;
-    transform: scale(0.98);    /* Makes it look slightly 'pressed' or recessed */
+    cursor: not-allowed;
+    transform: scale(0.98);
 }
-
