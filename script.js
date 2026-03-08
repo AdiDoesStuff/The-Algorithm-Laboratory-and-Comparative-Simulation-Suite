@@ -3,16 +3,16 @@ let isPaused = false;
 let isRunning = false;
 let currentGeneration = 0;
 
+// 1. Initial Setup: Draw bars as soon as the page loads
+window.onload = () => {
+    generateNewArray();
+};
+
 function togglePause() {
     isPaused = !isPaused;
     const btn = document.getElementById('pause-btn');
     btn.innerText = isPaused ? 'Resume' : 'Pause';
 }
-
-// 1. Initial Setup: Draw bars as soon as the page loads
-window.onload = () => {
-    generateNewArray();
-};
 
 // 2. Fetch Logic: Talk to your Flask Backend
 async function fetchSortSteps(algorithm, array) {
