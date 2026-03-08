@@ -6,6 +6,7 @@ def bubble_sort_steps(arr):
     n = len(arr)
     temp_arr = arr.copy()
     start_time = time.perf_counter()
+    
     for i in range(n):
         for j in range(0, n-i-1):
             steps.append({'type' : 'compare' , 'indices' : [j , j+1], 'current_state' : temp_arr.copy()})
@@ -129,6 +130,7 @@ def merge_sort_steps(arr):
             steps.append({'type': 'swap', 'indices': [start + k, start + k], 'current_state': temp_arr.copy()})
         
         return merged
+    
     mergesort(0, len(temp_arr))
     end_time = time.perf_counter()
     execution_time = (end_time - start_time) * 1000
