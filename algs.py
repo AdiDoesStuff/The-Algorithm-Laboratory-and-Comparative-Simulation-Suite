@@ -37,7 +37,6 @@ def selection_sort_steps(arr):
     execution_time = (end_time - start_time) * 1000
     return {"steps": steps, "execution_time": execution_time}
 
-
 def quick_sort_steps(arr):
     steps = []
     temp_arr = arr.copy()
@@ -134,7 +133,6 @@ def merge_sort_steps(arr):
     end_time = time.perf_counter()
     execution_time = (end_time - start_time) * 1000
     return {"steps": steps, "execution_time": execution_time}
-
 
 def heap_sort_steps(arr):
     steps = []
