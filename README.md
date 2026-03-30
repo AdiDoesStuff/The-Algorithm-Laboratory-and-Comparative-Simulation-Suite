@@ -85,13 +85,18 @@ Deploying the suite locally requires minimal dependencies.
 - Modern Web Browser (Chrome, Edge, Firefox, Safari)
 
 ### 2. Environment Setup
-Clone the repository and install the required routing modules:
+Clone the repository:
 ```bash
 # Clone the project (Replace with your repository URL)
 git clone https://github.com/yourusername/Algorithm-Laboratory.git
 cd Algorithm-Laboratory
+```
 
-# Install the lightweight HTTP server requirements
+#### Installing Dependencies (Windows)
+We provide a convenient installation script for Windows users. Simply double-click the `install_dependencies.bat` file located in the root directory. It will automatically verify your Python installation and install the required packages.
+
+Alternatively, you can manually install the lightweight HTTP server requirements:
+```bash
 pip install flask flask-cors
 ```
 
