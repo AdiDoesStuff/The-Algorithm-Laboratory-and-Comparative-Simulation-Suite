@@ -2,81 +2,132 @@
 
 # 🧪 The Algorithm Laboratory & Comparative Simulation Suite
 
-**An interactive, visual platform for comparing the performance and mechanics of various sorting algorithms side-by-side.**
+**An advanced, full-stack educational platform for real-time visualization and comparative analysis of sorting algorithms.**
 
 [![Python Badge](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=for-the-badge)](https://www.python.org/)
-[![Flask Badge](https://img.shields.io/badge/Flask-000?logo=flask&logoColor=fff&style=for-the-badge)](https://flask.palletsprojects.com/)
+[![Flask Badge](https://img.shields.io/badge/Flask-000000?logo=flask&logoColor=fff&style=for-the-badge)](https://flask.palletsprojects.com/)
 [![HTML5 Badge](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=fff&style=for-the-badge)](https://en.wikipedia.org/wiki/HTML5)
-[![CSS Badge](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=fff&style=for-the-badge)](https://en.wikipedia.org/wiki/CSS)
+[![CSS3 Badge](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=fff&style=for-the-badge)](https://en.wikipedia.org/wiki/CSS)
 [![JavaScript Badge](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=000&style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
+<br/>
+
+*Watch algorithms battle side-by-side, analyze their microsecond execution times, and explore their underlying mathematical complexities.*
 
 </div>
 
-## 📖 Overview
+---
 
-The **Algorithm Laboratory: Sorting Duel** is a full-stack educational tool designed to help developers and computer science students visualize how different sorting algorithms operate under the hood. By utilizing a side-by-side "duel" interface, users can launch two algorithms simultaneously on the same randomized dataset to visually and quantitatively compare their efficiency, execution time, and total array operations.
+## ⚡ Executive Summary
 
-## ✨ Features
+**The Algorithm Laboratory** transcends traditional sorting visualizers by providing a highly interactive, dual-arena "duel" environment. Built with a decoupled architecture (Python/Flask backend computing step-states mapping to a responsive Vanilla JS frontend), the suite allows developers, students, and educators to benchmark algorithms synchronously on identical datasets. 
 
-- **⚔️ Side-by-Side Duel Interface:** Compare any two sorting algorithms at the exact same time.
-- **📊 Live Visualization:** Watch the arrays swap, highlight, and sort in real-time.
-- **⏱️ Deep Analytics:** Tracks the exact number of **Comparisons** and backend **Logic Time (ms)** natively.
-- **🎛️ Interactive Controls:** Dynamically adjust the number of elements (array size) and the playback speed.
-- **🌐 Full-Stack Architecture:** Python/Flask backend seamlessly processes the heavy algorithmic logic, tracking step-by-step state changes, and sends it to the dynamic JavaScript frontend.
+It's not just about watching bars swap—it's about understanding *why* $O(n \log n)$ dominates $O(n^2)$, observing the memory implications of Out-Of-Place merges, and tracking microsecond logic execution dynamically.
 
-## 🧠 Supported Algorithms
+---
 
-1. **Bubble Sort** - Simple but inefficient $O(n^2)$ sorting.
-2. **Selection Sort** - In-place comparison sort, $O(n^2)$.
-3. **Insertion Sort** - Builds the final sorted list one item at a time, $O(n^2)$.
-4. **Quick Sort** - Efficient, divide-and-conquer strategy, $O(n \log n)$.
-5. **Merge Sort** - Stable, divide-and-conquer list sorting, $O(n \log n)$.
-6. **Heap Sort** - Optimization of selection sort using a priority queue, $O(n \log n)$.
-7. **Bogo Sort** - Highly inefficient, random permutations until sorted. $O((n+1)!)$. *(Use with small array sizes!)*
-8. **Optimized Bogo** - A slightly smarter variant of Bogo Sort that locks correctly sorted initial segments.
+## ✨ Core Features
 
-## 🛠️ Tech Stack
+- 🌑 **Immersive Glitch Entry:** A custom `<canvas>` based "Matrix-style" digital rain that smoothly transitions into an ordered state upon entering the lab, setting a premium user experience from the first click.
+- ⚔️ **Synchronous Dueling Arenas:** Launch two completely different algorithms simultaneously on a cloned numerical array. Watch Divide-and-Conquer strategies race against Brute-Force methodologies in real-time.
+- ⏱️ **Precision Analytics:** Native backend logic tracking. The suite records exact algorithmic **Comparisons** and total internal **Logic Time (ms)** entirely disconnected from the frontend animation speed.
+- 📚 **Interactive Codex (Glossary):** A dedicated definitions hub featuring a custom-built 3D Parallax Tilt engine for browsing algorithm methodologies, stability concepts, and spatial complexities.
+- 🎛️ **Granular Control:** Dynamically manipulate standard variables through intuitive sliders: increase the element count (array size) to stress test performance, or slow down the rendering speed to $0.5x$ to observe step-by-step memory swaps.
 
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript
-- **Backend:** Python 3, Flask framework
-- **API:** RESTful API using Flask-CORS for cross-origin requests
+---
 
-## 🚀 Getting Started
+## 🧠 Supported Algorithm Library
 
-Follow these steps to run the Algorithm Laboratory locally.
+The laboratory natively supports 10 distinct sorting architectures, ranging from optimal production-grade systems to stochastic anomalies:
 
-### 1. Prerequisites
-Ensure you have [Python](https://www.python.org/downloads/) installed on your machine.
+| Algorithm | Category | Average Time | Space | Stability |
+| :--- | :--- | :--- | :--- | :--- |
+| **Quick Sort** | Divide & Conquer | $\mathcal{O}(n \log n)$ | $\mathcal{O}(\log n)$ | ❌ Unstable |
+| **Merge Sort** | Divide & Conquer | $\mathcal{O}(n \log n)$ | $\mathcal{O}(n)$ | ✅ Stable |
+| **Heap Sort** | Selection-based | $\mathcal{O}(n \log n)$ | $\mathcal{O}(1)$ | ❌ Unstable |
+| **Radix Sort** | Non-Comparison | $\mathcal{O}(nk)$ | $\mathcal{O}(n + k)$ | ✅ Stable |
+| **Counting Sort**| Non-Comparison | $\mathcal{O}(n + k)$ | $\mathcal{O}(n + k)$ | ✅ Stable |
+| **Insertion Sort**| Decrease/Conquer | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ✅ Stable |
+| **Selection Sort**| Selection-based | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ❌ Unstable |
+| **Bubble Sort** | Brute Force | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ✅ Stable |
+| **Optimized Bogo**| Hybrid/Stochastic| $\mathcal{O}(n!)$ | $\mathcal{O}(1)$ | ❌ Unstable |
+| **Bogo Sort** | Las Vegas | $\mathcal{O}(n \times n!)$ | $\mathcal{O}(1)$ | ❌ Unstable |
 
-### 2. Install Dependencies
-Open your terminal and install the required Python packages for the web server:
+> **Note on Implementations:** All computational logic resides purely in `algs.py`. The frontend visually interpolates the chronological `swap` and `compare` steps emitted by the Python engine.
 
+---
+
+## 🛠️ Technical Architecture
+
+The project leverages a robust, lightweight Full-Stack model to ensure visualization rendering doesn't corrupt logic timing benchmarks.
+
+1. **The Computing Engine (Flask / Python 3):**
+   - Receives target algorithm requirements via REST API.
+   - Executes recursive or iterative sorts via the `time.perf_counter()` environment to ensure sub-millisecond accuracy.
+   - Compiles an execution roadmap mapping array states (`current_state`), active indices (`indices`), and operation events (`type: swap | compare`).
+
+2. **The Render Engine (Vanilla JS / CSS3):**
+   - Consumes the `JSON` roadmap and initializes the dual concurrent animations.
+   - Utilizes CSS transform state changes and `replaceChildren` DOM techniques to prevent memory-leak lag when rendering high element counts.
+
+3. **Motion & UX (Glassmorphism & Canvas):**
+   - Avoids heavyweight component libraries (No React/Tailwind) in favor of deeply optimized vanilla CSS Grid/Flexbox layouts.
+   - Implements GPU-accelerated fading transitions and 3D card tilt transformations natively.
+
+---
+
+## 🚀 Installation & Deployment
+
+Deploying the suite locally requires minimal dependencies.
+
+### 1. System Requirements
+- [Python 3.8+](https://www.python.org/downloads/)
+- Modern Web Browser (Chrome, Edge, Firefox, Safari)
+
+### 2. Environment Setup
+Clone the repository and install the required routing modules:
 ```bash
+# Clone the project (Replace with your repository URL)
+git clone https://github.com/yourusername/Algorithm-Laboratory.git
+cd Algorithm-Laboratory
+
+# Install the lightweight HTTP server requirements
 pip install flask flask-cors
 ```
 
-### 3. Start the Backend Server
-Run the Flask application backend:
-
+### 3. Ignition
+Launch the Python computation backend:
 ```bash
 python app.py
 ```
-*The server will start running on `http://127.0.0.1:5000`.*
+*The Flask core will spin up locally on `http://127.0.0.1:5000`.*
 
-### 4. Launch the Frontend
-Simply open the `index.html` file in your preferred web browser (e.g., double click it) to access the Laboratory interface.
+Finally, launch the UI by opening `index.html` directly in your browser. No Webpack or Node server required.
 
-## 🎮 How to Use
+---
 
-1. **Select Algorithms:** Use the dropdown menus on the *Left* and *Right* arenas to pick which algorithms to battle against each other.
-2. **Adjust Parameters:** Use the interactive sliders to change the **Elements** (number of bars) and **Speed** of the visualization.
-3. **Start Race:** Click `Start Race` to generate a random array and begin the sorting duel!
-4. **Pause/Reset:** You can pause the visualization mid-way using the `Pause` button, or completely clear the board using `Reset`.
+## 📸 Interface Preview
 
-## 📸 Screenshots
+*(Repository Maintainer: Insert a high-resolution screenshot of the Dual-Arena here to demonstrate the UI)*  
+<!-- Example: `<img src="./assets/dashboard.png" width="800">` -->
 
-*(To make your README look even better on GitHub, add screenshots of the duel interface here! You can take a screenshot of your app, save it as `screenshot.png` in the project folder, and replace this text with: `![Dashboard Screenshot](screenshot.png)`)*
+---
 
 ## 🤝 Contributing
 
-Feel free to fork this project, submit pull requests, or send suggestions to add more algorithms (e.g., Radix Sort, Tim Sort) or improve the visual feedback!
+Contributions to expand the Algorithm Laboratory are highly encouraged. Prospective features include:
+- Implementing **TimSort** or **Shell Sort**.
+- Expanding algorithm variables (e.g., choosing Quick Sort's pivot methodology: Lomuto vs. Hoare).
+- Adding audio-oscillator triggers for aural representation of array swaps (Sound of Sorting).
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingAlgorithm`)
+3. Commit your Changes (`git commit -m 'Added A* Pathfinding sort'`)
+4. Push to the Branch (`git push origin feature/AmazingAlgorithm`)
+5. Open a Pull Request
+
+---
+
+<div align="center">
+  <p>Designed and structured to democratize the understanding of data structures.</p>
+</div>
