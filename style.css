@@ -35,6 +35,7 @@ h1 {
     margin-top: 30px;
     margin-bottom: 20px;
     background: linear-gradient(45deg, #38bdf8, #818cf8);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
@@ -218,4 +219,228 @@ button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* Algorithm Information Card Styles */
+.algo-info-card {
+    width: 100%;
+    margin-top: 15px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: left;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--text-primary);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.algo-info-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--accent-primary);
+    font-size: 1.4rem;
+    font-family: 'Pixelify Sans', cursive;
+    text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.info-desc {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.info-box {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+}
+
+.info-box span.label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+}
+
+.info-box span.value {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bar-default);
+}
+
+.info-box span.value.good { color: var(--bar-sorted); }
+.info-box span.value.warn { color: var(--bar-swapping); }
+.info-box span.value.bad { color: var(--bar-comparing); }
+
+.observation-box {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid var(--accent-primary);
+    padding: 12px 15px;
+    border-radius: 4px 8px 8px 4px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.observation-box strong {
+    color: var(--accent-primary);
+    display: block;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.traits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.traits-list li {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.traits-list li span {
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.creator-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.creator-details summary {
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    outline: none;
+    user-select: none;
+}
+
+.creator-details summary:hover {
+    color: var(--text-primary);
+}
+
+.creator-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Code Snippet Styles */
+.code-container {
+    background: rgba(10, 15, 30, 0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    overflow-x: auto;
+    position: relative;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.code-container::before {
+    content: "PYTHON";
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.code-container pre {
+    margin: 0;
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #e2e8f0;
+}
+
+.code-container code {
+    color: #a5b4fc;
+}
+
+/* Animation for dynamic content changes */
+@keyframes fadeInSlide {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.content-enter {
+    animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Glossary Box Styles */
+.glossary-box {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.glossary-box summary {
+    cursor: pointer;
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    outline: none;
+    user-select: none;
+}
+
+.glossary-box summary:hover {
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.glossary-content {
+    padding: 0 15px 15px 15px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.glossary-content p {
+    margin: 8px 0 0 0;
+}
+
+.glossary-content p strong {
+    color: var(--text-primary);
 }
