@@ -254,3 +254,81 @@ def optimized_bogo_sort_steps(arr):
     end_time = time.perf_counter()
     execution_time = (end_time - start_time) * 1000
     return {"steps": steps, "execution_time": execution_time}
+
+def counting_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+    n = len(temp_arr)
+    start_time = time.perf_counter()
+    
+    if n == 0:
+        return {"steps": steps, "execution_time": 0}
+
+    max_val = max(temp_arr)
+    count = [0] * (max_val + 1)
+    output = [0] * n
+    
+    # Store the count of each element
+    for i in range(n):
+        count[temp_arr[i]] += 1
+        steps.append({'type': 'compare', 'indices': [i], 'current_state': temp_arr.copy()})
+        
+    for i in range(1, max_val + 1):
+        count[i] += count[i - 1]
+        
+    # Build the output array
+    for i in range(n - 1, -1, -1):
+        output[count[temp_arr[i]] - 1] = temp_arr[i]
+        count[temp_arr[i]] -= 1
+        
+    # Copy output back to temp_arr for visualization updates
+    for i in range(n):
+        temp_arr[i] = output[i]
+        steps.append({'type': 'swap', 'indices': [i, i], 'current_state': temp_arr.copy()})
+
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}
+
+def counting_sort_for_radix(temp_arr, exp, steps):
+    n = len(temp_arr)
+    output = [0] * n
+    count = [0] * 10
+    
+    # Store count of occurrences in count[]
+    for i in range(n):
+        index = temp_arr[i] // exp
+        count[index % 10] += 1
+        steps.append({'type': 'compare', 'indices': [i], 'current_state': temp_arr.copy()})
+        
+    # Change count[i] so that count[i] now contains actual position of this digit in output[]
+    for i in range(1, 10):
+        count[i] += count[i - 1]
+        
+    # Build the output array
+    for i in range(n - 1, -1, -1):
+        index = temp_arr[i] // exp
+        output[count[index % 10] - 1] = temp_arr[i]
+        count[index % 10] -= 1
+        
+    # Copy the output array to temp_arr[], so that temp_arr[] now contains sorted numbers according to current digit
+    for i in range(n):
+        temp_arr[i] = output[i]
+        steps.append({'type': 'swap', 'indices': [i, i], 'current_state': temp_arr.copy()})
+
+def radix_sort_steps(arr):
+    steps = []
+    temp_arr = arr.copy()
+    n = len(temp_arr)
+    start_time = time.perf_counter()
+    
+    if n > 0:
+        max_val = max(temp_arr)
+        exp = 1
+        while max_val // exp > 0:
+            counting_sort_for_radix(temp_arr, exp, steps)
+            exp *= 10
+            
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000
+    return {"steps": steps, "execution_time": execution_time}

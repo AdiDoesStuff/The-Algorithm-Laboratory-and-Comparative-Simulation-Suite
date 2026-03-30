@@ -1,0 +1,328 @@
+/* definitions.css */
+
+.definitions-body {
+    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+    background-color: var(--bg-primary);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* Page Transition Overlay */
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 9999;
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 0.6s cubic-bezier(0.85, 0, 0.15, 1);
+}
+
+.page-transition.fade-out {
+    opacity: 0;
+}
+
+.page-transition.fade-in {
+    opacity: 1;
+}
+
+/* Header */
+.def-header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.def-header h1 {
+    font-family: 'Pixelify Sans', cursive;
+    font-size: 2rem;
+    margin: 0;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+.btn-back {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-secondary);
+}
+
+#search-input {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    padding: 10px 20px 10px 45px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    width: 250px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    width: 300px;
+    background: rgba(30, 41, 59, 0.9);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Base Main Area */
+.def-main {
+    padding-top: 40px;
+    padding-bottom: 120px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Flat Grid Layout */
+.glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
+    padding: 0 40px;
+}
+
+/* Flat Glossary Card */
+.glossary-card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 100px;
+}
+
+.glossary-card:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.25);
+    transform: translateY(-5px);
+    background: rgba(30, 41, 59, 0.6);
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--bar-default); /* Light blue */
+    letter-spacing: 0.5px;
+}
+
+/* Modal Popup Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.1);
+    transform: translateY(0);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.hidden .modal-content {
+    transform: scale(0.95) translateY(20px);
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.close-modal:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-title {
+    font-size: 2rem;
+    font-family: 'Pixelify Sans', cursive;
+    color: var(--text-primary);
+    margin: 0 0 15px 0;
+    padding-right: 30px;
+}
+
+.modal-divider {
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-primary), transparent);
+    width: 100px;
+    margin-bottom: 25px;
+}
+
+.modal-def {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.modal-def strong {
+    color: var(--text-primary);
+}
+
+/* Animation classes for Search filtering */
+@keyframes popIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.search-match {
+    animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Make it responsive */
+@media (max-width: 768px) {
+    .glossary-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+        padding: 0 20px;
+        gap: 15px;
+    }
+    
+    .glossary-card {
+        padding: 20px;
+        min-height: auto;
+    }
+
+    .def-header {
+        flex-direction: column;
+        height: auto;
+        padding: 15px 20px;
+        gap: 15px;
+    }
+    
+    .header-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .def-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .header-right, .search-container, #search-input {
+        width: 100%;
+    }
+    
+    .def-main {
+        padding-top: 20px;
+    }
+    
+    #search-input:focus {
+        width: 100%;
+    }
+}

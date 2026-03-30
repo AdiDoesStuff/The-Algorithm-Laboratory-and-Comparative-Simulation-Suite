@@ -30,6 +30,10 @@ def sort_handler():
         result = algs.heap_sort_steps(array)
     elif algo == "optbogo":
         result = algs.optimized_bogo_sort_steps(array)
+    elif algo == "counting":
+        result = algs.counting_sort_steps(array)
+    elif algo == "radix":
+        result = algs.radix_sort_steps(array)
     else:
         return jsonify({"error": "Invalid algorithm"}), 400
     

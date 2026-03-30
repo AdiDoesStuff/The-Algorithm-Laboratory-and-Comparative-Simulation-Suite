@@ -32,6 +32,12 @@
 
     <div id="main-app" class="lab-container app-hidden">
         <h1>Algorithm Laboratory: Sorting Duel</h1>
+        <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+            <button onclick="window.location.href='definitions.html'" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 10px 24px; font-size: 1rem; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                Definitions
+            </button>
+        </div>
         
         <div class="controls">
             <button onclick="startComparison()">Start Race</button>
@@ -60,6 +66,8 @@
             <option value="heap">Heap Sort</option>
             <option value="bogo">Bogo Sort</option>
             <option value="optbogo">Optimized Bogo</option>
+            <option value="counting">Counting Sort</option>
+            <option value="radix">Radix Sort</option>
         </select>
         <div id="visualizer-left" class="bar-container"></div>
         <p>
@@ -80,6 +88,8 @@
             <option value="heap">Heap Sort</option>
             <option value="bogo">Bogo Sort</option>
             <option value="optbogo">Optimized Bogo</option>
+            <option value="counting">Counting Sort</option>
+            <option value="radix">Radix Sort</option>
         </select>
         <div id="visualizer-right" class="bar-container"></div>
         <p>

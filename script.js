@@ -330,6 +330,45 @@ def optimized_bogo(arr):
         usecase: "When you want to demonstrate optimizations on exceptionally bad ideas.",
         prosCons: "Pros: Astronomically faster than standard bogo sort. Cons: Still comically useless for actual sorting.",
         creator: "Internet Culture", date: "Unknown"
+    },
+    counting: {
+        name: "Counting Sort",
+        desc: "An integer sorting algorithm that operates by counting the number of objects that possess distinct key values, and calculating the position of each key in the output sequence.",
+        codeSnippet: `def counting_sort(arr):
+    max_val = max(arr)
+    count = [0] * (max_val + 1)
+    for num in arr: count[num] += 1
+    for i in range(1, len(count)): count[i] += count[i-1]
+    res = [0] * len(arr)
+    for num in reversed(arr):
+        res[count[num] - 1] = num
+        count[num] -= 1
+    return res`,
+        timeBest: "O(n + k)", timeAvg: "O(n + k)", timeWorst: "O(n + k)",
+        space: "O(n + k)", type: "Non-Comparison / Distribution",
+        stability: "Stable", inplace: "Out-of-place",
+        observation: "You won't see pair-by-pair swaps. Instead, it scans the entire array to count occurrences, then mathematically calculates exactly where each item belongs, dropping them into place.",
+        usecase: "Highly efficient for sorting integers when the range between the minimum and maximum value (k) is not significantly larger than the number of items (n).",
+        prosCons: "Pros: Incredible linear O(n) performance for small ranges. Cons: Uses lots of memory; cannot be easily used for floats or long strings.",
+        creator: "Harold H. Seward", date: "1954"
+    },
+    radix: {
+        name: "Radix Sort",
+        desc: "A non-comparative integer sorting algorithm that sorts data with integer keys by grouping keys by individual digits which share the same significant position and value.",
+        codeSnippet: `def radix_sort(arr):
+    max_val = max(arr)
+    exp = 1
+    while max_val // exp > 0:
+        counting_sort_by_digit(arr, exp)
+        exp *= 10
+    return arr`,
+        timeBest: "O(nk)", timeAvg: "O(nk)", timeWorst: "O(nk)",
+        space: "O(n + k)", type: "Non-Comparison / Distribution",
+        stability: "Stable", inplace: "Out-of-place",
+        observation: "It sweeps through the array multiple times—first aligning elements by their ones digit, then their tens digit, and so on, progressively refining the order.",
+        usecase: "Often used when O(n log n) is too slow and the data consists of integers or strings where the maximum number of digits (k) is small.",
+        prosCons: "Pros: Linear time complexity if k is constant. Cons: Relies on an underlying stable sort (like Counting Sort) which takes extra memory.",
+        creator: "Herman Hollerith", date: "1887"
     }
 };
 
