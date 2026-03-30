@@ -106,26 +106,6 @@ Finally, launch the UI by opening `index.html` directly in your browser. No Webp
 
 ---
 
-## 📸 Interface Preview
-
-*(Repository Maintainer: Insert a high-resolution screenshot of the Dual-Arena here to demonstrate the UI)*  
-<!-- Example: `<img src="./assets/dashboard.png" width="800">` -->
-
----
-
-## 🤝 Contributing
-
-Contributions to expand the Algorithm Laboratory are highly encouraged. Prospective features include:
-- Implementing **TimSort** or **Shell Sort**.
-- Expanding algorithm variables (e.g., choosing Quick Sort's pivot methodology: Lomuto vs. Hoare).
-- Adding audio-oscillator triggers for aural representation of array swaps (Sound of Sorting).
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingAlgorithm`)
-3. Commit your Changes (`git commit -m 'Added A* Pathfinding sort'`)
-4. Push to the Branch (`git push origin feature/AmazingAlgorithm`)
-5. Open a Pull Request
-
 ---
 
 <div align="center">
