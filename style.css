@@ -444,3 +444,172 @@ button:disabled {
 .glossary-content p strong {
     color: var(--text-primary);
 }
+
+/* ========================================================================= */
+/* Landing Page (Splash Screen) Styles                                       */
+/* ========================================================================= */
+
+.landing-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-primary);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease;
+}
+
+.glitch-wrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+}
+
+#glitch-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.vignette-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.vignette-overlay.center {
+    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.8) 0%, transparent 60%);
+}
+
+.vignette-overlay.outer {
+    background: radial-gradient(circle at center, transparent 60%, rgba(15, 23, 42, 1) 100%);
+}
+
+.landing-content {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 60px 40px;
+    max-width: 600px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: translateY(0);
+    animation: floating 6s ease-in-out infinite;
+}
+
+@keyframes floating {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.landing-title {
+    font-size: 3.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: titleShine 4s linear infinite;
+    text-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+}
+
+@keyframes titleShine {
+    to { background-position: 200% center; }
+}
+
+.landing-title.title-sorted {
+    background: linear-gradient(135deg, #059669, #34d399, #10b981);
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 20px rgba(52, 211, 153, 0.6);
+    animation: titleSortedShine 0.8s ease-out forwards;
+}
+
+@keyframes titleSortedShine {
+    0% { background-position: 0% center; filter: brightness(1) drop-shadow(0 0 0px rgba(52, 211, 153, 0)); }
+    50% { background-position: 100% center; filter: brightness(1.5) drop-shadow(0 0 15px rgba(52, 211, 153, 0.8)); }
+    100% { background-position: 200% center; filter: brightness(1.1) drop-shadow(0 0 10px rgba(52, 211, 153, 0.5)); }
+}
+
+.landing-description {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+}
+
+.btn-go {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+    font-size: 1.2rem;
+    padding: 15px 40px;
+    border-radius: 50px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+}
+
+.btn-go:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.6);
+}
+
+.arrow-icon {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.btn-go:hover .arrow-icon {
+    transform: translateX(5px);
+}
+
+/* Animations for transitioning from landing to app */
+.slide-up-fade {
+    transform: translateY(-100vh);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.app-hidden {
+    display: none !important;
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.app-enter {
+    display: block !important;
+    animation: appReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes appReveal {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

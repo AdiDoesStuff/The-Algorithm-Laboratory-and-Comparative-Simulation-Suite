@@ -8,7 +8,29 @@
 </head>
 <body>
 
-    <div class="lab-container">
+    <!-- Landing Page (Splash Screen) -->
+    <div id="landing-page" class="landing-page">
+        <!-- Canvas Background Effect -->
+        <div class="glitch-wrapper">
+            <canvas id="glitch-canvas"></canvas>
+            <div class="vignette-overlay center"></div>
+            <div class="vignette-overlay outer"></div>
+        </div>
+        
+        <div class="landing-content" style="z-index: 10;">
+            <h1 class="landing-title">Algorithm Laboratory</h1>
+            <p class="landing-description">
+                Experience the ultimate sorting duel. Compare algorithms visually, 
+                analyze their real-time performance, and discover the mechanics behind each sort.
+            </p>
+            <button class="btn-go" onclick="enterApp()">
+                Go!
+                <svg xmlns="http://www.w3.org/2000/svg" class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app" class="lab-container app-hidden">
         <h1>Algorithm Laboratory: Sorting Duel</h1>
         
         <div class="controls">
