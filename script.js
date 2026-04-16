@@ -683,7 +683,7 @@ class MatrixBackground {
         if (!this.isSorting) return;
         
         // Chunk sizes determine how fast the visual sweeping completes. 
-        // Spanning across 40 frames (~600ms) guarantees a fast, satisfying visual
+        // Spanning across 40 frames
         const chunkSize = Math.max(30, Math.floor(this.letters.length / 40));
         
         for (let i = 0; i < chunkSize; i++) {

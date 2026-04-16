@@ -612,4 +612,157 @@ button:disabled {
         opacity: 1;
         transform: scale(1);
     }
+}
+
+.pathfinding-controls {
+    background: var(--bg-tertiary);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 950px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: var(--glass-shadow);
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.slider-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.pathfinding-floor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#grid-container {
+    display: grid;
+    gap: 1px;
+    background-color: #64748b; /* Contrast background for grid lines */
+    border: 5px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+    width: min(85vw, 60vh);
+    height: min(85vw, 60vh); /* Keeps grid a perfect responsive square */
+    margin: 0 auto;
+    padding: 1px;
+}
+
+.node {
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff; /* White background for nodes */
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    border-radius: 1px;
+}
+
+.node:hover {
+    background-color: #cbd5e1;
+}
+
+.node-start {
+    background-color: #10b981 !important;
+    transform: scale(1.15);
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.8);
+    position: relative;
+    z-index: 5;
+    border: 2px solid white;
+}
+
+.node-end {
+    background-color: #ef4444 !important;
+    transform: scale(1.15);
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.8);
+    position: relative;
+    z-index: 5;
+    border: 2px solid white;
+}
+
+.node-wall {
+    background-color: #0f172a !important; /* Pitch black for walls to contrast against white */
+    animation: wallPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 2px;
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.node-visited {
+    background-color: rgba(56, 189, 248, 0.85) !important;
+}
+
+.node-visited-animated {
+    animation: visitedAnimation 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.node-path {
+    background-color: #fbbf24 !important;
+    animation: pathAnimation 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.9);
+    border-radius: 4px;
+    position: relative;
+    z-index: 4;
+}
+
+.legend-node {
+    border: 1px solid #94a3b8; /* helps visibility of plain node in legend */
+}
+
+@keyframes wallPop {
+    0% { transform: scale(0.3); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes visitedAnimation {
+    0% {
+        transform: scale(0.3);
+        background-color: rgba(0, 0, 66, 0.75);
+        border-radius: 50%;
+    }
+    50% {
+        transform: scale(1.2);
+        background-color: rgba(17, 104, 217, 0.75);
+    }
+    100% {
+        transform: scale(1);
+        background-color: rgba(0, 190, 218, 0.75);
+    }
+}
+
+@keyframes pathAnimation {
+    0% {
+        transform: scale(0.6);
+        background-color: #fcd34d;
+    }
+    50% {
+        transform: scale(1.2);
+        background-color: #fbbf24;
+    }
+    100% {
+        transform: scale(1);
+        background-color: #fbbf24;
+    }
 }
