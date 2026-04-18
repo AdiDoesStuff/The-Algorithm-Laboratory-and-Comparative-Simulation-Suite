@@ -21,6 +21,6 @@ echo.
 echo =======================================================
 echo  Installation Complete!
 echo  To start the backend server run:
-echo  venv\Scripts\python app.py
+echo  venv\Scripts\python backend\app.py
 echo =======================================================
 pause

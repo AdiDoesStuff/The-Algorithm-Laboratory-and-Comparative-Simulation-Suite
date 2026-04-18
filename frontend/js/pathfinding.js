@@ -138,69 +138,94 @@ function moveEndNode(r, c) {
     el.classList.remove('node-wall');
 }
 
-function generateMaze() {
+// Helper sleep function
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function generateMaze() {
     if (isRunning) return;
     clearGrid();
+    
+    isRunning = true;
+    currentGeneration++;
+    const myGen = currentGeneration;
 
-    const mazeType = document.getElementById('maze-selector').value;
+    try {
+        const mazeType = document.getElementById('maze-selector').value;
+        const speedSlider = document.getElementById('speed-slider');
+        const speedMultiplier = speedSlider ? parseFloat(speedSlider.value) : 1;
+        // Significant speed increase: lower base delay and higher batching
+        const delay = 10 / speedMultiplier; 
 
-    if (mazeType === 'random') {
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (!grid[r][c].isStart && !grid[r][c].isEnd) {
-                    if (Math.random() < 0.3) {
-                        grid[r][c].isWall = true;
-                        document.getElementById(`node-${r}-${c}`).classList.add('node-wall');
+        if (mazeType === 'random') {
+            let count = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (myGen !== currentGeneration) return;
+                    if (!grid[r][c].isStart && !grid[r][c].isEnd) {
+                        if (Math.random() < 0.3) {
+                            grid[r][c].isWall = true;
+                            document.getElementById(`node-${r}-${c}`).classList.add('node-wall');
+                            count++;
+                            // Sleep every 5 nodes for faster random generation
+                            if (count % 5 === 0) await sleep(delay);
+                        }
                     }
                 }
             }
-        }
-    } else if (mazeType === 'stair') {
-        let r = rows - 2;
-        let c = 1;
-        let dRow = -1;
-        let dCol = 1;
+        } else if (mazeType === 'stair') {
+            let r = rows - 2;
+            let c = 1;
+            let dRow = -1;
+            let dCol = 1;
 
-        while (c < cols - 1) {
-            if (r >= 0 && r < rows) {
-                if (!grid[r][c].isStart && !grid[r][c].isEnd) {
-                    grid[r][c].isWall = true;
-                    document.getElementById(`node-${r}-${c}`).classList.add('node-wall');
-                }
-            }
-            r += dRow;
-            c += dCol;
-            if (r < 1 || r >= rows - 1) {
-                dRow = -dRow;
-                r += dRow * 2;
-            }
-        }
-    } else if (mazeType === 'recursive') {
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+            while (c < cols - 1) {
+                if (myGen !== currentGeneration) return;
+                if (r >= 0 && r < rows) {
                     if (!grid[r][c].isStart && !grid[r][c].isEnd) {
                         grid[r][c].isWall = true;
                         document.getElementById(`node-${r}-${c}`).classList.add('node-wall');
+                        await sleep(delay);
+                    }
+                }
+                r += dRow;
+                c += dCol;
+                if (r < 1 || r >= rows - 1) {
+                    dRow = -dRow;
+                    r += dRow * 2;
+                }
+            }
+        } else if (mazeType === 'recursive') {
+            // Instant border
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+                        if (!grid[r][c].isStart && !grid[r][c].isEnd) {
+                            grid[r][c].isWall = true;
+                            document.getElementById(`node-${r}-${c}`).classList.add('node-wall');
+                        }
                     }
                 }
             }
+            await sleep(delay * 2); 
+            await recursiveDivision(1, rows - 2, 1, cols - 2, rows > cols, delay, myGen);
         }
-        recursiveDivision(1, rows - 2, 1, cols - 2, rows > cols);
+    } finally {
+        if (myGen === currentGeneration) {
+            isRunning = false;
+        }
     }
 }
 
-function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal) {
+async function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal, delay, myGen) {
     if (rowEnd < rowStart || colEnd < colStart) return;
+    if (myGen !== currentGeneration) return;
 
     if (isHorizontal) {
         let possibleRows = [];
-        // Walls should be placed on EVEN indices
         for (let r = rowStart; r <= rowEnd; r++) {
             if (r % 2 === 0) possibleRows.push(r);
         }
         let possibleCols = [];
-        // Gaps (passages) should be placed on ODD indices
         for (let c = colStart; c <= colEnd; c++) {
             if (c % 2 === 1) possibleCols.push(c);
         }
@@ -213,8 +238,9 @@ function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal) {
         let currentRow = possibleRows[randomRowIndex];
         let randomCol = possibleCols[randomColIndex];
 
-        // Draw wall
+        // Draw wall segment quickly
         for (let c = colStart - 1; c <= colEnd + 1; c++) {
+            if (myGen !== currentGeneration) return;
             if (c !== randomCol && c >= 0 && c < cols && currentRow >= 0 && currentRow < rows) {
                 if (!grid[currentRow][c].isStart && !grid[currentRow][c].isEnd) {
                     grid[currentRow][c].isWall = true;
@@ -222,17 +248,17 @@ function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal) {
                 }
             }
         }
+        // Sleep once per wall segment for snappy division
+        await sleep(delay * 2);
 
-        recursiveDivision(rowStart, currentRow - 1, colStart, colEnd, (currentRow - 1 - rowStart) > (colEnd - colStart));
-        recursiveDivision(currentRow + 1, rowEnd, colStart, colEnd, (rowEnd - (currentRow + 1)) > (colEnd - colStart));
+        await recursiveDivision(rowStart, currentRow - 1, colStart, colEnd, (currentRow - 1 - rowStart) > (colEnd - colStart), delay, myGen);
+        await recursiveDivision(currentRow + 1, rowEnd, colStart, colEnd, (rowEnd - (currentRow + 1)) > (colEnd - colStart), delay, myGen);
     } else {
         let possibleCols = [];
-        // Walls should be placed on EVEN indices
         for (let c = colStart; c <= colEnd; c++) {
             if (c % 2 === 0) possibleCols.push(c);
         }
         let possibleRows = [];
-        // Gaps (passages) should be placed on ODD indices
         for (let r = rowStart; r <= rowEnd; r++) {
             if (r % 2 === 1) possibleRows.push(r);
         }
@@ -245,8 +271,8 @@ function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal) {
         let currentCol = possibleCols[randomColIndex];
         let randomRow = possibleRows[randomRowIndex];
 
-        // Draw wall
         for (let r = rowStart - 1; r <= rowEnd + 1; r++) {
+            if (myGen !== currentGeneration) return;
             if (r !== randomRow && r >= 0 && r < rows && currentCol >= 0 && currentCol < cols) {
                 if (!grid[r][currentCol].isStart && !grid[r][currentCol].isEnd) {
                     grid[r][currentCol].isWall = true;
@@ -254,9 +280,11 @@ function recursiveDivision(rowStart, rowEnd, colStart, colEnd, isHorizontal) {
                 }
             }
         }
+        // Sleep once per wall segment for snappy division
+        await sleep(delay * 2);
 
-        recursiveDivision(rowStart, rowEnd, colStart, currentCol - 1, (rowEnd - rowStart) > (currentCol - 1 - colStart));
-        recursiveDivision(rowStart, rowEnd, currentCol + 1, colEnd, (rowEnd - rowStart) > (colEnd - (currentCol + 1)));
+        await recursiveDivision(rowStart, rowEnd, colStart, currentCol - 1, (rowEnd - rowStart) > (currentCol - 1 - colStart), delay, myGen);
+        await recursiveDivision(rowStart, rowEnd, currentCol + 1, colEnd, (rowEnd - rowStart) > (colEnd - (currentCol + 1)), delay, myGen);
     }
 }
 

@@ -5,15 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorithm Laboratory - Pathfinding</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
 
     <div class="lab-container">
-        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-direction: column;">
+        <div class="header-with-nav"
+            style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-direction: column;">
             <h1>Algorithm Laboratory: Pathfinding</h1>
-            <a href="index.html" class="nav-button" style="text-decoration: none; background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 10px 24px; font-size: 1rem; border-radius: 50px; color: white; display:flex; align-items: center; gap:8px;">Switch to Sorting</a>
+            <a href="index.html" class="nav-button"
+                style="text-decoration: none; background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 10px 24px; font-size: 1rem; border-radius: 50px; color: white; display:flex; align-items: center; gap:8px;">Switch
+                to Sorting</a>
         </div>
 
         <div class="controls pathfinding-controls">
@@ -53,7 +56,8 @@
         </div>
 
         <div class="pathfinding-floor" style="margin-top: 20px;">
-            <div class="legend" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div class="legend"
+                style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
                 <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
                     <div class="node node-start legend-node" style="width: 25px; height: 25px;"></div> Start Node
                 </div>
@@ -70,12 +74,13 @@
                     <div class="node node-path legend-node" style="width: 25px; height: 25px;"></div> Shortest Path
                 </div>
             </div>
-            <p class="instructions" style="color: var(--text-secondary); margin-bottom: 15px;">Click and drag on empty nodes to add/remove walls. Drag Start or Target nodes to move them.</p>
+            <p class="instructions" style="color: var(--text-secondary); margin-bottom: 15px;">Click and drag on empty
+                nodes to add/remove walls. Drag Start or Target nodes to move them.</p>
             <div id="grid-container" class="grid-container"></div>
         </div>
     </div>
 
-    <script src="pathfinding.js"></script>
+    <script src="js/pathfinding.js"></script>
 </body>
 
 </html>
