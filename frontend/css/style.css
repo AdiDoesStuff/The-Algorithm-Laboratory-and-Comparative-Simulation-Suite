@@ -654,6 +654,76 @@ button:disabled {
     box-sizing: border-box;
 }
 
+.pathfinding-info-card {
+    width: min(100%, 1000px);
+    margin-top: 24px;
+}
+
+.info-section + .info-section {
+    margin-top: 18px;
+}
+
+.section-kicker {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--accent-primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.pathfinding-glossary {
+    display: grid;
+    gap: 12px;
+}
+
+.glossary-item {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.glossary-item strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.glossary-item p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.tradeoff-box {
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.tradeoff-box p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.tradeoff-box p + p {
+    margin-top: 10px;
+}
+
+.tradeoff-box strong {
+    color: var(--text-primary);
+}
+
+.creator-info-inline {
+    margin-top: 0;
+}
+
 #grid-container {
     display: grid;
     gap: 1px;
@@ -765,4 +835,4 @@ button:disabled {
         transform: scale(1);
         background-color: #fbbf24;
     }
-}
+}

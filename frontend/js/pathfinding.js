@@ -12,7 +12,102 @@ let isRunning = false;
 window.onload = () => {
     initializeGrid();
     drawGrid();
+    initPathfindingInfo();
 };
+
+function initPathfindingInfo() {
+    const algoSelector = document.getElementById('algo-selector');
+    if (!algoSelector) return;
+
+    algoSelector.addEventListener('change', () => renderPathfindingInfo(algoSelector.value));
+    renderPathfindingInfo(algoSelector.value);
+}
+
+function renderPathfindingInfo(algoId) {
+    const infoContainer = document.getElementById('pathfinding-info');
+    const data = pathfindingDetails[algoId];
+
+    if (!infoContainer || !data) return;
+
+    infoContainer.innerHTML = `
+        <div class="info-section">
+            <span class="section-kicker">1. The Identity</span>
+            <h3>${data.name}</h3>
+            <p class="info-desc">${data.vibe}</p>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">2. The Implementation</span>
+            <div class="code-container">
+                <pre><code>${data.codeSnippet}</code></pre>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">3. Performance Metrics</span>
+            <div class="info-grid">
+                <div class="info-box">
+                    <span class="label">Worst Case</span>
+                    <span class="value">${data.timeWorst}</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Space</span>
+                    <span class="value">${data.space}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">4. Algorithm DNA</span>
+            <ul class="traits-list">
+                <li><span>Type:</span> <strong>${data.type}</strong></li>
+                <li><span>Weighted Support:</span> ${data.weightedSupport}</li>
+                <li><span>Shortest Path Guarantee:</span> ${data.shortestPathGuarantee}</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">5. Concept Glossary</span>
+            <div class="pathfinding-glossary">
+                ${data.glossary.map((item) => `
+                    <div class="glossary-item">
+                        <strong>${item.term}</strong>
+                        <p>${item.definition}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">6. Lab Observation</span>
+            <div class="observation-box">
+                <strong>What to Watch</strong>
+                ${data.labObservation}
+            </div>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">7. Strategy & Trade-offs</span>
+            <div class="tradeoff-box">
+                <p><strong>Pro:</strong> ${data.prosCons.pro}</p>
+                <p><strong>Con:</strong> ${data.prosCons.con}</p>
+                <p><strong>Real-World Use Case:</strong> ${data.useCase}</p>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <span class="section-kicker">8. Historical Credit</span>
+            <div class="creator-info creator-info-inline">
+                <strong>Creator:</strong> ${data.creator}<br/>
+                <strong>First Appearance:</strong> ${data.date}
+            </div>
+        </div>
+    `;
+
+    infoContainer.classList.remove('content-enter');
+    void infoContainer.offsetWidth;
+    infoContainer.classList.add('content-enter');
+}
 
 function initializeGrid() {
     grid = [];
