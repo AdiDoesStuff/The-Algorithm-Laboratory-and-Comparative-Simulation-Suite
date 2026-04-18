@@ -1,118 +1,270 @@
-<div align="center">
+# The Algorithm Laboratory and Comparative Simulation Suite
 
-# 🧪 The Algorithm Laboratory & Comparative Simulation Suite
+A full-stack educational visualization platform for exploring how classic algorithms behave in practice.
 
-**An advanced, full-stack educational platform for real-time visualization and comparative analysis of sorting algorithms.**
+The project combines a Python Flask backend with a lightweight HTML, CSS, and JavaScript frontend to animate algorithm execution step by step. It currently includes:
 
-[![Python Badge](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=for-the-badge)](https://www.python.org/)
-[![Flask Badge](https://img.shields.io/badge/Flask-000000?logo=flask&logoColor=fff&style=for-the-badge)](https://flask.palletsprojects.com/)
-[![HTML5 Badge](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=fff&style=for-the-badge)](https://en.wikipedia.org/wiki/HTML5)
-[![CSS3 Badge](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=fff&style=for-the-badge)](https://en.wikipedia.org/wiki/CSS)
-[![JavaScript Badge](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=000&style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+- a dual-arena sorting visualizer
+- a grid-based pathfinding visualizer
+- an interactive glossary of core algorithm terms
 
-<br/>
+The suite is designed for students, educators, and anyone who wants to move beyond static pseudocode and see algorithm behavior unfold visually.
 
-*Watch algorithms battle side-by-side, analyze their microsecond execution times, and explore their underlying mathematical complexities.*
+## Highlights
 
-</div>
+- Side-by-side sorting comparison on identical input data
+- Real-time pathfinding visualization on an editable grid
+- Dynamic algorithm info panels for both sorting and pathfinding
+- Backend-generated execution steps for consistent animation logic
+- Adjustable speed and problem size controls
+- Standalone frontend pages with no Node.js build step
+- Basic backend test coverage with `pytest`
 
----
+## Current Modules
 
-## ⚡ Executive Summary
+### 1. Sorting Duel
 
-**The Algorithm Laboratory** transcends traditional sorting visualizers by providing a highly interactive, dual-arena "duel" environment. Built with a decoupled architecture (Python/Flask backend computing step-states mapping to a responsive Vanilla JS frontend), the suite allows developers, students, and educators to benchmark algorithms synchronously on identical datasets. 
+The sorting experience is built around two synchronized arenas so users can compare two algorithms on the same randomly generated array.
 
-It's not just about watching bars swap—it's about understanding *why* $O(n \log n)$ dominates $O(n^2)$, observing the memory implications of Out-Of-Place merges, and tracking microsecond logic execution dynamically.
+Features:
 
----
+- Start, pause, and reset controls
+- Adjustable element count and animation speed
+- Comparison counters and backend execution timing
+- Dynamic educational cards describing each algorithm
 
-## ✨ Core Features
+Supported sorting algorithms:
 
-- 🌑 **Immersive Glitch Entry:** A custom `<canvas>` based "Matrix-style" digital rain that smoothly transitions into an ordered state upon entering the lab, setting a premium user experience from the first click.
-- ⚔️ **Synchronous Dueling Arenas:** Launch two completely different algorithms simultaneously on a cloned numerical array. Watch Divide-and-Conquer strategies race against Brute-Force methodologies in real-time.
-- ⏱️ **Precision Analytics:** Native backend logic tracking. The suite records exact algorithmic **Comparisons** and total internal **Logic Time (ms)** entirely disconnected from the frontend animation speed.
-- 📚 **Interactive Codex (Glossary):** A dedicated definitions hub featuring a custom-built 3D Parallax Tilt engine for browsing algorithm methodologies, stability concepts, and spatial complexities.
-- 🎛️ **Granular Control:** Dynamically manipulate standard variables through intuitive sliders: increase the element count (array size) to stress test performance, or slow down the rendering speed to $0.5x$ to observe step-by-step memory swaps.
+| Algorithm | ID | Category |
+| --- | --- | --- |
+| Bubble Sort | `bubble` | Brute Force |
+| Selection Sort | `selection` | Brute Force |
+| Insertion Sort | `insertion` | Decrease and Conquer |
+| Quick Sort | `quick` | Divide and Conquer |
+| Merge Sort | `merge` | Divide and Conquer |
+| Heap Sort | `heap` | Selection Method |
+| Bogo Sort | `bogo` | Randomized / Brute Force |
+| Optimized Bogo Sort | `optbogo` | Randomized / Decrease |
+| Counting Sort | `counting` | Non-Comparison / Distribution |
+| Radix Sort | `radix` | Non-Comparison / Distribution |
 
----
+### 2. Pathfinding Visualizer
 
-## 🧠 Supported Algorithm Library
+The pathfinding experience uses a square grid where users can place walls, move the start and target nodes, generate mazes, and watch the search process animate in real time.
 
-The laboratory natively supports 10 distinct sorting architectures, ranging from optimal production-grade systems to stochastic anomalies:
+Features:
 
-| Algorithm | Category | Average Time | Space | Stability |
-| :--- | :--- | :--- | :--- | :--- |
-| **Quick Sort** | Divide & Conquer | $\mathcal{O}(n \log n)$ | $\mathcal{O}(\log n)$ | ❌ Unstable |
-| **Merge Sort** | Divide & Conquer | $\mathcal{O}(n \log n)$ | $\mathcal{O}(n)$ | ✅ Stable |
-| **Heap Sort** | Selection-based | $\mathcal{O}(n \log n)$ | $\mathcal{O}(1)$ | ❌ Unstable |
-| **Radix Sort** | Non-Comparison | $\mathcal{O}(nk)$ | $\mathcal{O}(n + k)$ | ✅ Stable |
-| **Counting Sort**| Non-Comparison | $\mathcal{O}(n + k)$ | $\mathcal{O}(n + k)$ | ✅ Stable |
-| **Insertion Sort**| Decrease/Conquer | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ✅ Stable |
-| **Selection Sort**| Selection-based | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ❌ Unstable |
-| **Bubble Sort** | Brute Force | $\mathcal{O}(n^2)$ | $\mathcal{O}(1)$ | ✅ Stable |
-| **Optimized Bogo**| Hybrid/Stochastic| $\mathcal{O}(n!)$ | $\mathcal{O}(1)$ | ❌ Unstable |
-| **Bogo Sort** | Las Vegas | $\mathcal{O}(n \times n!)$ | $\mathcal{O}(1)$ | ❌ Unstable |
+- Editable obstacle grid
+- Draggable start and target nodes
+- Maze generation presets
+- Adjustable grid size and animation speed
+- Dynamic educational panel for the selected pathfinding algorithm
 
-> **Note on Implementations:** All computational logic resides purely in `algs.py`. The frontend visually interpolates the chronological `swap` and `compare` steps emitted by the Python engine.
+Supported pathfinding algorithms:
 
----
+| Algorithm | ID | Notes |
+| --- | --- | --- |
+| Dijkstra's Algorithm | `dijkstra` | Uniform-cost shortest path on the current grid |
+| A* Search | `astar` | Heuristic-guided shortest path with Manhattan-style heuristic |
+| Bellman-Ford | `bellmanford` | Simplified queue-based grid variant |
 
-## 🛠️ Technical Architecture
+Note: the current pathfinding grid uses uniform movement cost. Terrain-weighted paths are not implemented in the present visualizer.
 
-The project leverages a robust, lightweight Full-Stack model to ensure visualization rendering doesn't corrupt logic timing benchmarks.
+### 3. Glossary and Definitions
 
-1. **The Computing Engine (Flask / Python 3):**
-   - Receives target algorithm requirements via REST API.
-   - Executes recursive or iterative sorts via the `time.perf_counter()` environment to ensure sub-millisecond accuracy.
-   - Compiles an execution roadmap mapping array states (`current_state`), active indices (`indices`), and operation events (`type: swap | compare`).
+The glossary page provides searchable explanations for common algorithmic vocabulary used throughout the project, such as:
 
-2. **The Render Engine (Vanilla JS / CSS3):**
-   - Consumes the `JSON` roadmap and initializes the dual concurrent animations.
-   - Utilizes CSS transform state changes and `replaceChildren` DOM techniques to prevent memory-leak lag when rendering high element counts.
+- Big O notation
+- auxiliary space
+- stable sort
+- pivot
+- partition
+- time complexity
 
-3. **Motion & UX (Glassmorphism & Canvas):**
-   - Avoids heavyweight component libraries (No React/Tailwind) in favor of deeply optimized vanilla CSS Grid/Flexbox layouts.
-   - Implements GPU-accelerated fading transitions and 3D card tilt transformations natively.
+## Architecture
 
----
+The project is intentionally simple and direct:
 
-## 🚀 Installation & Deployment
+- `backend/`
+  - Flask API
+  - sorting step generators
+  - pathfinding logic
+- `frontend/`
+  - standalone HTML pages
+  - styling and animation logic
+  - client-side algorithm metadata for educational panels
+- `tests/`
+  - backend tests using `pytest`
 
-Deploying the suite locally requires minimal dependencies.
+### Backend
 
-### 1. System Requirements
-- [Python 3.8+](https://www.python.org/downloads/)
-- Modern Web Browser (Chrome, Edge, Firefox, Safari)
+The Flask application exposes two JSON endpoints:
 
-### 2. Environment Setup
-Clone the repository:
-```bash
-# Clone the project (Replace with your repository URL)
-git clone https://github.com/yourusername/Algorithm-Laboratory.git
-cd Algorithm-Laboratory
+- `POST /sort`
+  - accepts an algorithm id and input array
+  - returns a sequence of sorting steps plus execution time
+- `POST /pathfind`
+  - accepts an algorithm id, grid dimensions, start node, end node, and walls
+  - returns visited nodes and final path
+
+The backend is responsible for generating the authoritative execution data. The frontend only renders what the backend returns.
+
+### Frontend
+
+The frontend is built with plain HTML, CSS, and JavaScript. There is no bundler, framework, or compile step.
+
+Key frontend responsibilities:
+
+- rendering bars and grid nodes
+- animating backend step data
+- exposing controls for array and grid configuration
+- displaying algorithm descriptions, complexity, glossary content, and curated code snippets
+
+## Project Structure
+
+```text
+The Algorithm Laboratory and Comparative Simulation Suite/
+|-- backend/
+|   |-- algs.py
+|   |-- app.py
+|   `-- pathfinding.py
+|-- frontend/
+|   |-- index.html
+|   |-- pathfinding.html
+|   |-- definitions.html
+|   |-- css/
+|   |   |-- style.css
+|   |   `-- definitions.css
+|   `-- js/
+|       |-- algorithmData.js
+|       |-- api.js
+|       |-- controls.js
+|       |-- definitions.js
+|       |-- pathfinding.js
+|       |-- pathfindingData.js
+|       `-- renderer.js
+|-- tests/
+|   `-- test_backend.py
+|-- install_dependencies.bat
+|-- README.md
+`-- venv/
 ```
 
-#### Installing Dependencies (Windows)
-We provide a convenient installation script for Windows users. Simply double-click the `install_dependencies.bat` file located in the root directory. It will automatically verify your Python installation and install the required packages.
+## Requirements
 
-Alternatively, you can manually install the lightweight HTTP server requirements:
-```bash
-pip install flask flask-cors
+- Python 3.8 or newer
+- A modern web browser
+- Windows PowerShell or Command Prompt for the setup steps below
+
+## Setup
+
+This project should be run inside a virtual environment. A `venv` directory already exists in the repository, but you can recreate it if needed.
+
+### Option A: Use the provided Windows installer
+
+Run:
+
+```bat
+install_dependencies.bat
 ```
 
-### 3. Ignition
-Launch the Python computation backend:
-```bash
-python app.py
+That script:
+
+- creates `venv`
+- installs `flask`
+- installs `flask-cors`
+- installs `pytest`
+
+### Option B: Manual setup
+
+From the project root:
+
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install flask flask-cors pytest
 ```
-*The Flask core will spin up locally on `http://127.0.0.1:5000`.*
 
-Finally, launch the UI by opening `index.html` directly in your browser. No Webpack or Node server required.
+If you are using Command Prompt instead of PowerShell:
 
----
+```bat
+venv\Scripts\activate.bat
+```
 
----
+## Running the Project
 
-<div align="center">
-  <p>Designed and structured to democratize the understanding of data structures.</p>
-</div>
+### 1. Start the backend
+
+From the project root, with the virtual environment activated:
+
+```powershell
+venv\Scripts\python backend\app.py
+```
+
+The Flask server runs at:
+
+```text
+http://127.0.0.1:5000
+```
+
+### 2. Open the frontend
+
+Open the main frontend page:
+
+```text
+frontend/index.html
+```
+
+From there you can navigate to:
+
+- the Sorting Duel
+- the Pathfinding visualizer
+- the Glossary page
+
+## Testing
+
+Run the backend tests from the project root with the virtual environment activated:
+
+```powershell
+venv\Scripts\python -m pytest
+```
+
+The existing test suite covers:
+
+- several sorting implementations reaching a sorted final state
+- validation behavior on `/sort`
+- validation behavior on `/pathfind`
+
+## Educational Design
+
+One of the strengths of this project is that it is not just an animation layer. The interface is also built to teach.
+
+The current UI includes:
+
+- algorithm descriptions
+- complexity summaries
+- implementation snippets
+- conceptual glossary items
+- visual observations tied directly to what the user sees on screen
+
+This makes the suite useful in classrooms, demonstrations, self-study, and project presentations.
+
+## Known Characteristics
+
+- The sorting visualizer measures backend logic time independently from animation speed.
+- The pathfinding visualizer currently assumes uniform movement cost.
+- Frontend pages are static files and do not require a JavaScript toolchain.
+- The project is optimized for local execution and learning, not production deployment.
+
+## Future Improvement Ideas
+
+- add weighted pathfinding terrain
+- add more graph algorithms and maze generators
+- expand automated test coverage
+- improve mobile-specific layout tuning
+- add exportable experiment summaries
+
+## License
+
+No license file is currently included in the repository. If you plan to distribute or publish the project, add an explicit license.
