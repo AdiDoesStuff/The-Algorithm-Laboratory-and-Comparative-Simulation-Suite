@@ -200,17 +200,19 @@ def bogo_sort_steps(arr):
             return True
         return False
     
+    truncated = False
     while not isSorted(temp_arr):
         random.shuffle(temp_arr)
         # Record the shuffle as a giant "swap" of all indices
         steps.append({'type': 'swap', 'indices': list(range(n)), 'current_state': temp_arr.copy()})
         
-        # because it generates MILLIONS of steps. 
-        if len(steps) > 5000: 
+        # Cap at 5000 steps to prevent browser lockup
+        if len(steps) > 5000:
+            truncated = True
             break
     end_time = time.perf_counter()
     execution_time = (end_time - start_time) * 1000
-    return {"steps": steps, "execution_time": execution_time}
+    return {"steps": steps, "execution_time": execution_time, "truncated": truncated}
 
 def optimized_bogo_sort_steps(arr):
     steps = []
@@ -235,6 +237,7 @@ def optimized_bogo_sort_steps(arr):
                 return False
         return True
     
+    truncated = False
     while not isSorted(temp_arr):
         # We only shuffle the part that is NOT sorted yet
         to_shuffle = temp_arr[start:] 
@@ -248,12 +251,14 @@ def optimized_bogo_sort_steps(arr):
             'current_state': temp_arr.copy()
         })
         
-        if len(steps) > 5000: 
+        # Cap at 5000 steps to prevent browser lockup
+        if len(steps) > 5000:
+            truncated = True
             break
             
     end_time = time.perf_counter()
     execution_time = (end_time - start_time) * 1000
-    return {"steps": steps, "execution_time": execution_time}
+    return {"steps": steps, "execution_time": execution_time, "truncated": truncated}
 
 def counting_sort_steps(arr):
     steps = []

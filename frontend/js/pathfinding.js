@@ -238,11 +238,23 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function generateMaze() {
     if (isRunning) return;
-    clearGrid();
-    
+
     isRunning = true;
     currentGeneration++;
     const myGen = currentGeneration;
+
+    // Inline grid reset — does NOT bump currentGeneration again (unlike calling clearGrid())
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            grid[r][c].isWall = false;
+            grid[r][c].isVisited = false;
+            grid[r][c].isPath = false;
+            const el = document.getElementById(`node-${r}-${c}`);
+            el.className = 'node';
+            if (grid[r][c].isStart) el.classList.add('node-start');
+            if (grid[r][c].isEnd) el.classList.add('node-end');
+        }
+    }
 
     try {
         const mazeType = document.getElementById('maze-selector').value;
@@ -517,21 +529,26 @@ async function startPathfinding() {
         }
 
         // 2. Animate shortest path
-        for (let i = 0; i < data.path.length; i++) {
-            if (myGen !== currentGeneration) { isRunning = false; return; }
+        if (data.path.length <= 1) {
+            // path has 0 or 1 nodes means no route was found
+            showToast('❌ No path found! The target is completely blocked by walls.', 'error');
+        } else {
+            for (let i = 0; i < data.path.length; i++) {
+                if (myGen !== currentGeneration) { isRunning = false; return; }
 
-            const node = data.path[i];
-            const isStartOrEnd = (node.row === startNode.row && node.col === startNode.col) ||
-                (node.row === endNode.row && node.col === endNode.col);
+                const node = data.path[i];
+                const isStartOrEnd = (node.row === startNode.row && node.col === startNode.col) ||
+                    (node.row === endNode.row && node.col === endNode.col);
 
-            if (!isStartOrEnd) {
-                const el = document.getElementById(`node-${node.row}-${node.col}`);
-                grid[node.row][node.col].isPath = true;
-                el.classList.remove('node-visited-animated');
-                el.classList.add('node-path');
+                if (!isStartOrEnd) {
+                    const el = document.getElementById(`node-${node.row}-${node.col}`);
+                    grid[node.row][node.col].isPath = true;
+                    el.classList.remove('node-visited-animated');
+                    el.classList.add('node-path');
+                }
+
+                await new Promise(r => setTimeout(r, 40 / speedMultiplier));
             }
-
-            await new Promise(r => setTimeout(r, 40 / speedMultiplier));
         }
 
     } catch (err) {
@@ -540,4 +557,35 @@ async function startPathfinding() {
     } finally {
         isRunning = false;
     }
+}
+
+/**
+ * Shared toast notification utility.
+ * @param {string} message  - The text to display.
+ * @param {'info'|'warning'|'error'} type - Controls colour scheme.
+ * @param {number} duration - Auto-dismiss delay in ms (default 5000).
+ */
+function showToast(message, type = 'info', duration = 5000) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-message">${message}</span>
+        <button class="toast-dismiss" onclick="this.closest('.toast').remove()" title="Dismiss">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-dismiss
+    setTimeout(() => {
+        toast.classList.add('toast-hiding');
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    }, duration);
 }

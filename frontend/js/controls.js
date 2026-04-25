@@ -7,7 +7,20 @@ let bgMatrix = null;
 window.onload = () => {
     generateNewArray();
     initAlgorithmInfo();
-    bgMatrix = new MatrixBackground('glitch-canvas');
+
+    // Check if we should skip landing page (e.g., when returning from another page)
+    if (sessionStorage.getItem('skipLanding') === 'true') {
+        const landing = document.getElementById('landing-page');
+        const app = document.getElementById('main-app');
+        if (landing) landing.style.display = 'none';
+        if (app) {
+            app.classList.remove('app-hidden');
+            app.style.opacity = '1';
+            app.style.transform = 'scale(1)';
+        }
+    } else {
+        bgMatrix = new MatrixBackground('glitch-canvas');
+    }
 };
 
 function togglePause() {
@@ -50,6 +63,14 @@ async function startComparison() {
             animateSort('left', leftData.steps),
             animateSort('right', rightData.steps)
         ]);
+
+        // Notify user if either bogo sort was cut short
+        if (leftData.truncated) {
+            showToast(`⚠️ ${algorithmDetails[leftAlgo].name} hit the step limit and was stopped early — it could run forever!`, 'warning');
+        }
+        if (rightData.truncated) {
+            showToast(`⚠️ ${algorithmDetails[rightAlgo].name} hit the step limit and was stopped early — it could run forever!`, 'warning');
+        }
     } catch (error) {
         console.error("CRITICAL RACE ERROR:", error);
         alert("The race crashed! Open the browser console (F12 -> Console) to see why.");
@@ -96,6 +117,9 @@ function enterApp() {
     const title = document.querySelector('.landing-title');
     if (title) title.classList.add('title-sorted');
 
+    // Store that the user has entered the app for this session
+    sessionStorage.setItem('skipLanding', 'true');
+
     if (bgMatrix) {
         bgMatrix.startSorting(() => {
             setTimeout(executeTransition, 400);
@@ -116,6 +140,37 @@ function executeTransition() {
         app.classList.remove('app-hidden');
         app.classList.add('app-enter');
     }, 800);
+}
+
+/**
+ * Shared toast notification utility.
+ * @param {string} message  - The text to display.
+ * @param {'info'|'warning'|'error'} type - Controls colour scheme.
+ * @param {number} duration - Auto-dismiss delay in ms (default 5000).
+ */
+function showToast(message, type = 'info', duration = 5000) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-message">${message}</span>
+        <button class="toast-dismiss" onclick="this.closest('.toast').remove()" title="Dismiss">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-dismiss
+    setTimeout(() => {
+        toast.classList.add('toast-hiding');
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    }, duration);
 }
 
 class MatrixBackground {
