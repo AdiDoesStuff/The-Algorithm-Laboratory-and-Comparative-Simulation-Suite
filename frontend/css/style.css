@@ -635,7 +635,7 @@ button:disabled {
     gap: 10px;
 }
 
-.slider-group {
+.pathfinding-controls .slider-group {
     display: flex;
     justify-content: center;
     gap: 20px;

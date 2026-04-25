@@ -269,6 +269,9 @@ def counting_sort_steps(arr):
     if n == 0:
         return {"steps": steps, "execution_time": 0}
 
+    if min(temp_arr) < 0:
+        return {"steps": [], "execution_time": 0, "error": "Counting sort only supports non-negative integers."}
+
     max_val = max(temp_arr)
     count = [0] * (max_val + 1)
     output = [0] * n
@@ -328,6 +331,8 @@ def radix_sort_steps(arr):
     start_time = time.perf_counter()
     
     if n > 0:
+        if min(temp_arr) < 0:
+            return {"steps": [], "execution_time": 0, "error": "Radix sort only supports non-negative integers."}
         max_val = max(temp_arr)
         exp = 1
         while max_val // exp > 0:

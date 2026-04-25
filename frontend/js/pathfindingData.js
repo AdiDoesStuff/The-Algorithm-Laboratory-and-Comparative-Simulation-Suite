@@ -124,8 +124,8 @@ def a_star(rows, cols, start, end, walls):
         date: "1968"
     },
     bellmanford: {
-        name: "Bellman-Ford",
-        vibe: "A patient rule-checker. It keeps relaxing paths over and over, willing to revisit earlier assumptions until no better route appears.",
+        name: "Bellman-Ford (SPFA variant)",
+        vibe: "A patient rule-checker. It keeps relaxing paths over and over, willing to revisit earlier assumptions until no better route appears. This visualizer uses the queue-optimised SPFA variant rather than classical Bellman-Ford.",
         codeSnippet: `from collections import deque
 
 def bellman_ford(rows, cols, start, end, walls):
@@ -152,11 +152,11 @@ def bellman_ford(rows, cols, start, end, walls):
                 if neighbor not in in_queue:
                     queue.append(neighbor)
                     in_queue.add(neighbor)`,
-        timeWorst: "O(VE)",
+        timeWorst: "O(VE) classical; O(V·E) amortised better with SPFA queue",
         space: "O(V)",
-        type: "Dynamic Programming / Relaxation-Based Shortest Path",
+        type: "Queue-Based Relaxation (SPFA — Shortest Path Faster Algorithm)",
         weightedSupport: "Not in the current visualizer; current grid uses uniform cost.",
-        shortestPathGuarantee: "Yes, in theory; current visualizer uses a simplified queue-based grid variant.",
+        shortestPathGuarantee: "Yes, in theory; this visualizer uses a SPFA queue variant (not the classical V−1 edge relaxation passes).",
         glossary: [
             {
                 term: "Relaxation",

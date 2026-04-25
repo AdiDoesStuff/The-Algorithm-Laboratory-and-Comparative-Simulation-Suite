@@ -455,7 +455,7 @@ function updateSpeedDisplay() {
 
 async function fetchPathfindingSteps(algorithm, wallsData) {
     try {
-        const response = await fetch('http://127.0.0.1:5000/pathfind', {
+        const response = await fetch(`${BASE_URL}/pathfind`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -467,6 +467,9 @@ async function fetchPathfindingSteps(algorithm, wallsData) {
                 walls: wallsData
             })
         });
+        if (!response.ok) {
+            throw new Error(`Server error ${response.status}: ${response.statusText}`);
+        }
         return await response.json();
     } catch (error) {
         console.error("Backend error:", error);
@@ -559,33 +562,4 @@ async function startPathfinding() {
     }
 }
 
-/**
- * Shared toast notification utility.
- * @param {string} message  - The text to display.
- * @param {'info'|'warning'|'error'} type - Controls colour scheme.
- * @param {number} duration - Auto-dismiss delay in ms (default 5000).
- */
-function showToast(message, type = 'info', duration = 5000) {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-message">${message}</span>
-        <button class="toast-dismiss" onclick="this.closest('.toast').remove()" title="Dismiss">&times;</button>
-    `;
-
-    container.appendChild(toast);
-
-    // Auto-dismiss
-    setTimeout(() => {
-        toast.classList.add('toast-hiding');
-        toast.addEventListener('animationend', () => toast.remove(), { once: true });
-    }, duration);
-}
+// showToast is defined in utils.js and available globally on this page.
