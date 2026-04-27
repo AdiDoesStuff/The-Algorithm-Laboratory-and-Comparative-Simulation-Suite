@@ -65,6 +65,23 @@ function initAlgorithmInfo() {
     renderAlgorithmInfo('right', rightSelect.value);
 }
 
+function renderComplexity(value, whyHtml, extraClasses = '') {
+    const safeValue = value ?? '';
+    const safeWhy = (typeof whyHtml === 'string' && whyHtml.trim().length > 0) ? whyHtml : '';
+    const cls = `value ${extraClasses}`.trim();
+
+    if (!safeWhy) {
+        return `<span class="${cls}">${safeValue}</span>`;
+    }
+
+    return `
+        <span class="${cls} complexity-tooltip">
+            ${safeValue}
+            <span class="complexity-tooltip-bubble" role="tooltip">${safeWhy}</span>
+        </span>
+    `;
+}
+
 function renderAlgorithmInfo(side, algoId) {
     const infoContainer = document.getElementById(`info-${side}`);
     const data = algorithmDetails[algoId];
@@ -107,19 +124,19 @@ function renderAlgorithmInfo(side, algoId) {
         <div class="info-grid">
             <div class="info-box">
                 <span class="label">Best Case</span>
-                <span class="value ${getSpeedClass(data.timeBest)}">${data.timeBest}</span>
+                ${renderComplexity(data.timeBest, data.timeBestWhy, getSpeedClass(data.timeBest))}
             </div>
             <div class="info-box">
                 <span class="label">Average</span>
-                <span class="value ${getSpeedClass(data.timeAvg)}">${data.timeAvg}</span>
+                ${renderComplexity(data.timeAvg, data.timeAvgWhy, getSpeedClass(data.timeAvg))}
             </div>
             <div class="info-box">
                 <span class="label">Worst Case</span>
-                <span class="value ${getSpeedClass(data.timeWorst)}">${data.timeWorst}</span>
+                ${renderComplexity(data.timeWorst, data.timeWorstWhy, getSpeedClass(data.timeWorst))}
             </div>
             <div class="info-box">
                 <span class="label">Space Time</span>
-                <span class="value ${getSpeedClass(data.space)}">${data.space}</span>
+                ${renderComplexity(data.space, data.spaceWhy, getSpeedClass(data.space))}
             </div>
         </div>
 
@@ -160,6 +177,10 @@ function renderAlgorithmInfo(side, algoId) {
             </div>
         </details>
     `;
+
+    if (typeof autoPositionComplexityTooltips === 'function') {
+        autoPositionComplexityTooltips(infoContainer);
+    }
 
     infoContainer.classList.remove('content-enter');
     void infoContainer.offsetWidth;

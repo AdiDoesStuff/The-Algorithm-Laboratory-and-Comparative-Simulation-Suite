@@ -33,7 +33,9 @@ def dijkstra(rows, cols, start, end, walls):
                 previous_nodes[neighbor] = current
                 heapq.heappush(pq, (new_dist, neighbor))`,
         timeWorst: "O((V + E) log V)",
+        timeWorstWhy: "Uses a priority queue: each pop/push costs <strong>log V</strong>. Over the whole run you process up to <strong>V</strong> nodes and relax up to <strong>E</strong> edges → Θ((<strong>V+E</strong>) <strong>log V</strong>).",
         space: "O(V)",
+        spaceWhy: "Stores distance/previous info for nodes plus the priority queue/visited set, all proportional to <strong>V</strong>.",
         type: "Uninformed Search / Shortest Path",
         weightedSupport: "Not in the current visualizer; current grid uses uniform cost.",
         shortestPathGuarantee: "Yes, for the current non-negative uniform-cost grid.",
@@ -96,7 +98,9 @@ def a_star(rows, cols, start, end, walls):
                     (f_score, -tentative_g_score, next(counter), neighbor)
                 )`,
         timeWorst: "O((V + E) log V)",
+        timeWorstWhy: "Worst case still uses a priority queue and may expand many nodes. Each queue operation is <strong>log V</strong>, and total relaxations are up to <strong>E</strong> → Θ((<strong>V+E</strong>) <strong>log V</strong>).",
         space: "O(V)",
+        spaceWhy: "Keeps score maps (g-scores), previous pointers, a closed set, and the priority queue — all scale with the number of nodes <strong>V</strong>.",
         type: "Informed Search / Heuristic Search",
         weightedSupport: "Not in the current visualizer; current grid uses uniform cost.",
         shortestPathGuarantee: "Yes, with the current admissible Manhattan-style setup on this grid.",
@@ -153,7 +157,9 @@ def bellman_ford(rows, cols, start, end, walls):
                     queue.append(neighbor)
                     in_queue.add(neighbor)`,
         timeWorst: "O(VE) classical; O(V·E) amortised better with SPFA queue",
+        timeWorstWhy: "Bellman-Ford can relax edges repeatedly. In the classical analysis, up to <strong>V−1</strong> rounds of relaxing <strong>E</strong> edges gives Θ(<strong>V·E</strong>). SPFA often improves in practice, but worst case can still hit Θ(<strong>V·E</strong>).",
         space: "O(V)",
+        spaceWhy: "Stores distances, previous pointers, and queue bookkeeping for nodes, all proportional to <strong>V</strong>.",
         type: "Queue-Based Relaxation (SPFA — Shortest Path Faster Algorithm)",
         weightedSupport: "Not in the current visualizer; current grid uses uniform cost.",
         shortestPathGuarantee: "Yes, in theory; this visualizer uses a SPFA queue variant (not the classical V−1 edge relaxation passes).",

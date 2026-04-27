@@ -4,9 +4,13 @@ const definitions = [
     { term: "Algorithm", def: "A step-by-step set of instructions designed to perform a specific task or solve a particular problem." },
     { term: "Asymptotic Notation", def: "Mathematical tools (like <strong>Big O</strong>) used to describe the limiting behavior of a function when the argument tends towards a particular value or infinity." },
     { term: "Auxiliary Space", def: "The extra space or temporary space used by an algorithm, typically excluding the space used to store the input." },
+    { term: "Amortized Analysis", def: "A way to analyze an algorithm over a <em>sequence</em> of operations, averaging expensive steps out over many cheap steps. Some algorithms have rare costly operations but good amortized performance overall." },
     { term: "Average Case", def: "The expected amount of time or space an algorithm requires to execute on a typical input of size n, representing standard real-world conditions." },
     { term: "Best Case", def: "The scenario where the algorithm requires the minimum amount of time or space to execute (e.g., sorting an already sorted array)." },
     { term: "Big O Notation (O)", def: "Describes the upper bound of the time or space complexity of an algorithm. It gives the worst-case scenario." },
+    { term: "n (Input Size)", def: "The size of the input. For sorting, <strong>n</strong> is usually the number of elements in the array. Many complexities are expressed as a function of <strong>n</strong>." },
+    { term: "V (Vertices)", def: "In graph algorithms, <strong>V</strong> is the number of vertices (nodes) in the graph. On a grid, V is roughly the number of squares (rows × columns) that are considered nodes." },
+    { term: "E (Edges)", def: "In graph algorithms, <strong>E</strong> is the number of edges (connections). On a 4-neighbor grid, E is on the order of V because each node has only a few neighbors." },
     { term: "Comparisons", def: "The operation of checking if one element in a data structure is greater than, less than, or equal to another. Minimizing this is often a key goal in sorting algorithms." },
     { term: "Data Structure", def: "A specialized format for organizing, processing, retrieving and storing data." },
     { term: "Divide and Conquer", def: "An algorithm design paradigm based on recursively breaking down a problem into two or more sub-problems of the same or related type, until these become simple enough to be solved directly." },
@@ -64,7 +68,14 @@ const definitions = [
     { term: "Big Omega (Ω)", def: "Describes the lower bound of an algorithm's complexity — the best it can possibly do. An algorithm is Ω(f(n)) if it always takes at least f(n) time." },
     { term: "Big Theta (Θ)", def: "Describes the tight bound of an algorithm's complexity — when the best and worst case grow at the same rate. Merge Sort is Θ(n log n) because all cases are equal." },
     { term: "O(1) — Constant Time", def: "An operation whose execution time does not change regardless of input size. Accessing a specific array index by position is an O(1) operation." },
+    { term: "O(log n)", def: "Logarithmic time. The work grows very slowly as n grows. This often appears when a problem size is repeatedly halved (e.g., binary search or recursion depth in balanced divide-and-conquer)." },
+    { term: "O(n) — Linear Time", def: "Linear time. The work grows proportionally with n. A single full scan through an array is typically O(n)." },
     { term: "O(n log n)", def: "The holy grail complexity for comparison-based sorting. It means the time grows proportionally to n times the logarithm of n — efficient for large datasets." },
+    { term: "O(n²)", def: "Quadratic time. Often caused by two nested loops over the same n elements, leading to about n × n operations." },
+    { term: "O(n!)", def: "Factorial time. Growth is extremely fast. Algorithms that brute-force all permutations (like Bogo Sort’s expected behavior) can involve factorial-scale complexity." },
+    { term: "O(V) — Linear in Nodes", def: "Linear in the number of vertices. Common for space usage in pathfinding when storing distance/visited/previous information per node." },
+    { term: "O((V + E) log V)", def: "Typical for Dijkstra/A* with a binary heap priority queue: you may push/pop nodes (log V each) while processing V nodes and relaxing E edges." },
+    { term: "O(VE)", def: "Appears in Bellman-Ford worst-case analysis: repeatedly relaxing edges across up to V−1 rounds gives on the order of V × E work." },
     { term: "Comparison-Based Sort", def: "A sorting algorithm that determines order solely by comparing pairs of elements. All comparison-based sorts have a theoretical lower bound of O(n log n)." }
 ];
 

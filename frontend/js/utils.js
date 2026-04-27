@@ -36,3 +36,44 @@ function showToast(message, type = 'info', duration = 5000) {
         toast.addEventListener('animationend', () => toast.remove(), { once: true });
     }, duration);
 }
+
+function autoPositionComplexityTooltips(root = document, viewportPaddingPx = 10) {
+    const targets = root.querySelectorAll?.('.complexity-tooltip');
+    if (!targets || targets.length === 0) return;
+
+    const clampShift = (tooltipEl) => {
+        const bubble = tooltipEl.querySelector('.complexity-tooltip-bubble');
+        if (!bubble) return;
+
+        // Reset before measuring so we don't accumulate shifts.
+        bubble.style.setProperty('--tooltip-shift-x', '0px');
+
+        requestAnimationFrame(() => {
+            const rect = bubble.getBoundingClientRect();
+            const vpW = window.innerWidth || document.documentElement.clientWidth || 0;
+            if (!vpW) return;
+
+            let shift = 0;
+            const leftOverflow = viewportPaddingPx - rect.left;
+            const rightOverflow = rect.right - (vpW - viewportPaddingPx);
+
+            if (leftOverflow > 0) shift += leftOverflow;
+            if (rightOverflow > 0) shift -= rightOverflow;
+
+            if (shift !== 0) {
+                bubble.style.setProperty('--tooltip-shift-x', `${Math.round(shift)}px`);
+            }
+        });
+    };
+
+    targets.forEach((el) => {
+        if (el.dataset.tooltipAutoPosBound === '1') return;
+        el.dataset.tooltipAutoPosBound = '1';
+
+        el.addEventListener('mouseenter', () => clampShift(el));
+        el.addEventListener('mouseleave', () => {
+            const bubble = el.querySelector('.complexity-tooltip-bubble');
+            if (bubble) bubble.style.setProperty('--tooltip-shift-x', '0px');
+        });
+    });
+}

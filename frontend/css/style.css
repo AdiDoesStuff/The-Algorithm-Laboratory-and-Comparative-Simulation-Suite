@@ -54,6 +54,8 @@ h1 {
 .arena {
     flex: 1;
     min-width: 320px;
+    position: relative;
+    z-index: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -69,6 +71,7 @@ h1 {
 }
 
 .arena:hover {
+    z-index: 5;
     transform: translateY(-5px);
     box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
 }
@@ -287,6 +290,56 @@ button:disabled {
 .info-box span.value.good { color: var(--bar-sorted); }
 .info-box span.value.warn { color: var(--bar-swapping); }
 .info-box span.value.bad { color: var(--bar-comparing); }
+
+.complexity-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: help;
+    text-decoration: underline dotted rgba(148, 163, 184, 0.7);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 2px;
+}
+
+.complexity-tooltip-bubble {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(calc(-50% + var(--tooltip-shift-x, 0px))) translateY(6px) scale(0.985);
+    width: max-content;
+    max-width: min(380px, 70vw);
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+    white-space: normal;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+}
+
+.complexity-tooltip-bubble code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.82em;
+    color: #c7d2fe;
+}
+
+.complexity-tooltip:hover .complexity-tooltip-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(calc(-50% + var(--tooltip-shift-x, 0px))) translateY(0) scale(1);
+}
 
 .observation-box {
     background: rgba(59, 130, 246, 0.1);

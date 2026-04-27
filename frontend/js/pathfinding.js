@@ -15,6 +15,23 @@ window.onload = () => {
     initPathfindingInfo();
 };
 
+function renderComplexity(value, whyHtml, extraClasses = '') {
+    const safeValue = value ?? '';
+    const safeWhy = (typeof whyHtml === 'string' && whyHtml.trim().length > 0) ? whyHtml : '';
+    const cls = `value ${extraClasses}`.trim();
+
+    if (!safeWhy) {
+        return `<span class="${cls}">${safeValue}</span>`;
+    }
+
+    return `
+        <span class="${cls} complexity-tooltip">
+            ${safeValue}
+            <span class="complexity-tooltip-bubble" role="tooltip">${safeWhy}</span>
+        </span>
+    `;
+}
+
 function initPathfindingInfo() {
     const algoSelector = document.getElementById('algo-selector');
     if (!algoSelector) return;
@@ -48,11 +65,11 @@ function renderPathfindingInfo(algoId) {
             <div class="info-grid">
                 <div class="info-box">
                     <span class="label">Worst Case</span>
-                    <span class="value">${data.timeWorst}</span>
+                    ${renderComplexity(data.timeWorst, data.timeWorstWhy)}
                 </div>
                 <div class="info-box">
                     <span class="label">Space</span>
-                    <span class="value">${data.space}</span>
+                    ${renderComplexity(data.space, data.spaceWhy)}
                 </div>
             </div>
         </div>
@@ -103,6 +120,10 @@ function renderPathfindingInfo(algoId) {
             </div>
         </div>
     `;
+
+    if (typeof autoPositionComplexityTooltips === 'function') {
+        autoPositionComplexityTooltips(infoContainer);
+    }
 
     infoContainer.classList.remove('content-enter');
     void infoContainer.offsetWidth;
