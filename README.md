@@ -11,7 +11,6 @@ Compare sorting algorithms side by side, explore shortest-path search on an edit
 ![JavaScript](https://img.shields.io/badge/JavaScript-Frontend-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-Static_UI-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-Animated_UI-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![Pytest](https://img.shields.io/badge/Tests-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
 <br>
 
@@ -64,7 +63,6 @@ flowchart LR
 - Dynamic algorithm information cards with complexity notes
 - Searchable glossary for algorithm vocabulary
 - Flask JSON API with validation
-- Focused backend test coverage using `pytest`
 
 ## Sorting Duel
 
@@ -135,8 +133,6 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |       |-- pathfindingData.js
 |       |-- renderer.js
 |       `-- utils.js
-|-- tests/
-|   `-- test_backend.py
 |-- install_dependencies.bat
 |-- README.md
 `-- .gitignore
@@ -149,10 +145,25 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 | Backend | Python, Flask, Flask-CORS |
 | Algorithms | Pure Python step generators |
 | Frontend | HTML, CSS, vanilla JavaScript |
-| Testing | pytest |
 | Setup | Windows batch installer plus manual virtual environment option |
 
 ## Quick Start
+
+### One-click local launch
+
+After installing dependencies once, double-click:
+
+```text
+start_app.bat
+```
+
+This starts the Flask server and opens the app at:
+
+```text
+http://127.0.0.1:5000
+```
+
+Close the command window to stop the app.
 
 ### 1. Install dependencies
 
@@ -166,7 +177,6 @@ That script creates a virtual environment and installs:
 
 - `flask`
 - `flask-cors`
-- `pytest`
 
 Manual setup also works:
 
@@ -174,7 +184,7 @@ Manual setup also works:
 python -m venv venv
 venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install flask flask-cors pytest
+pip install flask flask-cors
 ```
 
 If you are using Command Prompt:
@@ -191,18 +201,10 @@ From the project root:
 venv\Scripts\python backend\app.py
 ```
 
-The API runs at:
+The web app and API run at:
 
 ```text
 http://127.0.0.1:5000
-```
-
-### 3. Open the frontend
-
-Open this file in a browser:
-
-```text
-frontend/index.html
 ```
 
 From there, use the in-app navigation to move between:
@@ -289,21 +291,6 @@ Supported pathfinding IDs:
 dijkstra, astar, bellmanford
 ```
 
-## Testing
-
-Run the backend tests with:
-
-```powershell
-venv\Scripts\python -m pytest
-```
-
-The current tests cover:
-
-- sorting algorithms reaching the correct final sorted state
-- `/sort` endpoint validation
-- `/sort` success responses
-- `/pathfind` validation behavior
-
 ## Educational Design
 
 This project is built as a learning tool, not just a visual effect. The important design idea is that every animation should connect to a concept:
@@ -331,7 +318,6 @@ This project is built as a learning tool, not just a visual effect. The importan
 - More graph algorithms such as BFS, DFS, Greedy Best-First Search, and Floyd-Warshall
 - More maze generators and obstacle presets
 - Exportable experiment summaries
-- More frontend interaction tests
 - Mobile layout polish for smaller screens
 - A hosted demo build
 

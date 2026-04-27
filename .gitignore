@@ -16,13 +16,6 @@ env/
 .env.*.local
 .flaskenv
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nosepy
-
 # IDE / editor settings
 .vscode/
 .idea/
@@ -61,4 +54,3 @@ build/
 *.obj
 *.exe
 *.dll
-

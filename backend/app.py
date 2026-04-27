@@ -1,10 +1,24 @@
-from flask import Flask, jsonify , request
+from pathlib import Path
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import algs
 import pathfinding
 
 app = Flask(__name__)
 CORS(app)
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+@app.route('/', methods=['GET'])
+def index_page():
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+
+@app.route('/<path:filename>', methods=['GET'])
+def frontend_file(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
 
 @app.route('/sort', methods=['POST'])
 def sort_handler():
@@ -105,4 +119,4 @@ def pathfind_handler():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

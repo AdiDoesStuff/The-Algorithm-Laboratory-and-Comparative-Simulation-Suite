@@ -16,7 +16,7 @@ echo Creating Virtual Environment (venv)...
 python -m venv venv
 echo.
 echo Installing required Python packages inside the venv...
-call venv\Scripts\pip install flask flask-cors pytest
+call venv\Scripts\pip install flask flask-cors
 echo.
 echo =======================================================
 echo  Installation Complete!
