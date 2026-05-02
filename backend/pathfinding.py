@@ -2,6 +2,19 @@ import heapq
 import itertools
 
 def get_neighbors(node, rows, cols, walls):
+    """
+    Retrieves the valid adjacent neighbors for a given node on the grid.
+    
+    Args:
+        node (tuple): (row, col) coordinates of the current node.
+        rows (int): Total number of rows in the grid.
+        cols (int): Total number of columns in the grid.
+        walls (set): A set of (row, col) tuples representing impassable walls.
+        
+    Returns:
+        list: A list of (row, col) tuples for valid neighbor nodes.
+    """
+
     r, c = node
     directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
     neighbors = []
@@ -12,6 +25,20 @@ def get_neighbors(node, rows, cols, walls):
     return neighbors
 
 def dijkstra(rows, cols, start, end, walls):
+    """
+    Implements Dijkstra's algorithm to find the shortest path in a uniform-cost grid.
+    
+    Args:
+        rows (int): Number of rows in the grid.
+        cols (int): Number of columns in the grid.
+        start (tuple): (row, col) coordinates of the start node.
+        end (tuple): (row, col) coordinates of the target node.
+        walls (set): Set of (row, col) tuples representing wall nodes.
+        
+    Returns:
+        dict: A dictionary containing the visited nodes in order and the final shortest path.
+    """
+
     visited_nodes_in_order = []
     distances = {start: 0}
     previous_nodes = {}
@@ -57,6 +84,20 @@ def heuristic(node_a, node_b):
     return abs(node_a[0] - node_b[0]) + abs(node_a[1] - node_b[1])
 
 def a_star(rows, cols, start, end, walls):
+    """
+    Implements A* Search algorithm using the Manhattan distance heuristic.
+    
+    Args:
+        rows (int): Number of rows in the grid.
+        cols (int): Number of columns in the grid.
+        start (tuple): (row, col) coordinates of the start node.
+        end (tuple): (row, col) coordinates of the target node.
+        walls (set): Set of (row, col) tuples representing wall nodes.
+        
+    Returns:
+        dict: A dictionary containing the visited nodes in order and the final shortest path.
+    """
+
     visited_nodes_in_order = []
     g_scores = {start: 0}
     f_scores = {start: heuristic(start, end)}
@@ -110,6 +151,20 @@ def a_star(rows, cols, start, end, walls):
     }
 
 def bellman_ford(rows, cols, start, end, walls):
+    """
+    Implements a queue-based variant of the Bellman-Ford algorithm (SPFA-like).
+    
+    Args:
+        rows (int): Number of rows in the grid.
+        cols (int): Number of columns in the grid.
+        start (tuple): (row, col) coordinates of the start node.
+        end (tuple): (row, col) coordinates of the target node.
+        walls (set): Set of (row, col) tuples representing wall nodes.
+        
+    Returns:
+        dict: A dictionary containing the visited nodes in order and the final shortest path.
+    """
+
     from collections import deque
     visited_nodes_in_order = []
     distances = {start: 0}

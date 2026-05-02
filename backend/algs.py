@@ -2,6 +2,18 @@ import random
 import time
 
 def bubble_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Bubble Sort.
+    
+    Bubble sort works by repeatedly swapping the adjacent elements if they are in the wrong order.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps (compare/swap) and the execution time.
+    """
+
     steps = [] 
     n = len(arr)
     temp_arr = arr.copy()
@@ -19,6 +31,19 @@ def bubble_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def selection_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Selection Sort.
+    
+    Selection sort sorts an array by repeatedly finding the minimum element from the 
+    unsorted part and putting it at the beginning.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     n = len(arr)
     temp_arr = arr.copy()
@@ -39,6 +64,19 @@ def selection_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def quick_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Quick Sort (Lomuto partition scheme).
+    
+    QuickSort is a Divide and Conquer algorithm. It picks an element as a pivot and 
+    partitions the given array around the picked pivot.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     start_time = time.perf_counter()
@@ -71,6 +109,19 @@ def quick_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def insertion_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Insertion Sort.
+    
+    Insertion sort works similarly to the way you sort playing cards in your hands. 
+    The array is virtually split into a sorted and an unsorted part.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     start_time = time.perf_counter()
@@ -91,6 +142,19 @@ def insertion_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def merge_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Merge Sort.
+    
+    Merge Sort is a Divide and Conquer algorithm that divides an array into halves, 
+    calls itself for the two halves, and then merges the two sorted halves.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     start_time = time.perf_counter()
@@ -137,6 +201,20 @@ def merge_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def heap_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Heap Sort.
+    
+    Heap sort is a comparison-based sorting technique based on Binary Heap data structure. 
+    It is similar to selection sort where we first find the maximum element and place 
+    the maximum element at the end.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
@@ -186,6 +264,19 @@ def heap_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time}
 
 def bogo_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Bogo Sort (Permutation Sort).
+    
+    Bogo sort is a highly inefficient sorting algorithm based on the generate and 
+    test paradigm. It repeatedly shuffles the array until it is sorted.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps, execution time, and truncation status.
+    """
+
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
@@ -215,6 +306,19 @@ def bogo_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time, "truncated": truncated}
 
 def optimized_bogo_sort_steps(arr):
+    """
+    Generates the step-by-step execution of an Optimized Bogo Sort variant.
+    
+    This variant shuffles only the unsorted suffix of the array, making it 
+    considerably faster than standard Bogo Sort while retaining the randomized spirit.
+    
+    Args:
+        arr (list): The input array to be sorted.
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps, execution time, and truncation status.
+    """
+
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
@@ -261,6 +365,19 @@ def optimized_bogo_sort_steps(arr):
     return {"steps": steps, "execution_time": execution_time, "truncated": truncated}
 
 def counting_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Counting Sort.
+    
+    Counting sort is a non-comparison-based sorting algorithm that works by counting 
+    the number of objects having distinct key values.
+    
+    Args:
+        arr (list): The input array to be sorted (must be non-negative).
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
@@ -325,6 +442,20 @@ def counting_sort_for_radix(temp_arr, exp, steps):
         steps.append({'type': 'swap', 'indices': [i, i], 'current_state': temp_arr.copy()})
 
 def radix_sort_steps(arr):
+    """
+    Generates the step-by-step execution of Radix Sort.
+    
+    Radix sort is a non-comparison-based sorting algorithm that sorts data with 
+    integer keys by grouping keys by the individual digits which share the same 
+    significant position and value.
+    
+    Args:
+        arr (list): The input array to be sorted (must be non-negative).
+        
+    Returns:
+        dict: A dictionary containing the sequence of steps and execution time.
+    """
+
     steps = []
     temp_arr = arr.copy()
     n = len(temp_arr)
