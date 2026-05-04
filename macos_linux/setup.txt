@@ -1,0 +1,63 @@
+# Setup Instructions for macOS and Linux
+
+Welcome! This guide will help you get 'The Algorithm Laboratory' running on your macOS or Linux machine.
+
+## 1. Open the Terminal
+The Terminal is where you will run the commands to set up and start the application.
+
+### On macOS:
+- Press `Command (⌘) + Space` to open Spotlight Search.
+- Type "Terminal" and press `Enter`.
+
+### On Linux:
+- Press `Ctrl + Alt + T` (most distributions) OR search for "Terminal" in your applications menu.
+
+---
+
+## 2. Navigate to the Project Folder
+You need to tell the Terminal where this project is located on your computer.
+
+1. Type `cd ` (with a space after it) in the terminal.
+2. **DO NOT press Enter yet.**
+3. Drag and drop the folder containing this project (the one where you see 'backend', 'frontend', etc.) into the terminal window. This will automatically paste the path.
+4. Press `Enter`.
+
+---
+
+## 3. Make the Scripts Executable
+Before you can run the scripts, you must give them permission to execute.
+
+Run this command in the terminal:
+```bash
+chmod +x macos_linux/*.sh
+```
+
+---
+
+## 4. Install Dependencies
+Run the installation script to set up your virtual environment and install required packages (Flask, etc.).
+
+Run this command:
+```bash
+./macos_linux/install_dependencies.sh
+```
+*Note: This may take a minute. If you get an error saying 'python3' is not found, please install Python 3.8+ from https://www.python.org/ or use Homebrew (`brew install python` on Mac).*
+
+---
+
+## 5. Start the Application
+Once the installation is complete, you can start the app anytime by running:
+
+```bash
+./macos_linux/start_app.sh
+```
+
+- This will automatically open your browser to http://127.0.0.1:5000.
+- To stop the application, press `Ctrl + C` in the terminal window or simply close the terminal.
+
+---
+
+## Troubleshooting
+- **Python not found**: Ensure you have Python 3 installed. Run `python3 --version` to check.
+- **Permission Denied**: Make sure you ran the `chmod +x` command in Step 3.
+- **Port already in use**: If the app fails to start because the port is in use, make sure you don't have another instance of the app running.
