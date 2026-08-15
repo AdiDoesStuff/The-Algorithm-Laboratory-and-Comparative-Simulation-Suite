@@ -37,21 +37,87 @@ async function animateSort(algoType, steps) {
     }
 }
 
+let lastStates = { left: [], right: [] };
+
+function toggleNumbersDisplay() {
+    const leftVisualizer = document.getElementById('visualizer-left');
+    const rightVisualizer = document.getElementById('visualizer-right');
+
+    if (leftVisualizer && lastStates.left.length > 0) {
+        updateBars(leftVisualizer, lastStates.left, [], '');
+    }
+    if (rightVisualizer && lastStates.right.length > 0) {
+        updateBars(rightVisualizer, lastStates.right, [], '');
+    }
+}
+
 function updateBars(container, state, highlightIndices, type) {
     if (!container) return;
 
-    const newBars = state.map((val, idx) => {
+    const side = container.id.includes('left') ? 'left' : 'right';
+    lastStates[side] = state;
+
+    const showNumbers = document.getElementById('show-numbers-checkbox')?.checked;
+    const elementCount = state.length;
+
+    let fontSize = '0.95rem';
+    let barWidth = '16px';
+    let margin = '2px';
+    let letterSpacing = '-0.2px';
+
+    if (elementCount > 50) {
+        fontSize = '0.55rem';
+        barWidth = '6px';
+        margin = '0.5px';
+        letterSpacing = '-0.8px';
+    } else if (elementCount > 38) {
+        fontSize = '0.68rem';
+        barWidth = '9px';
+        margin = '1px';
+        letterSpacing = '-0.5px';
+    } else if (elementCount > 24) {
+        fontSize = '0.8rem';
+        barWidth = '12px';
+        margin = '1.5px';
+        letterSpacing = '-0.3px';
+    }
+
+    const newElements = state.map((val, idx) => {
         const bar = document.createElement('div');
         bar.className = 'bar';
         bar.style.height = `${(val || 0) * 4}px`;
+        bar.style.width = barWidth;
 
         if (highlightIndices && highlightIndices.includes(idx)) {
             bar.classList.add(type === 'compare' ? 'comparing' : 'swapping');
         }
+
+        if (showNumbers) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bar-wrapper';
+            wrapper.style.margin = `0 ${margin}`;
+
+            const numSpan = document.createElement('span');
+            numSpan.className = 'bar-number';
+            numSpan.innerText = val;
+            numSpan.style.fontSize = fontSize;
+            numSpan.style.letterSpacing = letterSpacing;
+
+            // For extremely high element counts, hide numbers to avoid clutter
+            if (elementCount > 60) {
+                numSpan.style.display = 'none';
+            }
+
+            wrapper.appendChild(numSpan);
+            wrapper.appendChild(bar);
+            return wrapper;
+        }
+
+        bar.style.margin = `0 ${margin}`;
         return bar;
     });
 
-    container.replaceChildren(...newBars);
+    container.replaceChildren(...newElements);
 }
 
 function initAlgorithmInfo() {

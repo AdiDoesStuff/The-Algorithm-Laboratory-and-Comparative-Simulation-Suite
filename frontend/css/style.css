@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Pixelify+Sans:wght@400..700&display=swap');
 
 :root {
     --bg-primary: #0f172a;
@@ -177,6 +177,120 @@ input[type=range] {
     height: 6px;
     border-radius: 3px;
 }
+
+.switch-group {
+    display: inline-flex;
+    align-items: center;
+    margin: 10px 20px;
+    background: var(--bg-tertiary);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.switch-group .switch-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-right: 12px;
+    color: var(--text-primary);
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider.round {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-secondary);
+    transition: .3s;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+}
+
+.slider.round:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-secondary);
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.switch input:checked + .slider.round {
+    background-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+}
+
+.switch input:checked + .slider.round:before {
+    transform: translateX(20px);
+    background-color: var(--text-primary);
+}
+
+.bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    margin: 0 1px;
+    min-width: 0;
+}
+
+.bar-wrapper .bar {
+    margin: 0;
+    width: 100%;
+}
+
+.bar-number {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(15, 23, 42, 0.8);
+    transition: color 0.15s ease, transform 0.15s ease;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    text-align: center;
+    max-width: 100%;
+}
+
+.bar-wrapper:has(.bar.comparing) .bar-number {
+    color: var(--bar-comparing);
+    font-weight: 700;
+    transform: scale(1.15);
+}
+
+.bar-wrapper:has(.bar.swapping) .bar-number {
+    color: var(--bar-swapping);
+    font-weight: 700;
+    transform: scale(1.25);
+}
+
+.bar-wrapper:has(.bar.sorted) .bar-number {
+    color: var(--bar-sorted);
+    font-weight: 700;
+}
+
 
 .controls {
     margin-bottom: 20px;
