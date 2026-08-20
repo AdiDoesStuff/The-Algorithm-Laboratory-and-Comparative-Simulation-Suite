@@ -24,6 +24,10 @@ def get_neighbors(node, rows, cols, walls):
             neighbors.append((nr, nc))
     return neighbors
 
+
+def heuristic(node_a, node_b):
+    return abs(node_a[0] - node_b[0]) + abs(node_a[1] - node_b[1])
+
 def dijkstra(rows, cols, start, end, walls):
     """
     Implements Dijkstra's algorithm to find the shortest path in a uniform-cost grid.
@@ -79,9 +83,6 @@ def dijkstra(rows, cols, start, end, walls):
         "visited_nodes": [{"row": r, "col": c} for r, c in visited_nodes_in_order],
         "path": [{"row": r, "col": c} for r, c in path]
     }
-
-def heuristic(node_a, node_b):
-    return abs(node_a[0] - node_b[0]) + abs(node_a[1] - node_b[1])
 
 def a_star(rows, cols, start, end, walls):
     """
