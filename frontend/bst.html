@@ -231,14 +231,15 @@
                         <p id="checkpoint-feedback" role="status" aria-live="polite" style="margin: 8px 0 0 0; font-size: 0.8rem; color: #94a3b8;"></p>
                     </div>
 
-                    <!-- Quiz sentinel placeholder (B3 wires the real quiz) -->
+                    <!-- Quiz sentinel: lesson end mounts the QuizEngine here -->
                     <div id="quiz-prompt-panel" class="hidden" style="margin-top: 10px; padding: 10px 12px; border: 1px dashed rgba(52, 211, 153, 0.5); border-radius: 8px; background: rgba(52, 211, 153, 0.06);">
-                        <p style="margin: 0 0 8px 0; font-size: 0.85rem; color: #a7f3d0;">
+                        <p id="quiz-prompt-text" style="margin: 0 0 8px 0; font-size: 0.85rem; color: #a7f3d0;">
                             Lesson complete.
                         </p>
-                        <button id="btn-lesson-quiz" type="button" disabled title="Coming with quizzes">
-                            Test yourself (coming soon)
+                        <button id="btn-lesson-quiz" type="button" disabled>
+                            Take the quiz
                         </button>
+                        <div id="quiz-mount" class="hidden" style="margin-top: 10px;"></div>
                     </div>
                 </div>
             </div>

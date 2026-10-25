@@ -7,6 +7,8 @@ import { TreeCanvas } from './primitives/TreeCanvas.js';
 import { PlaybackController } from './engine/PlaybackController.js';
 import { LessonRunner } from './engine/LessonRunner.js';
 import { BST_LESSONS } from './lessons/bstLessons.js';
+import { render as renderQuiz } from './primitives/QuizEngine.js';
+import { getQuiz } from './quizzes/index.js';
 
 let treeCanvas = null;
 let compareCanvasA = null;
@@ -35,6 +37,11 @@ const latestCompare = window.createLatest ? window.createLatest() : (fn => (type
 let currentLesson = BST_LESSONS[0];
 let activeCheckpoint = null;
 let pendingLearnReset = false;   // a lesson switch/reset arrived while the busy gate was closed
+let checkpointHideTimer = null;  // hides resolved-checkpoint feedback without killing the next one
+
+// Quiz state (B3). At most one quiz is mounted at a time.
+let quizController = null;
+let quizSource = null;           // 'lesson' | 'deep-link'
 
 const lessonRunner = new LessonRunner({
     buildSteps: buildLessonSteps,
@@ -51,6 +58,10 @@ const lessonRunner = new LessonRunner({
     },
     onCheckpoint: (checkpoint) => {
         activeCheckpoint = checkpoint;
+        if (checkpointHideTimer !== null) {
+            window.clearTimeout(checkpointHideTimer);
+            checkpointHideTimer = null;
+        }
         showCheckpoint(checkpoint);
         updateLearnControls();
     },
@@ -62,16 +73,28 @@ const lessonRunner = new LessonRunner({
                 ? 'Correct.'
                 : (correct === false ? 'Not quite — read the reveal above.' : '');
         }
-        window.setTimeout(hideCheckpoint, 1500);
+        // Hide the feedback after a beat, but never hide a newer checkpoint
+        // that was opened in the meantime.
+        if (checkpointHideTimer !== null) window.clearTimeout(checkpointHideTimer);
+        checkpointHideTimer = window.setTimeout(() => {
+            checkpointHideTimer = null;
+            if (!activeCheckpoint) hideCheckpoint();
+        }, 1500);
         updateLearnControls();
     },
-    onQuizPrompt: () => {
+    onQuizPrompt: (quizId) => {
         const panel = document.getElementById('quiz-prompt-panel');
         if (panel) panel.classList.remove('hidden');
+        const startBtn = document.getElementById('btn-lesson-quiz');
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.title = '';
+            startBtn.textContent = 'Take the quiz';
+        }
         updateLearnControls();
     },
     onStateChange: (state) => {
-        if (state.status !== 'quiz') hideQuizPrompt();
+        if (state.status !== 'quiz' && !quizController) hideQuizPrompt();
         updateLearnControls();
     },
     onError: (error) => {
@@ -129,13 +152,14 @@ const comparePlayback = new PlaybackController({
     }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     initTreeCanvases();
     bindEventListeners();
     initLessonSelector();
     updateUIForMode('play');
     setTreeModel('bst', false); // Avoid double-refresh
     refreshClassification();
+    await initQuizDeepLink();
 });
 
 function initTreeCanvases() {
@@ -201,6 +225,7 @@ function bindEventListeners() {
     document.getElementById('btn-learn-prev')?.addEventListener('click', onLearnPrev);
     document.getElementById('btn-learn-next')?.addEventListener('click', onLearnNext);
     document.getElementById('btn-learn-reset')?.addEventListener('click', onLearnReset);
+    document.getElementById('btn-lesson-quiz')?.addEventListener('click', onTakeLessonQuiz);
     document.getElementById('btn-checkpoint-reveal')?.addEventListener('click', () => lessonRunner.revealCheckpoint());
 
     // Compare Mode Controls
@@ -380,12 +405,12 @@ function updatePlayPauseButton() {
 
 // --- Mode & Tree Switchers ---
 
-function setMode(mode) {
+async function setMode(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
     updateUIForMode(mode);
     if (mode === 'learn') {
-        onLearnReset();
+        await onLearnReset();
     } else {
         lessonRunner.cancel();
         activeCheckpoint = null;
@@ -828,6 +853,10 @@ function onLearnNext() {
 }
 
 function onLearnPrev() {
+    if (quizController) {
+        exitQuiz();
+        return;
+    }
     lessonRunner.prev();
 }
 
@@ -837,13 +866,15 @@ function updateLearnControls() {
     if (!prevBtn && !nextBtn) return;
 
     const state = lessonRunner.state;
+    const quizActive = quizController !== null;
     const blockedBoth = state.status === 'loading' || state.status === 'error';
     const blockedForward = blockedBoth ||
         state.status === 'quiz' ||
-        state.status === 'checkpoint';
+        state.status === 'checkpoint' ||
+        quizActive;
 
     if (prevBtn) {
-        prevBtn.disabled = blockedBoth || state.cursor <= 0;
+        prevBtn.disabled = blockedBoth || (!quizActive && state.cursor <= 0);
     }
     if (nextBtn) {
         nextBtn.disabled = blockedForward ||
@@ -902,8 +933,124 @@ function hideCheckpoint() {
     document.getElementById('checkpoint-panel')?.classList.add('hidden');
 }
 
+// --- Quiz wiring (Phase B3) ---
+
+function readProgressStore() {
+    const progress = window.AlgoLabProgress;
+    return progress && typeof progress.recordAttempt === 'function' ? progress : null;
+}
+
+function onTakeLessonQuiz() {
+    const quizId = lessonRunner.currentLesson?.quizId || currentLesson?.quizId;
+    if (!quizId) return;
+    openQuiz(quizId, 'lesson');
+}
+
+/**
+ * Resolve a quiz through the registry and mount a fresh QuizEngine.
+ * An unknown id surfaces in the page's error banner instead of breaking.
+ */
+function openQuiz(quizId, source) {
+    let quiz;
+    try {
+        quiz = getQuiz(quizId);
+    } catch (error) {
+        showError({ message: error.message, field: 'quiz' });
+        hideQuizPrompt();
+        return false;
+    }
+
+    destroyQuiz();
+
+    const panel = document.getElementById('quiz-prompt-panel');
+    const mount = document.getElementById('quiz-mount');
+    if (!panel || !mount) return false;
+
+    quizSource = source;
+    document.getElementById('quiz-prompt-text')?.classList.add('hidden');
+    document.getElementById('btn-lesson-quiz')?.classList.add('hidden');
+    mount.classList.remove('hidden');
+    panel.classList.remove('hidden');
+    clearError();
+
+    quizController = renderQuiz(mount, {
+        questions: quiz.questions,
+        onComplete: (result) => {
+            const progress = readProgressStore();
+            if (!progress) return;
+            try {
+                progress.recordAttempt(quiz.unitId, result.score, result.total);
+            } catch (error) {
+                console.warn('[AlgoLab] Quiz progress was not saved:', error.message);
+            }
+        },
+        secondaryAction: {
+            label: source === 'deep-link' ? 'Back to hub' : 'Back to lesson',
+            onClick: exitQuiz
+        }
+    });
+
+    updateLearnControls();
+    return true;
+}
+
+function destroyQuiz() {
+    if (quizController) {
+        quizController.destroy();
+        quizController = null;
+    }
+    quizSource = null;
+    const mount = document.getElementById('quiz-mount');
+    if (mount) mount.textContent = '';
+}
+
+/**
+ * Leave a quiz without recording anything new.
+ * Lesson quizzes step back off the sentinel; deep links return to the hub.
+ */
+function exitQuiz() {
+    const source = quizSource;
+    hideQuizPrompt();
+    if (source === 'deep-link') {
+        window.location.href = 'index.html';
+        return;
+    }
+    if (lessonRunner.status === 'quiz') {
+        lessonRunner.prev();
+    }
+    updateLearnControls();
+}
+
 function hideQuizPrompt() {
+    destroyQuiz();
     document.getElementById('quiz-prompt-panel')?.classList.add('hidden');
+    document.getElementById('quiz-prompt-text')?.classList.remove('hidden');
+    document.getElementById('btn-lesson-quiz')?.classList.remove('hidden');
+}
+
+/**
+ * `bst.html?quiz=<id>` mounts that quiz directly, without playing the lesson.
+ * Unknown ids show the banner error and leave a usable Learn panel behind.
+ */
+async function initQuizDeepLink() {
+    const quizId = new URLSearchParams(window.location.search).get('quiz');
+    if (!quizId) return;
+
+    try {
+        getQuiz(quizId);
+    } catch (error) {
+        if (currentMode !== 'learn') await setMode('learn');
+        showError({ message: `Unknown quiz "${quizId}". ${error.message}`, field: 'quiz' });
+        return;
+    }
+
+    if (currentMode !== 'learn') {
+        await setMode('learn');
+    } else {
+        await onLearnReset();
+    }
+    openQuiz(quizId, 'deep-link');
+    updateLearnControls();
 }
 
 
