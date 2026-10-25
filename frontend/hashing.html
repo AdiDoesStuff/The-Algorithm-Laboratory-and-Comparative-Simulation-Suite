@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Hashing</title>
+    <meta name="description" content="Hash keys with a weak sum hash and a polynomial hash, then compare separate chaining with open addressing, tombstones, load factors and resizing side by side.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="stylesheet" href="css/lab.css">
+    <link rel="stylesheet" href="css/quiz.css">
+    <link rel="stylesheet" href="css/glossary.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+    <div class="lab-container">
+        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-direction: column;">
+            <h1>Algorithm Laboratory: Hashing</h1>
+            <div id="algo-nav" data-algo-nav data-current-id="hash"></div>
+        </div>
+
+        <div class="lab-layout">
+            <!-- Controls -->
+            <div class="side-panel">
+                <div class="mode-tabs" role="tablist" aria-label="Mode">
+                    <button id="btn-mode-play" class="mode-tab active-tab" role="tab" aria-selected="true">Play Mode</button>
+                    <button id="btn-mode-learn" class="mode-tab" role="tab" aria-selected="false">Learn Mode</button>
+                </div>
+
+                <!-- Play Mode -->
+                <div id="play-controls-panel" class="control-group">
+                    <div class="control-group">
+                        <label for="key-input">Key</label>
+                        <div class="input-row">
+                            <input type="text" id="key-input" maxlength="12" autocomplete="off" spellcheck="false" placeholder="1-12 printable chars, e.g. ab" />
+                        </div>
+                        <div class="input-row" style="margin-top: 6px;">
+                            <button id="btn-insert">Insert</button>
+                            <button id="btn-delete" style="background: #b91c1c;">Delete</button>
+                            <button id="btn-search" style="background: #475569;">Search</button>
+                        </div>
+                        <p class="control-hint">Keys are case-sensitive; spaces are not allowed. Enter inserts.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="hash-fn">Hash function</label>
+                        <select id="hash-fn">
+                            <option value="sum_mod">Sum of char codes (weak)</option>
+                            <option value="poly">Polynomial &#215;31 (better)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="table-size">Initial table size</label>
+                        <select id="table-size">
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7" selected>7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                        </select>
+                        <p class="control-hint">Changing either setting clears the op log, because stored keys must be replayed under the new settings.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label">Presets</span>
+                        <div class="input-row preset-row">
+                            <button id="preset-anagram" type="button" style="background: #0e7490;">Anagram collision demo</button>
+                            <button id="preset-resize" type="button" style="background: #0e7490;">Fill to trigger resize</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 4px;">
+                        <span class="control-label">Stored keys</span>
+                        <div id="key-chips" class="chip-row" role="list" aria-label="Stored keys">
+                            <span class="control-hint" style="margin: 0;">No keys yet.</span>
+                        </div>
+                        <p class="control-hint">Select a key to place it in the key box.</p>
+                    </div>
+
+                    <button id="btn-clear" style="margin-top: 10px; background: #475569;">Clear</button>
+
+                    <div class="control-group" style="margin-top: 12px;">
+                        <label for="speed-slider">Speed</label>
+                        <div class="input-row" style="align-items: center;">
+                            <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1" style="flex: 1;" />
+                            <button id="btn-play-pause" style="padding: 6px 14px; min-width: 76px;">Pause</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 12px;">
+                        <span class="control-label">Step through</span>
+                        <div class="step-row">
+                            <button id="btn-step-prev" type="button">&#8592; Prev</button>
+                            <button id="btn-step-next" type="button">Next &#8594;</button>
+                        </div>
+                        <p id="step-counter" class="step-counter" aria-live="polite">No trace yet.</p>
+                    </div>
+                </div>
+
+                <!-- Learn Mode -->
+                <div id="learn-controls-panel" class="control-group hidden">
+                    <p class="control-hint" style="margin: 0;">
+                        Pick a lesson, then step through it with next/prev or reset.
+                    </p>
+
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                        <label for="lesson-select" style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap;">Lesson:</label>
+                        <select id="lesson-select" class="algo-selector" style="flex: 1; min-width: 0; min-height: 44px;"></select>
+                    </div>
+                    <p id="lesson-description" class="control-hint" style="margin: 6px 0 0 0;"></p>
+
+                    <div id="learn-pills-row" class="learn-pills-row"></div>
+
+                    <div class="step-row" style="margin-top: 12px;">
+                        <button id="btn-learn-prev" type="button" disabled>&#8592; Prev Step</button>
+                        <button id="btn-learn-next" type="button">Next Step &#8594;</button>
+                    </div>
+                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Lesson</button>
+
+                    <div id="lesson-narration" class="step-annotation-box" style="margin-top: 10px; min-height: 54px;" aria-live="polite">
+                        Select a lesson and press Reset Lesson to begin.
+                    </div>
+
+                    <div id="checkpoint-panel" class="checkpoint-panel hidden">
+                        <p id="checkpoint-prompt"></p>
+                        <div id="checkpoint-choices" class="checkpoint-choices"></div>
+                        <button id="btn-checkpoint-reveal" type="button" style="margin-top: 8px;">Reveal</button>
+                        <p id="checkpoint-feedback" class="checkpoint-feedback" role="status" aria-live="polite"></p>
+                    </div>
+
+                    <div id="quiz-prompt-panel" class="quiz-prompt-panel hidden">
+                        <p id="quiz-prompt-text">
+                            Lesson complete. This unit quiz covers hash indices, collisions, chaining versus open addressing, tombstones and resizing.
+                        </p>
+                        <button id="btn-lesson-quiz" type="button" disabled>
+                            Take the quiz
+                        </button>
+                        <div id="quiz-mount" class="hidden" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="visualizer-panel">
+                <div id="hash-error-banner" role="alert" aria-live="polite" class="error-banner hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span id="hash-error-text"></span>
+                </div>
+
+                <div id="hash-notice" class="notice-banner hidden" role="status" aria-live="polite"></div>
+
+                <section class="panel-card" aria-labelledby="explainer-heading">
+                    <h2 id="explainer-heading" class="panel-heading">Hash function</h2>
+                    <div id="hash-explainer" class="hash-explainer">
+                        <span class="hash-formula">h(key)</span>
+                        <span>Enter a key and insert it to see the per-character terms, the raw hash and the index.</span>
+                    </div>
+                </section>
+
+                <div class="hash-panels">
+                    <section id="chaining-panel" class="panel-card" aria-labelledby="chaining-heading">
+                        <h2 id="chaining-heading" class="panel-heading">
+                            Separate chaining
+                            <span id="chaining-now" class="panel-now"></span>
+                        </h2>
+                        <p class="panel-note">One list per bucket. Collisions append to the same chain; no tombstone is needed on delete.</p>
+                        <div id="chaining-meter" class="hash-meter">
+                            <div class="hash-meter-track">
+                                <div id="chaining-meter-fill" class="hash-meter-fill"></div>
+                                <div id="chaining-meter-threshold" class="hash-meter-threshold"></div>
+                            </div>
+                            <p id="chaining-meter-text" class="hash-meter-text">0.00 / 1.00 load factor</p>
+                        </div>
+                        <div id="chaining-grid"></div>
+                    </section>
+
+                    <section id="open-panel" class="panel-card" aria-labelledby="open-heading">
+                        <h2 id="open-heading" class="panel-heading">
+                            Open addressing (linear probing)
+                            <span id="open-now" class="panel-now"></span>
+                        </h2>
+                        <p class="panel-note">One key per slot. Deletes leave a tombstone (&#8224;) so later probes keep looking past it.</p>
+                        <div id="open-meter" class="hash-meter">
+                            <div class="hash-meter-track">
+                                <div id="open-meter-fill" class="hash-meter-fill"></div>
+                                <div id="open-meter-threshold" class="hash-meter-threshold"></div>
+                            </div>
+                            <p id="open-meter-text" class="hash-meter-text">0.00 / 0.75 load factor</p>
+                        </div>
+                        <div id="open-grid"></div>
+                    </section>
+                </div>
+
+                <div id="step-annotation" class="step-annotation-box" aria-live="polite">
+                    Ready. Insert a key, or choose a preset or Learn Mode to begin.
+                </div>
+
+                <p class="legend-row" aria-label="Cell state legend">
+                    <span><span class="legend-badge" aria-hidden="true">+</span> created or placed in this step</span>
+                    <span><span class="legend-badge" aria-hidden="true">?</span> probed or compared</span>
+                    <span><span class="legend-badge" aria-hidden="true">&#10003;</span> matched on search</span>
+                    <span><span class="legend-badge" aria-hidden="true">&#8800;</span> removed or changed</span>
+                    <span><span class="legend-badge" aria-hidden="true">&#8224;</span> tombstone (deleted key)</span>
+                    <span><span class="legend-badge" aria-hidden="true">&#8709;</span> empty bucket</span>
+                </p>
+
+                <section class="panel-card" aria-labelledby="compare-heading">
+                    <h2 id="compare-heading" class="panel-heading">Metrics comparison</h2>
+                    <div class="table-scroll">
+                        <table class="compare-table">
+                            <caption>Both panels replay the same inserted keys, but each panel resizes on its own.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Metric</th>
+                                    <th scope="col">Chaining</th>
+                                    <th scope="col">Open addressing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compare-body">
+                                <tr><td>Keys stored</td><td id="cmp-chain-count">0</td><td id="cmp-open-count">0</td></tr>
+                                <tr><td>Table size</td><td id="cmp-chain-size">0</td><td id="cmp-open-size">0</td></tr>
+                                <tr><td>Load factor</td><td id="cmp-chain-load">0.00</td><td id="cmp-open-load">0.00</td></tr>
+                                <tr><td>Collisions</td><td id="cmp-chain-collisions">0</td><td id="cmp-open-collisions">0</td></tr>
+                                <tr><td>Longest chain / probe</td><td id="cmp-chain-longest">0</td><td id="cmp-open-longest">0</td></tr>
+                                <tr><td>Probes so far</td><td id="cmp-chain-probes">0</td><td id="cmp-open-probes">0</td></tr>
+                                <tr><td>Resizes</td><td id="cmp-chain-resizes">0</td><td id="cmp-open-resizes">0</td></tr>
+                                <tr><td>Tombstones</td><td id="cmp-chain-tombstones">0 (never)</td><td id="cmp-open-tombstones">0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/shell/progress.js"></script>
+    <script src="js/shell/glossaryData.js"></script>
+    <script type="module" src="js/hashing.js"></script>
+</body>
+</html>
