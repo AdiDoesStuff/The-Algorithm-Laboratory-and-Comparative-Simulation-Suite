@@ -188,8 +188,6 @@ def tree_handler():
         ))
     elif algo == 'heap_insert':
         return jsonify(trees.heap_insert_steps(input_data))
-    elif algo == 'avl_insert':
-        return jsonify(trees.avl_insert_steps(input_data))
 
     raise ValidationError(f"Unknown tree algorithm: {algo}", field="algorithm")
 
@@ -215,6 +213,27 @@ def heap_handler():
         validated['heap_type'],
         validated.get('ops', []),
         validated.get('action')
+    ))
+
+
+@app.route('/avl', methods=['GET', 'POST'])
+def avl_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_avl_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    return jsonify(trees.avl_op_steps(
+        validated['algorithm'],
+        validated.get('ops', []),
+        validated.get('value')
     ))
 
 

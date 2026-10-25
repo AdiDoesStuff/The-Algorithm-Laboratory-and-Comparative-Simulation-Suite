@@ -34,6 +34,14 @@ DEFAULT_ROLES = {
     'build_done':           {'highlighted': lambda ids: ids},
     'mark_sorted':          {'sorted': lambda ids: ids},
     'heapsort_done':        {'sorted': lambda ids: ids},
+    # AVL steps (Phase C)
+    'balance_update':       {'highlighted': lambda ids: ids},
+    'unbalanced':           {'unbalanced': lambda ids: ids},
+    'rotate_LL':            {'rotating': lambda ids: ids},
+    'rotate_RR':            {'rotating': lambda ids: ids},
+    'rotate_LR':            {'rotating': lambda ids: ids},
+    'rotate_RL':            {'rotating': lambda ids: ids},
+    'rotation_done':        {'highlighted': lambda ids: ids},
     # Mirror / structural comparison steps (dual-snapshot; roles are _a/_b suffixed)
     'mirror_compare':       {},   # roles in comparing_a / comparing_b
     'struct_compare':       {},   # same shape, identical mode

@@ -1265,16 +1265,599 @@ def heapsort_steps(heap_type: str, array: List[int]) -> Dict[str, Any]:
     }
 
 
-# Stub functions for remaining units (unchanged)
+# --- Unit 2b: AVL Trees (Phase C) ---
+#
+# Height is counted in edges: a leaf has height 0, an empty child has height -1.
+# Balance factor is height(left) - height(right), so +1 means left-heavy.
+# Node ids stay equal to the inserting op's index, exactly like BST mode.
+# Every snapshot recomputes heights from the current links, so a sublabel can
+# never show a stale balance factor.
+
+class AVLNode(Node):
+    def __init__(self, value: int, node_id: Optional[int] = None):
+        super().__init__(value, node_id)
+        self.parent: Optional['AVLNode'] = None
+
+
+def _avl_height(node: Optional[AVLNode]) -> int:
+    if node is None:
+        return -1
+    return 1 + max(_avl_height(node.left), _avl_height(node.right))
+
+
+def _avl_balance(node: Optional[AVLNode]) -> int:
+    if node is None:
+        return 0
+    return _avl_height(node.left) - _avl_height(node.right)
+
+
+def serialize_avl_tree(root: Optional[AVLNode]) -> Dict[str, Any]:
+    """Tree snapshot with a live `bf:+N` sublabel on every node."""
+    heights: Dict[int, int] = {}
+
+    def height(node: Optional[AVLNode]) -> int:
+        if node is None:
+            return -1
+        key = id(node)
+        if key not in heights:
+            heights[key] = 1 + max(height(node.left), height(node.right))
+        return heights[key]
+
+    nodes: List[Dict[str, Any]] = []
+
+    def walk(node: Optional[AVLNode], parent_id: Optional[int] = None,
+             side: Optional[str] = None) -> None:
+        if node is None:
+            return
+        bf = height(node.left) - height(node.right)
+        nodes.append({
+            'id': node.id,
+            'label': str(node.value),
+            'sublabel': f'bf:{bf:+d}',
+            'parent_id': parent_id,
+            'side': side
+        })
+        walk(node.left, node.id, 'left')
+        walk(node.right, node.id, 'right')
+
+    walk(root)
+    return {'nodes': nodes, 'root_id': root.id if root else None}
+
+
+class _AVLTracer:
+    """Collects steps; `enabled = False` makes an op-log replay silent."""
+
+    def __init__(self, tree: '_AVLTree'):
+        self.tree = tree
+        self.enabled = True
+        self.steps: List[Dict[str, Any]] = []
+        self.comparisons = 0
+        self.rotations = 0
+
+    def reset(self) -> None:
+        self.enabled = True
+        self.steps = []
+        self.comparisons = 0
+        self.rotations = 0
+
+    def add(self, step_type: str, node_ids: List[int], note: str,
+            payload: Optional[Dict[str, Any]] = None,
+            **extra: Any) -> Optional[Dict[str, Any]]:
+        if not self.enabled:
+            return None
+        step = make_step(
+            step_type,
+            node_ids,
+            serialize_avl_tree(self.tree.root),
+            note,
+            payload=payload or {},
+            kind='tree',
+            **extra
+        )
+        self.steps.append(step)
+        return step
+
+
+class _AVLTree:
+    def __init__(self):
+        self.root: Optional[AVLNode] = None
+        self.tracer = _AVLTracer(self)
+
+
+def _avl_replace_child(tree: _AVLTree, old: AVLNode, new: Optional[AVLNode]) -> None:
+    parent = old.parent
+    if new is not None:
+        new.parent = parent
+    if parent is None:
+        tree.root = new
+    elif parent.left is old:
+        parent.left = new
+    else:
+        parent.right = new
+
+
+def _avl_rotate_right(tree: _AVLTree, x: AVLNode) -> AVLNode:
+    y = x.left
+    x.left = y.right
+    if y.right is not None:
+        y.right.parent = x
+    _avl_replace_child(tree, x, y)
+    y.right = x
+    x.parent = y
+    return y
+
+
+def _avl_rotate_left(tree: _AVLTree, x: AVLNode) -> AVLNode:
+    y = x.right
+    x.right = y.left
+    if y.left is not None:
+        y.left.parent = x
+    _avl_replace_child(tree, x, y)
+    y.left = x
+    x.parent = y
+    return y
+
+
+def _avl_case(node: AVLNode) -> str:
+    bf = _avl_balance(node)
+    if bf > 1:
+        return 'LL' if _avl_balance(node.left) >= 0 else 'LR'
+    return 'RR' if _avl_balance(node.right) <= 0 else 'RL'
+
+
+def _avl_rotation_payload(case: str, node: AVLNode, pivot: Optional[AVLNode],
+                          new_root: AVLNode, phase: int, phases: int) -> Dict[str, Any]:
+    return {
+        'case': case,
+        'phase': phase,
+        'phases': phases,
+        'unbalanced': node.id,
+        'pivot': pivot.id if pivot is not None else None,
+        'new_root': new_root.id,
+        'subtree': {
+            'left': new_root.left.id if new_root.left else None,
+            'right': new_root.right.id if new_root.right else None
+        }
+    }
+
+
+def _avl_apply_rotation(tree: _AVLTree, node: AVLNode, case: str) -> AVLNode:
+    """Performs one single or one double rotation and emits its steps."""
+    tracer = tree.tracer
+    bf = _avl_balance(node)
+
+    if case == 'LL':
+        pivot = node.left
+        new_root = _avl_rotate_right(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LL', [node.id, pivot.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-left case): rotate right at "
+                f"{node.value}. {pivot.value} becomes the new subtree root."
+            ),
+            payload=_avl_rotation_payload('LL', node, pivot, new_root, 1, 1)
+        )
+        return new_root
+
+    if case == 'RR':
+        pivot = node.right
+        new_root = _avl_rotate_left(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_RR', [node.id, pivot.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (right-right case): rotate left at "
+                f"{node.value}. {pivot.value} becomes the new subtree root."
+            ),
+            payload=_avl_rotation_payload('RR', node, pivot, new_root, 1, 1)
+        )
+        return new_root
+
+    if case == 'LR':
+        pivot = node.left
+        inner = pivot.right
+        _avl_rotate_left(tree, pivot)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LR', [pivot.id, inner.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-right case): step 1 of 2, "
+                f"rotate left at {pivot.value} to turn it into a left-left case."
+            ),
+            payload={
+                'case': 'LR', 'phase': 1, 'phases': 2,
+                'unbalanced': node.id, 'pivot': pivot.id, 'new_root': inner.id,
+                'subtree': {
+                    'left': inner.left.id if inner.left else None,
+                    'right': inner.right.id if inner.right else None
+                }
+            }
+        )
+        new_root = _avl_rotate_right(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LR', [node.id, inner.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-right case): step 2 of 2, "
+                f"rotate right at {node.value}. {inner.value} becomes the new subtree root."
+            ),
+            payload={
+                'case': 'LR', 'phase': 2, 'phases': 2,
+                'unbalanced': node.id, 'pivot': inner.id, 'new_root': inner.id,
+                'subtree': {
+                    'left': inner.left.id if inner.left else None,
+                    'right': inner.right.id if inner.right else None
+                }
+            }
+        )
+        return new_root
+
+    # RL
+    pivot = node.right
+    inner = pivot.left
+    _avl_rotate_right(tree, pivot)
+    tracer.rotations += 1
+    tracer.add(
+        'rotate_RL', [pivot.id, inner.id],
+        (
+            f"Node {node.value} has bf {bf:+d} (right-left case): step 1 of 2, "
+            f"rotate right at {pivot.value} to turn it into a right-right case."
+        ),
+        payload={
+            'case': 'RL', 'phase': 1, 'phases': 2,
+            'unbalanced': node.id, 'pivot': pivot.id, 'new_root': inner.id,
+            'subtree': {
+                'left': inner.left.id if inner.left else None,
+                'right': inner.right.id if inner.right else None
+            }
+        }
+    )
+    new_root = _avl_rotate_left(tree, node)
+    tracer.rotations += 1
+    tracer.add(
+        'rotate_RL', [node.id, inner.id],
+        (
+            f"Node {node.value} has bf {bf:+d} (right-left case): step 2 of 2, "
+            f"rotate left at {node.value}. {inner.value} becomes the new subtree root."
+        ),
+        payload={
+            'case': 'RL', 'phase': 2, 'phases': 2,
+            'unbalanced': node.id, 'pivot': inner.id, 'new_root': inner.id,
+            'subtree': {
+                'left': inner.left.id if inner.left else None,
+                'right': inner.right.id if inner.right else None
+            }
+        }
+    )
+    return new_root
+
+
+def _avl_note_balance(node: AVLNode, bf: int) -> str:
+    return (
+        f"On the way back up: node {node.value} has height {_avl_height(node)} "
+        f"and bf {bf:+d} (left height {_avl_height(node.left)}, "
+        f"right height {_avl_height(node.right)})."
+    )
+
+
+def _avl_insert(tree: _AVLTree, value: int, node_id: int) -> None:
+    tracer = tree.tracer
+
+    if tree.root is None:
+        node = AVLNode(value, node_id)
+        tree.root = node
+        tracer.add(
+            'insert', [node.id],
+            f"Inserted {value} as the root of the empty tree.",
+            payload={'path': [], 'value': value, 'node_id': node.id}
+        )
+        tracer.add(
+            'insert_done', [node.id],
+            f"Inserted {value}. The tree is balanced.",
+            payload={
+                'value': value, 'node_id': node.id, 'rotations': 0, 'height': 0
+            }
+        )
+        return
+
+    path_ids: List[int] = []
+    parent: Optional[AVLNode] = None
+    current: Optional[AVLNode] = tree.root
+    while current is not None:
+        path_ids.append(current.id)
+        direction = 'left' if value < current.value else 'right'
+        tracer.comparisons += 1
+        tracer.add(
+            'compare', [current.id],
+            (
+                f"Compare {value} with {current.value}: "
+                f"{value} {'<' if value < current.value else '>'} {current.value} "
+                f"→ go {direction}."
+            ),
+            payload={'path': list(path_ids)}
+        )
+        parent = current
+        current = current.left if value < current.value else current.right
+
+    node = AVLNode(value, node_id)
+    node.parent = parent
+    side = 'left' if value < parent.value else 'right'
+    if side == 'left':
+        parent.left = node
+    else:
+        parent.right = node
+
+    tracer.add(
+        'insert', [node.id],
+        (
+            f"Inserted {value} as the {side} child of {parent.value}. "
+            f"Now retrace the path to update heights and balance factors."
+        ),
+        payload={'path': list(path_ids), 'value': value, 'node_id': node.id}
+    )
+
+    current = parent
+    rotations = 0
+    while current is not None:
+        bf = _avl_balance(current)
+        if abs(bf) > 1:
+            case = _avl_case(current)
+            tracer.add(
+                'unbalanced', [current.id],
+                (
+                    f"Node {current.value} is unbalanced: bf {bf:+d} ({case} case). "
+                    f"Stop here and rotate."
+                ),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'balance_factor': bf, 'case': case
+                }
+            )
+            new_root = _avl_apply_rotation(tree, current, case)
+            rotations += 2 if case in ('LR', 'RL') else 1
+            tracer.add(
+                'rotation_done', [new_root.id],
+                (
+                    f"Subtree rooted at {new_root.value} is balanced again "
+                    f"(height {_avl_height(new_root)}, bf {_avl_balance(new_root):+d}). "
+                    f"For insertion the height is back to its pre-insert value, so "
+                    f"no ancestor above can be unbalanced."
+                ),
+                payload={
+                    'new_root': new_root.id,
+                    'height': _avl_height(new_root),
+                    'balance_factor': _avl_balance(new_root)
+                }
+            )
+            break
+        tracer.add(
+            'balance_update', [current.id],
+            _avl_note_balance(current, bf),
+            payload={
+                'node_id': current.id, 'value': current.value,
+                'height': _avl_height(current), 'balance_factor': bf
+            }
+        )
+        current = current.parent
+
+    tracer.add(
+        'insert_done', [node.id],
+        (
+            f"Inserted {value}. "
+            + (f"Rebalanced with {rotations} rotation{'s' if rotations != 1 else ''}."
+               if rotations else "No rotation was needed; bf is within ±1 everywhere.")
+        ),
+        payload={
+            'value': value, 'node_id': node.id, 'rotations': rotations,
+            'height': _avl_height(tree.root)
+        }
+    )
+
+
+def _avl_delete(tree: _AVLTree, value: int) -> None:
+    tracer = tree.tracer
+
+    current = tree.root
+    path_ids: List[int] = []
+    while current is not None and current.value != value:
+        path_ids.append(current.id)
+        direction = 'left' if value < current.value else 'right'
+        tracer.comparisons += 1
+        tracer.add(
+            'compare', [current.id],
+            (
+                f"Search for {value}: compare with {current.value}, "
+                f"{value} {'<' if value < current.value else '>'} {current.value} "
+                f"→ go {direction}."
+            ),
+            payload={'path': list(path_ids)}
+        )
+        current = current.left if value < current.value else current.right
+
+    if current is None:
+        # The validator checks existence, so this only guards direct calls.
+        raise ValidationError(
+            f"Value {value} not found in tree to delete",
+            field="value", status_code=400
+        )
+
+    z = current
+    path_ids.append(z.id)
+    start: Optional[AVLNode] = None
+
+    if z.left is None or z.right is None:
+        child = z.left if z.left is not None else z.right
+        parent = z.parent
+        _avl_replace_child(tree, z, child)
+        start = parent
+        if child is None:
+            tracer.add(
+                'delete_leaf', [z.id],
+                (
+                    f"Deleted leaf {value} (id {z.id}): it had no children, so its "
+                    f"parent link is cleared. Retrace from the parent to rebalance."
+                ),
+                payload={'value': value, 'node_id': z.id, 'path': path_ids}
+            )
+        else:
+            tracer.add(
+                'delete_single_child', [z.id],
+                (
+                    f"Deleted {value} (id {z.id}) with one child: child "
+                    f"{child.value} is promoted into its place."
+                ),
+                payload={
+                    'value': value, 'node_id': z.id,
+                    'replacement': child.id, 'path': path_ids
+                }
+            )
+    else:
+        successor = z.right
+        while successor.left is not None:
+            successor = successor.left
+
+        if successor is z.right:
+            _avl_replace_child(tree, z, successor)
+            successor.left = z.left
+            z.left.parent = successor
+            start = successor
+        else:
+            old_parent = successor.parent
+            old_parent.left = successor.right
+            if successor.right is not None:
+                successor.right.parent = old_parent
+            _avl_replace_child(tree, z, successor)
+            successor.left = z.left
+            z.left.parent = successor
+            successor.right = z.right
+            z.right.parent = successor
+            start = old_parent
+
+        tracer.add(
+            'delete_two_children', [z.id, successor.id],
+            (
+                f"Deleted {value} (id {z.id}) with two children: the in-order "
+                f"successor {successor.value} (id {successor.id}) is relinked into "
+                f"its place, so node ids survive the delete."
+            ),
+            payload={
+                'value': value, 'node_id': z.id,
+                'successor': successor.id, 'path': path_ids
+            }
+        )
+
+    rotations = 0
+    current = start
+    while current is not None:
+        bf = _avl_balance(current)
+        if abs(bf) > 1:
+            case = _avl_case(current)
+            tracer.add(
+                'unbalanced', [current.id],
+                (
+                    f"Node {current.value} is unbalanced after the delete: "
+                    f"bf {bf:+d} ({case} case)."
+                ),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'balance_factor': bf, 'case': case
+                }
+            )
+            new_root = _avl_apply_rotation(tree, current, case)
+            rotations += 2 if case in ('LR', 'RL') else 1
+            tracer.add(
+                'rotation_done', [new_root.id],
+                (
+                    f"Subtree rooted at {new_root.value} is balanced again "
+                    f"(height {_avl_height(new_root)}, bf {_avl_balance(new_root):+d}). "
+                    f"Deletion can shorten a subtree, so keep checking ancestors."
+                ),
+                payload={
+                    'new_root': new_root.id,
+                    'height': _avl_height(new_root),
+                    'balance_factor': _avl_balance(new_root)
+                }
+            )
+            current = new_root.parent
+        else:
+            tracer.add(
+                'balance_update', [current.id],
+                _avl_note_balance(current, bf),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'height': _avl_height(current), 'balance_factor': bf
+                }
+            )
+            current = current.parent
+
+    root_id = tree.root.id if tree.root is not None else None
+    tracer.add(
+        'delete_done', [root_id] if root_id is not None else [],
+        (
+            f"Deleted {value}. "
+            + (f"Rebalanced with {rotations} rotation{'s' if rotations != 1 else ''}."
+               if rotations else "Every node still has bf within ±1.")
+        ),
+        payload={
+            'value': value, 'rotations': rotations,
+            'height': _avl_height(tree.root) if tree.root is not None else -1
+        }
+    )
+
+
+def _replay_avl_ops(tree: _AVLTree, ops: List[Dict[str, Any]]) -> None:
+    """Silently replays an op-log. Ids come from the inserting op's index."""
+    for idx, op in enumerate(ops):
+        if op['op'] == 'insert':
+            _avl_insert(tree, op['value'], node_id=idx)
+        else:
+            _avl_delete(tree, op['value'])
+
+
+def avl_op_steps(algorithm: str, ops: Optional[List[Dict[str, Any]]] = None,
+                 value: Optional[int] = None) -> Dict[str, Any]:
+    """Action steps for POST /avl. The op-log replay itself emits no steps."""
+    ops = ops or []
+    tree = _AVLTree()
+    tree.tracer.enabled = False
+    _replay_avl_ops(tree, ops)
+    tree.tracer.reset()
+
+    if algorithm == 'avl_insert':
+        _avl_insert(tree, int(value), node_id=len(ops))
+    elif algorithm == 'avl_delete':
+        _avl_delete(tree, int(value))
+    elif algorithm != 'avl_replay':
+        raise ValidationError(f"Unknown AVL algorithm: {algorithm}", field="algorithm")
+
+    if len(tree.tracer.steps) > validation.MAX_AVL_STEPS:
+        raise ValidationError(
+            (
+                f"Trace would exceed {validation.MAX_AVL_STEPS} steps; "
+                f"shorten the op log or the value list."
+            ),
+            field="ops", status_code=400
+        )
+
+    return {
+        'steps': tree.tracer.steps,
+        'final_tree': serialize_avl_tree(tree.root),
+        'metrics': {
+            'comparisons': tree.tracer.comparisons,
+            'rotations': tree.tracer.rotations,
+            'steps': len(tree.tracer.steps),
+            'height': _avl_height(tree.root)
+        },
+        'metadata': {'algorithm': algorithm}
+    }
+
 
 def heap_insert_steps(values: Any) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "heap_insert"}}
 
 def heap_extract_steps(values: Any) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "heap_extract"}}
-
-def avl_insert_steps(values: Any) -> Dict[str, Any]:
-    return {"steps": [], "metadata": {"algorithm": "avl_insert"}}
 
 def trie_insert_steps(words: List[str]) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "trie_insert"}}

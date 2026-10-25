@@ -13,7 +13,6 @@ VALID_TREE_ALGORITHMS = {
     'array_to_tree',
     'bst_mirror',
     'heap_insert',
-    'avl_insert',
 }
 
 VALID_TRAVERSAL_ORDERS = {'inorder', 'preorder', 'postorder', 'level'}
@@ -317,5 +316,75 @@ def validate_heap_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
             if size == 0:
                 return None, ("Cannot extract from an empty heap", "action")
         validated['action'] = parsed
+
+    return validated, None
+
+
+# --- AVL endpoint validation (/avl) ---
+
+VALID_AVL_ALGORITHMS = {'avl_insert', 'avl_delete', 'avl_replay'}
+MAX_AVL_OPS = 64
+MAX_AVL_STEPS = 1000
+
+
+def validate_avl_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[str, str]]]:
+    """
+    Validates a POST /avl payload. The op log must be internally consistent:
+    an insert cannot duplicate a live value and a delete must target one.
+    Never raises, so no invalid input can reach a 500.
+    """
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get('algorithm')
+    if not isinstance(algo, str) or algo not in VALID_AVL_ALGORITHMS:
+        return None, (f"Unknown AVL algorithm: {algo}", "algorithm")
+
+    raw_ops = data.get('ops', [])
+    if raw_ops is None:
+        raw_ops = []
+    if not isinstance(raw_ops, list):
+        return None, ("'ops' must be a list", "ops")
+    if len(raw_ops) > MAX_AVL_OPS:
+        return None, (f"'ops' supports at most {MAX_AVL_OPS} entries", "ops")
+
+    ops = []
+    present = set()
+    for i, item in enumerate(raw_ops):
+        if not isinstance(item, dict):
+            return None, (f"'ops[{i}]' must be an object with 'op' and 'value'", "ops")
+        name = item.get('op')
+        value = item.get('value')
+        if name not in ('insert', 'delete'):
+            return None, (
+                f"Invalid op '{name}' in ops[{i}]: expected 'insert' or 'delete'",
+                "ops"
+            )
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None, (f"Missing or invalid integer 'value' in ops[{i}]", "ops")
+        if name == 'insert':
+            if value in present:
+                return None, (f"Duplicate insert value {value} in ops at index {i}", "ops")
+            present.add(value)
+        else:
+            if value not in present:
+                return None, (
+                    f"ops[{i}] deletes {value}, which is not in the tree at that point",
+                    "ops"
+                )
+            present.remove(value)
+        ops.append({'op': name, 'value': value})
+
+    validated: Dict[str, Any] = {'algorithm': algo, 'ops': ops}
+
+    if algo != 'avl_replay':
+        value = data.get('value')
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None, ("Missing or invalid 'value': integer required", "value")
+        if algo == 'avl_insert' and value in present:
+            return None, (f"Duplicate value: {value} already exists in the tree", "value")
+        if algo == 'avl_delete' and value not in present:
+            return None, (f"Value {value} not found in tree to delete", "value")
+        validated['value'] = value
 
     return validated, None
