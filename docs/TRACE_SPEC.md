@@ -519,3 +519,75 @@ The tests check every snapshot, not just the final one:
   only on the path from the operation focus to the root. Every
   `insert_done`/`delete_done` step must have **zero** nodes with `abs(bf) > 1`.
 
+---
+
+## Section 8 Trie Phase D
+
+Request POST /trie body { algorithm, ops, action }. algorithm in {trie_insert,trie_search,trie_prefix}. ops committed history inserts only. insert action {word}; search {word}; prefix {prefix}.
+
+Normalisation and limits: words lowercased server-side then must match ^[a-z]+$. Else 400 field word or prefix. Word length 1-12; at most 30 words in op log; at most 200 total trie nodes (else 400 field word). Autocomplete at most 10 completions (truncated true when more). Empty string: insert/search reject 400; prefix accepts empty (root, first 10 words alphabetically). Duplicates: inserting existing word 400 field word. Inserting car after card creates no nodes only marks end.
+
+IDs: root 0; counter assigned in creation order during stateless replay; children ordered alphabetically. IDs pure function of op log.
+
+Response { steps, final_tree, metrics, metadata }. Tree snapshot { nodes: [{id,label,parent_id,side:null,sublabel,terminal}], root_id }; root label root; others single letter. Metrics nodes words created reused letters_total compression. Metadata normalized_word or prefix, completions, truncated.
+
+Step types all kind tree snapshot after step payload.path ancestor id chain.
+Insert: per letter node_reused (reused:[id]) or node_created (created:[id]); payload {letter,depth,path,word}. Then mark_end (selected:[id]; payload {word,was_new_node}). Then insert_done (payload {created_count,reused_count}).
+Search: per letter match (matched:[id]) or no_match (payload {letter,depth,failed_at}); outcome found/not_found (reason in {missing_edge,not_a_word}); then search_done.
+Prefix: per letter match/no_match; full match prefix_matched (payload {prefix,node_id}) then prefix_done (selected terminal nodes of completions, matched prefix path, payload.completions at most 10, truncated). Missing edge prefix_missing then prefix_done empty.
+
+Roles: created (new node, green, thick solid ring plus +), reused (blue, thin double ring), matched (check glyph), selected, new_node.
+
+Caps MAX_TRIE_STEPS enforced 400 field word.
+
+## Section 9 Hashing Phase D
+
+Request POST /hash body { algorithm, hash_fn, table_size, probing, ops, action }. algorithm in {hash_insert,hash_delete,hash_search}. hash_fn in {sum_mod,poly}. probing in {linear}. table_size initial 5..13 default 7.
+
+Hash functions: sum_mod h = sum char codes mod m. poly h = 0; for c h = (h*31 + code(c)) mod 2^32; index = h mod m. Test vectors m=7: sum_mod abc raw 294 idx 0; poly abc raw 96354 idx 6; ab and ba both idx 6 under sum_mod; poly ab 3105 idx 4; poly ba 3135 idx 6.
+
+Keys strings 1-12 chars printable ASCII excluding whitespace codes 33-126 case-sensitive. Bad key 400 field key.
+
+Limits: MAX_TABLE_SIZE 63. Growth new_size = 2*m+1 (7 to 15 to 31 to 63). Max live keys 40 (400 field key beyond). Max total ops 100.
+
+Load factor and resize: chaining resizes when (n+1)/m > 1.0; open when (live+tombstones+1)/m > 0.75. Check before place. Resizes independent per panel. At cap in-place rehash same size clears tombstones. If still would exceed threshold 400 field key table at maximum capacity.
+
+Duplicates absent: inserting live key 400 field key. Deleting absent 400 field key. Searching absent not error not_found step.
+
+Tombstones open addressing: delete leaves visible tombstone snapshot slot {tombstone:true} rendered dagger plus hatch plus aria. Insert reuses first tombstone seen on probe path but still probes to empty to prove absence. Search delete probe past tombstones stop on empty or match. Resize rehash drops all tombstones. Chaining delete removes entry chain_remove.
+
+IDs entry id = index of inserting op in log stable; delete-then-reinsert gets new id.
+
+Snapshot dual-panel both step and final_state: chaining {strategy,size,count,load_factor,threshold:1.0,buckets:[[id,key]]}; open {strategy,size,count,tombstones,load_factor,threshold:0.75,slots:[null or {id,key} or {tombstone:true}]}. Steps kind grid panel chaining or open. Sequential all chaining then all open; other panel snapshot carried unchanged. Role arrays suffixed by panel probing_open new_node_chaining; items bucket or slot indices; payload.chain_pos int or null.
+
+Step types: both panels every action hash_compute payload {key,hash_fn,terms:[{char,code,running}],raw,table_size,index}. Chaining insert chain_compare per existing entry then chain_append new_node_chaining. Search chain_compare found or not_found. Delete chain_compare chain_remove. Open insert probe per slot probing_open payload {slot,attempt,state,occupant_key} then place new_node_open payload {slot,reused_tombstone}. Search probe found or not_found. Delete probe tombstone. Resize resize_start payload {old_size,new_size,load_factor,threshold,in_place}; one rehash_move per live key payload {key,from,to,probes,remaining}; resize_done. Every action ends each panel with action_done payload carries that panel metrics. MAX_HASH_STEPS enforced; probe loops bounded by size.
+
+Metrics per panel collisions max_chain_length or max_probe_length total_probes resizes tombstones load_factor. Top-level metrics {chaining,open}. Metadata hash_fn table_size_initial warnings.
+
+## Section 10 Merkle Phase D
+
+Request POST /merkle body { algorithm, leaves, index, new_data }. algorithm in {merkle_build,merkle_tamper}. Leaves 1-16 strings each 0-40 chars empty allowed. Tamper 0 <= index < len leaves new_data same limits.
+
+Hashing real SHA-256 via hashlib. Leaf SHA256 utf8 bytes of data. Parent SHA256 left_digest_bytes concat right_digest_bytes over raw 32-byte digests. Test vector leaf abc -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad. Display truncation sublabel first 8 hex; full 64 in node full_hash and payloads. UI states SHA-256 showing first 8 of 64 hex chars.
+
+Odd-node policy duplicate last: at any level with odd node count last node duplicated to pair with itself. Duplicate real tree node own id duplicate_of original id same hash rendered dashed text dup. Single leaf own root no duplication. Duplicate-last Bitcoin-style simplification CVE-2012-2459 class documented.
+
+IDs pure function of leaf count: leaf i id i; internal incl duplicates ids n,n+1 bottom-up left-to-right. Tamper never changes structure ids never change. Adding removing leaf rebuild may reassign ids.
+
+Snapshot nodes {id,label,parent_id,side,sublabel,full_hash,duplicate_of}. label block data leaves or H+level internal. sublabel first 8 hex or ellipsis for pending hashes full structure present from step 0. side left right or null root.
+
+Step types all kind tree. Build: leaf_hash per leaf highlighted:[id] payload {index,data,digest}; per level pair_hash per parent highlighted:[parent] matched:[left,right] payload {level,left,right,digest}; duplicate_last where odd node copied created:[dup_id]; level_done; finally root_ready selected:[root] and build_done. Tamper: tamper_edit payload {index,old_data,new_data,old_digest,new_digest} leaf mismatch; then for each ancestor bottom-to-top recompute highlighted:[node] sibling hash in reused then mismatch node with new hash mismatch:[node] payload {old_digest,new_digest}. If new data == old data each ancestor emits match instead. If path node sibling is its own duplicate duplicate updated same step and also mismatch. After root root_compare payload {original_root,new_root,changed} then tamper_done payload as metrics tamper fields. Only leaf-to-root path recomputed; snapshot after each mismatch already contains new hash and keeps earlier mismatch ids marked until tamper_done.
+
+Metrics leaves nodes levels root root_short. Tamper adds recomputed total_internal root_changed original_root new_root matches_full_rebuild.
+
+Caps MAX_MERKLE_STEPS enforced.
+
+## Role vocabulary Phase D additions
+
+created trie node newly created or Merkle duplicated node preferred green thick solid ring plus + badge. reused trie node reused or Merkle sibling hash reused without recompute preferred blue thin double ring plus annotation text. matched node or cell on successful search or prefix walk check glyph or solid ring distinct. probing hash slot or chain entry currently examined pulsing or dashed outline plus ? glyph static under reduced motion. mismatch Merkle hash that changed vs original not-equal glyph plus heavy outline.
+
+Colours preferences cue column requirement. Styled in primitives.css CSS variables; both TreeCanvas and BucketGrid honour them.
+
+## Tree-node schema extensions Phase D
+
+Snapshot node fields added: terminal bool trie end-of-word; duplicate_of int or null Merkle duplicated odd node; full_hash string Merkle full digest. N-ary layout uses side null (trie). sublabel reused for Merkle hash text and trie end.
