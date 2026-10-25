@@ -194,6 +194,30 @@ def tree_handler():
     raise ValidationError(f"Unknown tree algorithm: {algo}", field="algorithm")
 
 
+@app.route('/heap', methods=['GET', 'POST'])
+def heap_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_heap_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    if validated['algorithm'] == 'heapsort':
+        return jsonify(trees.heapsort_steps(validated['heap_type'], validated['array']))
+
+    return jsonify(trees.heap_op_steps(
+        validated['heap_type'],
+        validated.get('ops', []),
+        validated.get('action')
+    ))
+
+
 @app.route('/hash', methods=['POST'])
 def hash_handler():
     data = request.get_json(silent=True) or {}

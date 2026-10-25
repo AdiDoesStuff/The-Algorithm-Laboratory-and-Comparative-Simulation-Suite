@@ -22,6 +22,18 @@ DEFAULT_ROLES = {
     'probe':                {'comparing': lambda ids: ids},
     'dp_fill':              {'new_node': lambda ids: ids},
     'select':               {'selected': lambda ids: ids},
+    # Heap steps (Phase C)
+    'append':               {'new_node': lambda ids: ids},
+    'swap':                 {'swapping': lambda ids: ids},
+    'insert_done':          {'highlighted': lambda ids: ids},
+    'extract_root':         {'selected': lambda ids: ids},
+    'remove_last':          {'highlighted': lambda ids: ids},
+    'extract_done':         {'highlighted': lambda ids: ids},
+    'build_start':          {'highlighted': lambda ids: ids},
+    'heapify_node_done':    {'selected': lambda ids: ids},
+    'build_done':           {'highlighted': lambda ids: ids},
+    'mark_sorted':          {'sorted': lambda ids: ids},
+    'heapsort_done':        {'sorted': lambda ids: ids},
     # Mirror / structural comparison steps (dual-snapshot; roles are _a/_b suffixed)
     'mirror_compare':       {},   # roles in comparing_a / comparing_b
     'struct_compare':       {},   # same shape, identical mode

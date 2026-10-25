@@ -838,6 +838,433 @@ def bst_mirror_steps(tree_a_spec: Dict, tree_b_spec: Dict, mode: str = 'mirror')
     }
 
 
+# --- Unit 2: Heaps (array + tree dual-panel traces) ---
+
+HEAP_MAX_SIZE = 31
+HEAP_MAX_STEPS = 1000
+
+
+def _heap_better(heap_type: str, candidate: int, current: int) -> bool:
+    """Strict improvement only, so equal values never swap (documented tie-break)."""
+    return candidate < current if heap_type == 'min' else candidate > current
+
+
+class _HeapState:
+    def __init__(self, heap_type: str):
+        self.heap_type = heap_type
+        self.cells: List[Dict[str, Any]] = []   # [{'id': int, 'value': int}]
+        self.heap_size = 0
+        self.next_id = 0
+
+
+def _heap_tree_snapshot(cells: List[Dict[str, Any]], heap_size: int) -> Dict[str, Any]:
+    """Derives the complete-binary-tree snapshot from cells[0:heap_size]."""
+    nodes = []
+    for index in range(heap_size):
+        cell = cells[index]
+        if index == 0:
+            parent_id = None
+            side = None
+        else:
+            parent_index = (index - 1) // 2
+            parent_id = cells[parent_index]['id']
+            side = 'left' if index % 2 == 1 else 'right'
+        nodes.append({
+            'id': cell['id'],
+            'label': str(cell['value']),
+            'sublabel': f'i={index}',
+            'parent_id': parent_id,
+            'side': side,
+        })
+    return {'nodes': nodes, 'root_id': cells[0]['id'] if heap_size > 0 else None}
+
+
+def _heap_dual_snapshot(state: _HeapState) -> Dict[str, Any]:
+    return {
+        'array': {
+            'cells': [{'id': c['id'], 'value': c['value']} for c in state.cells],
+            'heap_size': state.heap_size,
+            'heap_type': state.heap_type,
+        },
+        'tree': _heap_tree_snapshot(state.cells, state.heap_size),
+    }
+
+
+class _HeapTracer:
+    def __init__(self, state: _HeapState, field: str = 'action'):
+        self.state = state
+        self.field = field
+        self.steps: List[Dict[str, Any]] = []
+        self.comparisons = 0
+        self.swaps = 0
+
+    def add(self, step_type: str, ids: List[Any], note: str, **extra) -> Dict[str, Any]:
+        if len(self.steps) >= HEAP_MAX_STEPS:
+            raise ValidationError(
+                f"Trace exceeded {HEAP_MAX_STEPS} steps; reduce the input size",
+                field=self.field, status_code=400
+            )
+        step = make_step(step_type, ids, _heap_dual_snapshot(self.state), note, kind='dual', **extra)
+        self.steps.append(step)
+        if step_type == 'compare':
+            self.comparisons += 1
+        elif step_type == 'swap':
+            self.swaps += 1
+        return step
+
+
+def _heap_swap(state: _HeapState, tracer: _HeapTracer, i: int, j: int, note: Optional[str] = None) -> None:
+    first = state.cells[i]
+    second = state.cells[j]
+    state.cells[i], state.cells[j] = second, first
+    if note is None:
+        note = (
+            f"Swap index {i} ({first['value']}) with index {j} ({second['value']}) "
+            f"to restore the {state.heap_type}-heap property."
+        )
+    tracer.add('swap', [first['id'], second['id']], note, payload={
+        'from_index': i,
+        'to_index': j,
+        'from_value': first['value'],
+        'to_value': second['value'],
+    })
+
+
+def _heap_bubble_up(state: _HeapState, tracer: _HeapTracer, index: int) -> int:
+    while index > 0:
+        parent_index = (index - 1) // 2
+        child = state.cells[index]
+        parent = state.cells[parent_index]
+        swap_needed = _heap_better(state.heap_type, child['value'], parent['value'])
+        relation = 'smaller' if state.heap_type == 'min' else 'larger'
+        tracer.add(
+            'compare',
+            [child['id'], parent['id']],
+            (
+                f"Compare child index {index} ({child['value']}) with parent index {parent_index} "
+                f"({parent['value']}) using (i-1)//2 = ({index}-1)//2 = {parent_index}. "
+                + (
+                    f"Swap because the child is {relation} than the parent."
+                    if swap_needed else
+                    "No swap: the parent is correctly ordered (equal values never swap)."
+                )
+            ),
+            payload={
+                'child_index': index,
+                'parent_index': parent_index,
+                'child_id': child['id'],
+                'parent_id': parent['id'],
+                'swap_needed': swap_needed,
+                'focus_index': index,
+            }
+        )
+        if not swap_needed:
+            break
+        _heap_swap(state, tracer, index, parent_index)
+        index = parent_index
+    return index
+
+
+def _heap_sift_down(state: _HeapState, tracer: _HeapTracer, index: int,
+                    heap_size: Optional[int] = None, sift_root: Optional[int] = None) -> int:
+    size = state.heap_size if heap_size is None else heap_size
+    root_index = sift_root if sift_root is not None else index
+    relation = 'smallest' if state.heap_type == 'min' else 'largest'
+
+    while True:
+        left = 2 * index + 1
+        right = 2 * index + 2
+        if left >= size:
+            break
+
+        best = index
+        if _heap_better(state.heap_type, state.cells[left]['value'], state.cells[best]['value']):
+            best = left
+        if right < size and _heap_better(state.heap_type, state.cells[right]['value'], state.cells[best]['value']):
+            best = right
+
+        right_text = f"{state.cells[right]['value']}" if right < size else 'none'
+        chosen = best if best != index else None
+        tracer.add(
+            'compare',
+            [state.cells[index]['id'], state.cells[left]['id']]
+            + ([state.cells[right]['id']] if right < size else []),
+            (
+                f"Compare parent index {index} ({state.cells[index]['value']}) with left child "
+                f"{left} ({state.cells[left]['value']}) and right child {right} ({right_text}). "
+                + (
+                    f"Swap with index {best} because it is the {relation} child and outranks the parent."
+                    if chosen is not None else "Heap order already holds for this subtree."
+                )
+            ),
+            payload={
+                'parent_index': index,
+                'left_index': left,
+                'right_index': right,
+                'chosen_index': chosen,
+                'sift_root': root_index,
+                'focus_index': chosen if chosen is not None else index,
+            }
+        )
+        if chosen is None:
+            break
+        _heap_swap(state, tracer, index, chosen)
+        index = chosen
+
+    return index
+
+
+def _heap_apply_insert(state: _HeapState, value: int, tracer: _HeapTracer) -> None:
+    if state.heap_size >= HEAP_MAX_SIZE:
+        raise ValidationError(
+            f"Heap supports at most {HEAP_MAX_SIZE} elements",
+            field=tracer.field, status_code=400
+        )
+    cell = {'id': state.next_id, 'value': value}
+    state.next_id += 1
+    state.cells.append(cell)
+    state.heap_size += 1
+    index = state.heap_size - 1
+    tracer.add(
+        'append',
+        [cell['id']],
+        f"Append {value} at index {index}, the next free slot in the array.",
+        payload={'index': index, 'value': value, 'heap_size': state.heap_size}
+    )
+    final_index = _heap_bubble_up(state, tracer, index)
+    tracer.add(
+        'insert_done',
+        [cell['id']],
+        f"{value} settled at index {final_index} and the {state.heap_type}-heap property holds.",
+        payload={'index': final_index, 'value': value}
+    )
+
+
+def _heap_apply_extract(state: _HeapState, tracer: _HeapTracer) -> None:
+    if state.heap_size == 0:
+        raise ValidationError(
+            "Cannot extract from an empty heap",
+            field=tracer.field, status_code=400
+        )
+    root_cell = state.cells[0]
+    tracer.add(
+        'extract_root',
+        [root_cell['id']],
+        f"Extract the root: index 0 holds {root_cell['value']}, the heap {state.heap_type}imum.",
+        payload={'index': 0, 'value': root_cell['value']}
+    )
+
+    last = state.heap_size - 1
+    if last > 0:
+        last_value = state.cells[last]['value']
+        _heap_swap(
+            state, tracer, 0, last,
+            note=f"Move the last element ({last_value}) to the root before removing the old root."
+        )
+    removed = state.cells.pop()
+    state.heap_size -= 1
+    tracer.add(
+        'remove_last',
+        [],
+        (
+            f"Remove {removed['value']} (id {removed['id']}) from index {last}. "
+            f"Heap size is now {state.heap_size}."
+        ),
+        payload={
+            'index': last,
+            'extracted_value': removed['value'],
+            'extracted_id': removed['id'],
+            'heap_size': state.heap_size,
+        }
+    )
+
+    if state.heap_size > 0:
+        _heap_sift_down(state, tracer, 0)
+
+    new_root = state.cells[0] if state.heap_size > 0 else None
+    tracer.add(
+        'extract_done',
+        [new_root['id']] if new_root else [],
+        (
+            f"Extracted {root_cell['value']}. "
+            + (f"New root is {new_root['value']}." if new_root else "The heap is empty.")
+        ),
+        payload={'extracted_value': root_cell['value'], 'extracted_id': root_cell['id']}
+    )
+
+
+def _heap_build(state: _HeapState, values: List[int], tracer: _HeapTracer) -> None:
+    state.cells = [{'id': i, 'value': value} for i, value in enumerate(values)]
+    state.heap_size = len(values)
+    state.next_id = len(values)
+
+    n = len(values)
+    last_parent = n // 2 - 1
+
+    tracer.add(
+        'build_start',
+        [state.cells[0]['id']] if n else [],
+        (
+            f"Build-heap from {n} values. Start at the last parent, "
+            f"index n//2-1 = {n}//2-1 = {last_parent}."
+            if n else "Build-heap from an empty array — nothing to heapify."
+        ),
+        payload={'n': n, 'last_parent': last_parent}
+    )
+    for i in range(last_parent, -1, -1):
+        _heap_sift_down(state, tracer, i, heap_size=n, sift_root=i)
+        tracer.add(
+            'heapify_node_done',
+            [state.cells[i]['id']],
+            f"Subtree rooted at index {i} satisfies the {state.heap_type}-heap property.",
+            payload={'index': i}
+        )
+    tracer.add(
+        'build_done',
+        [],
+        f"Build-heap complete: {n} element(s) form a valid {state.heap_type}-heap.",
+        payload={'heap_size': n}
+    )
+
+
+class _NullHeapTracer:
+    """Silent tracer used while replaying ops; applies mutations without recording."""
+    def __init__(self, state: _HeapState):
+        self.state = state
+        self.field = 'ops'
+
+    def add(self, step_type: str, ids: List[Any], note: str, **extra) -> None:
+        return None
+
+
+def _heap_heapsort_rounds(state: _HeapState, tracer: _HeapTracer) -> None:
+    n = len(state.cells)
+    for end in range(n - 1, 0, -1):
+        top = state.cells[0]
+        _heap_swap(
+            state, tracer, 0, end,
+            note=(
+                f"Swap the heap {'minimum' if state.heap_type == 'min' else 'maximum'} "
+                f"({top['value']}) at index 0 with index {end}."
+            )
+        )
+        state.heap_size = end
+        sorted_ids = [state.cells[k]['id'] for k in range(end, n)]
+        tracer.add(
+            'mark_sorted',
+            sorted_ids,
+            (
+                f"Index {end} is final ({state.cells[end]['value']}); the sorted region is "
+                f"indices {end}..{n - 1} and the heap is indices 0..{end - 1}."
+            ),
+            payload={'sorted_from': end, 'heap_size': end}
+        )
+        if end > 1:
+            _heap_sift_down(state, tracer, 0, heap_size=end)
+
+    state.heap_size = 0
+    all_ids = [cell['id'] for cell in state.cells]
+    tracer.add(
+        'heapsort_done',
+        all_ids,
+        (
+            f"Heapsort complete: the array is sorted in "
+            f"{'ascending' if state.heap_type == 'max' else 'descending'} order."
+        ),
+        payload={'sorted': True}
+    )
+
+
+def _apply_heap_action(state: _HeapState, action: Dict[str, Any], tracer: _HeapTracer) -> None:
+    name = action.get('op')
+    if name == 'build':
+        if state.cells:
+            raise ValidationError(
+                "'build' is only allowed on an empty heap",
+                field='action', status_code=400
+            )
+        _heap_build(state, action['values'], tracer)
+    elif name == 'insert':
+        _heap_apply_insert(state, action['value'], tracer)
+    elif name == 'extract':
+        _heap_apply_extract(state, tracer)
+    else:
+        raise ValidationError(f"Unknown heap op: {name}", field='action', status_code=400)
+
+
+def _replay_heap_ops(state: _HeapState, ops: List[Dict[str, Any]]) -> None:
+    silent = _NullHeapTracer(state)
+    for index, op in enumerate(ops):
+        name = op.get('op')
+        if name == 'build':
+            if index != 0:
+                raise ValidationError(
+                    "'build' is only allowed as the first op",
+                    field='ops', status_code=400
+                )
+            _heap_build(state, op['values'], silent)
+        elif name == 'insert':
+            _heap_apply_insert(state, op['value'], silent)
+        elif name == 'extract':
+            _heap_apply_extract(state, silent)
+        else:
+            raise ValidationError(f"Unknown heap op: {name}", field='ops', status_code=400)
+
+
+def heap_op_steps(heap_type: str, ops: Optional[List[Dict[str, Any]]] = None,
+                  action: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Statelessly replays ops, then emits dual-panel steps for the requested action."""
+    state = _HeapState(heap_type)
+    _replay_heap_ops(state, ops or [])
+
+    tracer = _HeapTracer(state, field='action')
+    if action:
+        _apply_heap_action(state, action, tracer)
+
+    steps = tracer.steps
+    final_state = steps[-1]['snapshot'] if steps else _heap_dual_snapshot(state)
+    return {
+        'steps': steps,
+        'final_state': final_state,
+        'metrics': {
+            'comparisons': tracer.comparisons,
+            'swaps': tracer.swaps,
+            'steps': len(steps),
+        },
+        'metadata': {
+            'algorithm': 'heap_op',
+            'heap_type': heap_type,
+            'heap_size': state.heap_size,
+        },
+    }
+
+
+def heapsort_steps(heap_type: str, array: List[int]) -> Dict[str, Any]:
+    """Builds a heap from `array`, then sorts it in place, retaining the sorted tail."""
+    state = _HeapState(heap_type)
+    tracer = _HeapTracer(state, field='array')
+    _heap_build(state, list(array), tracer)
+    _heap_heapsort_rounds(state, tracer)
+
+    steps = tracer.steps
+    final_state = steps[-1]['snapshot'] if steps else _heap_dual_snapshot(state)
+    return {
+        'steps': steps,
+        'final_state': final_state,
+        'metrics': {
+            'comparisons': tracer.comparisons,
+            'swaps': tracer.swaps,
+            'steps': len(steps),
+        },
+        'metadata': {
+            'algorithm': 'heapsort',
+            'heap_type': heap_type,
+            'heap_size': 0,
+            'array_size': len(array),
+        },
+    }
+
+
 # Stub functions for remaining units (unchanged)
 
 def heap_insert_steps(values: Any) -> Dict[str, Any]:
