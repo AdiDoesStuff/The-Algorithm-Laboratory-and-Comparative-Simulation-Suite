@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B3-B5 in progress on branch `phase-b-shell` (baseline 78/78 tests green before B3; B2 lesson engine shipped).
+**Last updated:** 25 Oct 2026 — Phase B (B1-B5) complete on branch `phase-b-shell`: 87/87 pytest, 8/8 content checks, three BST lessons, a 10-question quiz aligned to those lessons, live progress/Guided Path, and post-B5 UI fixes.
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -13,20 +13,21 @@
 | --- | --- |
 | Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html` and opens directly; `index.html` is the hub and owns the landing splash. |
 | Pathfinding Lab (3 algos) | Done, mature. |
-| Glossary | Done. Separate page, not yet contextual. |
-| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view, 78 pytest tests in the suite. Committed on `phase-a-stabilize`. |
+| Glossary | ✅ **B4 shipped.** Separate page plus contextual inline `?` tooltips on BST narration; 94 terms with stable slugs. |
+| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view. Covered by the current 87-test pytest suite. Committed on `phase-a-stabilize`; exercised by B2-B5 lessons and quizzes. |
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
 | Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
-| Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. |
-| Lesson engine | ✅ **B2 shipped.** `engine/LessonRunner.js` (generic, unit-agnostic), `lessons/bstLessons.js` (two data-only lessons), pinned narration, predict-then-reveal checkpoints, `quiz_prompt` placeholder. QuizEngine and progress are still B3-B4. |
+| Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `QuizEngine` (production, B3), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
+| Hub, shared nav, unit registry | ✅ **B1-B3 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, live progress badges, enabled "Test yourself" deep links, and the Guided Path wrapper with its soft nudge. |
+| Lesson engine, quizzes, progress | ✅ **B2-B5 shipped.** `engine/LessonRunner.js` (generic, unit-agnostic), `lessons/bstLessons.js` (three data-only lessons: insertion, deletion, traversal), pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine`, `bstQuiz.js`, and `progress.js` shipped in B3. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
-| Tests | ✅ 78/78 pytest tests green (38 API, 40 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, and B1 static routes. |
+| Tests | ✅ **87/87 pytest tests green** plus **8/8 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, B1 static routes, and B3-B5 lesson/quiz wiring. |
+| Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. |
 
 ### Audit findings that shape the plan
 
 1. ~~BST files are untracked. Commit first.~~ ✅ Committed on branch `phase-a-stabilize` (`b201ff8`).
-2. ~~**State model flaw.** The UI stores a `values[]` history and the backend rebuilds by re-inserting. After a two-child delete the displayed tree and the rebuilt tree can differ in shape. AVL will make this far worse because shape depends on rotation history.~~ ✅ Replaced with **op-log** (`b201ff8`). Client sends `ops[]`; backend replays statelessly. `values` shim kept as deprecated fallback (remove end of Phase B).
+2. ~~**State model flaw.** The UI stores a `values[]` history and the backend rebuilds by re-inserting. After a two-child delete the displayed tree and the rebuilt tree can differ in shape. AVL will make this far worse because shape depends on rotation history.~~ ✅ Replaced with **op-log** (`b201ff8`). Client sends `ops[]`; backend replays statelessly. The deprecated `values` shim was removed in B5 (`de1b1fc`).
 3. ~~Node IDs reset per request, and two-child delete rewrites a label in place, so identity is unstable.~~ ✅ Node ID = index of inserting op (`b201ff8`). Two-child delete relinks successor, preserving its ID.
 4. ~~`/tree` calls `int()` with no guard: bad input gives a 500.~~ ✅ `validation.py` guards all inputs; all errors return `400 {"error","field"}` (`ffd73d3`, `8d0588c`, `8e20f62`).
 5. ~~Duplicate handling disagrees between `_silent_insert` (discards) and `bst_insert_steps` (inserts right).~~ ✅ Both paths reject duplicates with `ValidationError` → HTTP 400 (`b201ff8`).
@@ -149,6 +150,8 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 
 *A session is about 3-4 focused hours. Total is roughly 35-43 sessions. D can run in parallel with C if you want, but they share the shell, so finish B first.
 
+**Current status:** Phase A ✅ (merged to `main`) and Phase B ✅ (B1-B5 on `phase-b-shell`) are complete. Phases C-F remain.
+
 ---
 
 ## Phase A: Stabilize Unit 1
@@ -216,6 +219,8 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 
 ## Phase B: Shell, Learn/Play engine, quizzes, progress
 
+**Status:** ✅ **Complete (B1-B5).** All exit criteria pass: 87/87 pytest, 8/8 content checks, the full hub → Learn → quiz → progress flow browser-verified, and the post-B5 UI fixes landed.
+
 **Goal:** the pedagogy shell exists once, and BST is its first tenant. After this, adding a unit is mostly writing a backend generator plus lesson/quiz data.
 
 ### B1. Shared shell
@@ -223,9 +228,9 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] Semantic `<nav aria-label="Primary">`, real `<a href>` links, keyboard focus order, `aria-current="page"`, visible `:focus-visible` ring. ✅ Browser-verified: 5 links, correct current item on all 5 pages, tab order starts Home → units → Definitions.
 - [x] Rename current `index.html` to `sorting.html` via `git mv`. Updated all links, `app.py` (`/` hub, explicit `/sorting.html`), `start_app` scripts (root URL only), `definitions.js` back link, and README. ✅ `2c48c40`, `9495d48`
 - [x] Move the landing splash (`MatrixBackground`, Go button, digit-sort transition) from sorting to the hub in `shell/landing.js` (classic script); the hub sits in `#main-app.app-hidden` until the transition ends. `sorting.html` now opens straight into the duel. Timeout fallbacks stop a throttled `requestAnimationFrame`/CSS animation from trapping the user on the splash or leaving the hub invisible. ✅ `5b75ef2`, `6c839fc`
-- [x] New `index.html` hub: hero blurb, unit cards with status (live / coming soon), empty `<span data-progress-slot="{id}">`, disabled "Test yourself" (`title="Coming with quizzes"`), disabled Guided Path placeholder, Playground grid. ✅ `2c48c40`
+- [x] New `index.html` hub: hero blurb, unit cards with status (live / coming soon), empty `<span data-progress-slot="{id}">`, disabled "Test yourself" (`title="Coming with quizzes"`), disabled Guided Path placeholder, Playground grid. ✅ `2c48c40` (B3 later filled the progress slots and enabled the quiz links.)
 - [x] Unit registry (`shell/units.js`): id, title, page, status, blurb, glossaryTerms. Single source of truth for nav + hub. `lessonId`/`quizId` land with B2/B3. ✅
-- [x] Backend tests: `GET /` 200 + hub marker, `GET /sorting.html` 200, `GET /nonexistent-file.html` JSON 404. 78/78 pytest green. ✅ `9495d48`
+- [x] Backend tests: `GET /` 200 + hub marker, `GET /sorting.html` 200, `GET /nonexistent-file.html` JSON 404. 78/78 pytest green at that checkpoint (87/87 after B3-B5). ✅ `9495d48`
 - [x] Hub responsive at 375 px: 1-column grid (332 px cards), nav wraps to 3 rows, no horizontal overflow. ✅ Browser-verified via a 375 px same-origin iframe (`scrollWidth == clientWidth == 360`).
 - [x] Hub splash responsive at 375 px: `.landing-content` 347 px wide, Go button reachable, no horizontal overflow. ✅ Browser-verified via iframe (`scrollWidth == clientWidth == 375`).
 
@@ -245,14 +250,14 @@ export const bstInsertLesson = {
 ```
 - [x] Runner handles next/prev/reset, narration pinned beside canvas, checkpoint steps (predict, then reveal), and the `quiz_prompt` sentinel as the final step. ✅ `prev()`/`seek()`/`reset()` never trigger a checkpoint; a checkpoint blocks only forward movement. ✅ Browser-verified: both insertion checkpoints fire, correct/incorrect feedback differ, quiz panel appears with forward disabled and hides again on Prev.
 - [x] Replace hardcoded `learnSequence` in `bst.js` with the lesson registry. Learn state is rebuilt from ops, never inverse operations. ✅ `buildLessonSteps` calls `/tree` once per op with the ops replayed so far, so a lesson can span inserts and deletes. ✅ Browser-verified: switching lessons mid-session rebuilds the timeline from scratch (queued through the busy gate instead of being dropped).
-- [x] Add at least two BST lessons: insertion basics, deletion (three cases). ✅ `bstInsertLesson` (7 inserts, 2 checkpoints) and `bstDeleteLesson` (6 inserts, then leaf / one-child / two-child deletes, 3 checkpoints). ✅ Browser-verified: deletion lesson renders 9 pills with `−` markers, all three checkpoints fire, and the final tree is 60 (root) with children 30 and 40.
-- [x] Lessons are data-only: adding one means appending to `frontend/js/lessons/bstLessons.js`. No runner or page-controller edits. ✅ Both registry entries use the same builder and the same runner.
+- [x] Add at least two BST lessons: insertion basics, deletion (three cases). ✅ `bstInsertLesson` (7 inserts, 2 checkpoints) and `bstDeleteLesson` (6 inserts, then leaf / one-child / two-child deletes, 3 checkpoints). A third lesson, `bstTraversalLesson` (perfect tree plus inorder/preorder/postorder), was added in the B5 alignment pass. ✅ Browser-verified: deletion lesson renders 9 pills with `−` markers, all three checkpoints fire, and the final tree is 60 (root) with children 30 and 40.
+- [x] Lessons are data-only: adding one means appending to `frontend/js/lessons/bstLessons.js`. No runner edits. ✅ Insert/delete lessons need no page-controller edits; the traversal lesson added a unit-local `traverse` branch to `buildLessonSteps`. Both the runner and the other engines stayed untouched.
 - [x] Learn panel responsive at 375 px: single-column layout, 322 px panel, tree canvas 360 px, no horizontal overflow. ✅ Browser-verified via iframe (`scrollWidth == clientWidth == 360`). Fixed a pre-existing 2 px border-box overflow on `.tree-canvas-container` that only surfaced once the Learn panel occupied the narrow column.
 
 **B2 notes**
 
 - `frontend/js/bst.js` still owns `buildLessonSteps` because it is unit-specific (it knows `bst_insert` / `bst_delete`). Lesson *content* is data; the *builder* is per-unit plumbing and lives next to the page controller.
-- The quiz sentinel currently opens a placeholder panel with a disabled button. B3 replaces it with `QuizEngine` + `bstQuiz.js`, and wires `quizId` through `shell/units.js`.
+- The B2 quiz sentinel placeholder was replaced in B3 by `QuizEngine` + `bstQuiz.js`, with `quizId` wired through `shell/units.js`.
 - `LessonRunner.play()` is unwired and untested; decide in F1 whether Learn gets autoplay. No UI button was added and no debug globals exist.
 - Lesson-switching race re-verified in B3 Stage 0.1: 5 rapid switches (including during a closing busy gate) end on the last selection with the correct pill count (9), description, and narration. No code change needed.
 - Not browser-verified in B2: touch/pointer interactions on phones, and screen-reader announcement order for checkpoint feedback (the panel is `aria-live="polite"`, but no AT was used).
@@ -291,6 +296,7 @@ export const bstInsertLesson = {
 - Not verified: real screen-reader announcement order, touch/pointer behaviour on phones, and load-time focus into the glossary modal in a focused window (the harness tab reports `document.hasFocus() === false`; click-open, Escape, and focus return were verified).
 - 375px re-check: hub, BST Learn, quiz, and glossary pages have no horizontal overflow; the tooltip popover clamps inside a 375px viewport.
 - Post-B5 UI polish: `.glossary-ref` keeps a term and its `?` toggle on one line with a 6px gap, `.lab-container` adds an 8px side gutter to the lab pages, and `.step-annotation-box` uses normal block/inline flow so glossary markers do not turn a narration sentence into flex columns. Browser-verified at 1000px and 375px.
+- B3-B5 verification: 87/87 pytest, 8/8 content checks (`dev/validate_content.mjs`), a clean 10/10 quiz attempt with the expected topic breakdown, and no horizontal overflow at 375px on the hub, BST Learn, quiz, and glossary pages. Commits `020e504`…`ad4df81` on `phase-b-shell`.
 
 ---
 
