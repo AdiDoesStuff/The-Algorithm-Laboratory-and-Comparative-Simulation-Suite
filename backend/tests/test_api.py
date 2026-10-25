@@ -406,3 +406,25 @@ def test_api_mirror_bad_payload(client, payload, expected_field):
     assert "error" in data
     assert "field" in data
     assert data["field"] == expected_field
+
+# --- Static shell routes (Phase B1) ---
+
+def test_index_route_serves_hub(client):
+    res = client.get('/')
+    assert res.status_code == 200
+    assert b'id="algo-hub"' in res.data
+
+
+def test_sorting_route_serves_sorting_page(client):
+    res = client.get('/sorting.html')
+    assert res.status_code == 200
+    assert b'Sorting Duel' in res.data
+
+
+def test_missing_static_file_returns_json_404(client):
+    res = client.get('/nonexistent-file.html')
+    assert res.status_code == 404
+    data = res.get_json()
+    assert data is not None
+    assert data.get('error')
+    assert data.get('field') == 'request'
