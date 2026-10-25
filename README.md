@@ -569,6 +569,7 @@ This project is built as a learning tool, not just a visual effect. The importan
 - Counting Sort and Radix Sort only support non-negative integers in the backend.
 - The pathfinding grid currently uses uniform-cost movement.
 - Quiz attempts and progress stay in `localStorage`; they are never sent to the backend, and a blocked or full storage falls back to session memory.
+- Tries accept lowercase `a-z` words only (input is lowercased first); hash keys may use printable ASCII without whitespace.
 - Tries lowercase every word, reject duplicates, and cap node/step counts; the autocomplete preview never mutates the stored words.
 - Hashing supports linear probing only and resizes at 0.75 (open) and 1.0 (chaining), with an in-place rehash fallback at the table-size cap.
 - Merkle trees use the duplicate-last policy for odd levels. Digests are real SHA-256, but the canvas truncates them to eight hex characters.
