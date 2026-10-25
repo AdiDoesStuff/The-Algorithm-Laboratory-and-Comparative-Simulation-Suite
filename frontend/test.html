@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Primitives Verification</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--cell-border, #334155);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .test-card h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--text-primary, #f8fafc);
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="lab-container">
+        <h1>Primitives Verification Suite</h1>
+        <p style="color: #94a3b8; text-align: center;">Testing TreeCanvas, BucketGrid, and GrowthChart generic primitives with fixture data.</p>
+        
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+            <button id="btn-play-tree">Animate Tree Steps</button>
+            <button id="btn-play-grid">Animate Grid Steps</button>
+            <button id="btn-reset-views">Reset Views</button>
+        </div>
+
+        <div class="test-grid">
+            <!-- TreeCanvas Primitive Test -->
+            <div class="test-card">
+                <h2>1. TreeCanvas (SVG Auto-Layout)</h2>
+                <div id="tree-container" style="height: 350px;"></div>
+                <div id="tree-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+            </div>
+
+            <!-- BucketGrid Primitive Test -->
+            <div class="test-card">
+                <h2>2. BucketGrid (Hash / DP Grid)</h2>
+                <div id="grid-container"></div>
+                <div id="grid-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+            </div>
+
+            <!-- GrowthChart Primitive Test -->
+            <div class="test-card full-width">
+                <h2>3. GrowthChart (Empirical Big-O Scatter & Line)</h2>
+                <div id="chart-container" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { TreeCanvas } from './js/primitives/TreeCanvas.js';
+        import { BucketGrid } from './js/primitives/BucketGrid.js';
+        import { GrowthChart } from './js/primitives/GrowthChart.js';
+
+        // 1. Setup TreeCanvas & Fixtures
+        const treeContainer = document.getElementById('tree-container');
+        const treeCanvas = new TreeCanvas(treeContainer);
+
+        const treeSnapshotBase = {
+            nodes: [
+                { id: 1, label: '30', sublabel: 'bf: 0', parent_id: null, side: null },
+                { id: 2, label: '15', sublabel: 'bf: 0', parent_id: 1, side: 'left' },
+                { id: 3, label: '45', sublabel: 'bf: -1', parent_id: 1, side: 'right' },
+                { id: 4, label: '60', sublabel: 'bf: 0', parent_id: 3, side: 'right' }
+            ],
+            root_id: 1
+        };
+
+        const treeSteps = [
+            {
+                type: 'visit',
+                snapshot: treeSnapshotBase,
+                highlighted: [1],
+                annotation: 'Visiting root node 30'
+            },
+            {
+                type: 'compare',
+                snapshot: treeSnapshotBase,
+                comparing: [3, 4],
+                annotation: 'Comparing right child 45 with target insert 60'
+            },
+            {
+                type: 'insert',
+                snapshot: {
+                    nodes: [
+                        ...treeSnapshotBase.nodes,
+                        { id: 5, label: '75', sublabel: 'bf: 0', parent_id: 4, side: 'right' }
+                    ],
+                    root_id: 1
+                },
+                new_node: [5],
+                annotation: 'Inserted new node 75 under 60'
+            },
+            {
+                type: 'rotate_RR',
+                pivot_id: 3,
+                new_subroot_id: 4,
+                snapshot_before: {
+                    nodes: [
+                        ...treeSnapshotBase.nodes,
+                        { id: 5, label: '75', sublabel: 'bf: 0', parent_id: 4, side: 'right' }
+                    ],
+                    root_id: 1
+                },
+                snapshot_after: {
+                    nodes: [
+                        { id: 1, label: '30', sublabel: 'bf: -2', parent_id: null, side: null },
+                        { id: 2, label: '15', sublabel: 'bf: 0', parent_id: 1, side: 'left' },
+                        { id: 4, label: '60', sublabel: 'bf: 0', parent_id: 1, side: 'right' },
+                        { id: 3, label: '45', sublabel: 'bf: 0', parent_id: 4, side: 'left' },
+                        { id: 5, label: '75', sublabel: 'bf: 0', parent_id: 4, side: 'right' }
+                    ],
+                    root_id: 1
+                },
+                rotating: [3, 4],
+                annotation: 'AVL unbalanced at 45 (RR case) — Rotating left around 45'
+            }
+        ];
+
+        treeCanvas.render(treeSnapshotBase);
+        treeCanvas.fitView();
+
+        document.getElementById('btn-play-tree').addEventListener('click', async () => {
+            const annoEl = document.getElementById('tree-annotation');
+            for (let s of treeSteps) {
+                annoEl.innerText = s.annotation;
+            }
+            await treeCanvas.animateSteps(treeSteps, 800);
+        });
+
+        // 2. Setup BucketGrid & Fixtures
+        const gridContainer = document.getElementById('grid-container');
+        const bucketGrid = new BucketGrid(gridContainer, { rows: 1, cols: 6 });
+
+        const gridSteps = [
+            {
+                snapshot: {
+                    rows: 1, cols: 6,
+                    cells: [
+                        { row: 0, col: 0, value: '12', role: 'filled' },
+                        { row: 0, col: 1, value: null, role: 'empty' },
+                        { row: 0, col: 2, value: '44', role: 'filled' },
+                        { row: 0, col: 3, value: null, role: 'empty' },
+                        { row: 0, col: 4, value: null, role: 'empty' },
+                        { row: 0, col: 5, value: null, role: 'empty' }
+                    ],
+                    highlighted: [{ row: 0, col: 2 }],
+                    chains: [
+                        { bucketIndex: 0, items: [{ value: 12, id: 'k1' }, { value: 36, id: 'k2' }] }
+                    ]
+                },
+                annotation: 'Hash(44) % 6 = 2 → Slot 2 is filled'
+            },
+            {
+                snapshot: {
+                    rows: 1, cols: 6,
+                    cells: [
+                        { row: 0, col: 0, value: '12', role: 'filled' },
+                        { row: 0, col: 1, value: null, role: 'empty' },
+                        { row: 0, col: 2, value: '44', role: 'filled' },
+                        { row: 0, col: 3, value: '99', role: 'probing' },
+                        { row: 0, col: 4, value: null, role: 'empty' },
+                        { row: 0, col: 5, value: null, role: 'empty' }
+                    ],
+                    highlighted: [{ row: 0, col: 3 }],
+                    chains: [
+                        { bucketIndex: 0, items: [{ value: 12, id: 'k1' }, { value: 36, id: 'k2' }] }
+                    ]
+                },
+                annotation: 'Open Addressing: Insert 99 → Probe slot 3 → Slot free!'
+            }
+        ];
+
+        bucketGrid.render(gridSteps[0].snapshot);
+
+        document.getElementById('btn-play-grid').addEventListener('click', async () => {
+            await bucketGrid.animateSteps(gridSteps, 1000);
+        });
+
+        // 3. Setup GrowthChart & Fixtures
+        const chartContainer = document.getElementById('chart-container');
+        const growthChart = new GrowthChart(chartContainer);
+
+        growthChart.render([
+            {
+                id: 'bubble_measured',
+                label: 'Bubble Sort (measured)',
+                type: 'scatter',
+                color: '#f97316',
+                points: [
+                    { x: 10, y: 0.1 },
+                    { x: 20, y: 0.4 },
+                    { x: 30, y: 0.9 },
+                    { x: 40, y: 1.6 },
+                    { x: 50, y: 2.5 }
+                ]
+            },
+            {
+                id: 'n2_theoretical',
+                label: 'O(n²) Theoretical',
+                type: 'line',
+                color: '#f97316',
+                dashed: true,
+                points: [
+                    { x: 0, y: 0 },
+                    { x: 10, y: 0.1 },
+                    { x: 20, y: 0.4 },
+                    { x: 30, y: 0.9 },
+                    { x: 40, y: 1.6 },
+                    { x: 50, y: 2.5 },
+                    { x: 60, y: 3.6 }
+                ]
+            },
+            {
+                id: 'quick_measured',
+                label: 'Quick Sort (measured)',
+                type: 'scatter',
+                color: '#38bdf8',
+                points: [
+                    { x: 10, y: 0.03 },
+                    { x: 20, y: 0.08 },
+                    { x: 30, y: 0.14 },
+                    { x: 40, y: 0.21 },
+                    { x: 50, y: 0.28 }
+                ]
+            }
+        ]);
+
+        document.getElementById('btn-reset-views').addEventListener('click', () => {
+            treeCanvas.fitView();
+            bucketGrid.render(gridSteps[0].snapshot);
+        });
+    </script>
+</body>
+</html>

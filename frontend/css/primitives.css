@@ -1,0 +1,415 @@
+/* primitives.css — Shared styles for TreeCanvas, BucketGrid, and GrowthChart primitives */
+
+:root {
+  --node-default-bg: #1e293b;
+  --node-default-border: #38bdf8;
+  --node-text: #f8fafc;
+  --node-subtext: #94a3b8;
+
+  --node-highlight-bg: #f59e0b;
+  --node-highlight-border: #fbbf24;
+  --node-compare-border: #3b82f6;
+  --node-rotate-border: #f97316;
+  --node-pruned-border: #64748b;
+  --node-pruned-bg: #0f172a;
+  --node-new-border: #10b981;
+  --node-new-bg: #064e3b;
+  --node-selected-border: #a855f7;
+  --node-selected-bg: rgba(168, 85, 247, 0.25);
+
+  --cell-empty-bg: #0f172a;
+  --cell-filled-bg: #1e293b;
+  --cell-border: #334155;
+  --cell-text: #f8fafc;
+}
+
+/* --- TreeCanvas SVG Styles --- */
+.tree-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  border: 1px solid var(--cell-border);
+}
+
+.tree-canvas-svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  user-select: none;
+}
+
+.tree-canvas-svg:active {
+  cursor: grabbing;
+}
+
+/* Edges */
+.tree-edge {
+  stroke: #475569;
+  stroke-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.tree-edge.edge-dashed {
+  stroke-dasharray: 4 4;
+}
+
+.tree-edge.path {
+  stroke: #38bdf8;
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.6));
+}
+
+/* Nodes */
+.tree-node {
+  transition: transform 0.4s ease;
+}
+
+.tree-node circle {
+  fill: var(--node-default-bg);
+  stroke: var(--node-default-border);
+  stroke-width: 2px;
+  transition: fill 0.3s ease, stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.tree-node text.node-label {
+  fill: var(--node-text);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.tree-node text.node-sublabel {
+  fill: var(--node-subtext);
+  font-family: inherit;
+  font-size: 10px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Highlight roles */
+.tree-node.node-highlight circle {
+  fill: rgba(245, 158, 11, 0.2);
+  stroke: var(--node-highlight-border);
+  stroke-width: 3px;
+  animation: node-pulse 1.5s infinite;
+}
+
+.tree-node.node-compare circle {
+  stroke: var(--node-compare-border);
+  stroke-width: 3px;
+}
+
+.tree-node.node-rotate circle {
+  stroke: var(--node-rotate-border);
+  stroke-width: 4px;
+  animation: node-pulse 1s infinite;
+}
+
+.tree-node.node-pruned circle {
+  fill: var(--node-pruned-bg);
+  stroke: var(--node-pruned-border);
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+
+.tree-node.node-new circle {
+  fill: var(--node-new-bg);
+  stroke: var(--node-new-border);
+  stroke-width: 3px;
+  animation: cell-flash 0.5s ease;
+}
+
+.tree-node.node-selected circle {
+  fill: rgba(168, 85, 247, 0.4) !important;
+  stroke: #c084fc !important;
+  stroke-width: 5px !important;
+  animation: node-pulse 1.2s infinite;
+}
+
+/* Search / Insertion Path Highlight */
+.tree-node.path circle {
+  stroke: #38bdf8;
+  stroke-width: 3px;
+  fill: rgba(56, 189, 248, 0.15);
+}
+
+.tree-node.path.node-compare circle {
+  stroke: #60a5fa;
+  stroke-width: 4px;
+  fill: rgba(59, 130, 246, 0.3);
+  animation: node-pulse 1.2s infinite;
+}
+
+/* Mirror / Structural Comparison Dual Highlights */
+.tree-node.node-matched circle {
+  stroke: #10b981 !important;
+  fill: rgba(16, 185, 129, 0.25) !important;
+  stroke-width: 3.5px !important;
+}
+
+.tree-node.node-mismatch circle {
+  stroke: #ef4444 !important;
+  fill: rgba(239, 68, 68, 0.25) !important;
+  stroke-width: 3.5px !important;
+  animation: node-pulse 1s infinite;
+}
+
+.traversal-output-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--node-compare-border, #3b82f6);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #38bdf8;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: 10px;
+  min-height: 2.2em;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes node-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cell-flash {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Control buttons overlay */
+.tree-controls-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.tree-controls-overlay button {
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--node-text);
+  border: 1px solid var(--cell-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
+.tree-controls-overlay button:hover {
+  background: rgba(51, 65, 85, 0.9);
+}
+
+/* --- Classification & Annotation UI components --- */
+
+.classification-panel {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--cell-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.classification-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.badge-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-chip.badge-pass {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+.badge-chip.badge-fail {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+.violation-note {
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  margin-top: 2px;
+}
+
+.step-annotation-box {
+  background: rgba(30, 41, 59, 0.6);
+  border-left: 4px solid var(--node-highlight-border);
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  color: var(--node-text);
+  font-size: 0.95rem;
+  min-height: 2.4em;
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.height-depth-panel {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.stat-box {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--cell-border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-box .stat-label {
+  font-size: 0.8rem;
+  color: var(--node-subtext);
+}
+
+.stat-box .stat-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--node-default-border);
+}
+
+.learn-controls-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.learn-pill {
+  padding: 4px 10px;
+  background: #334155;
+  color: #94a3b8;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.learn-pill.pill-active {
+  background: #0284c7;
+  color: #fff;
+}
+
+.learn-pill.pill-done {
+  background: #059669;
+  color: #fff;
+}
+
+/* --- BucketGrid Styles --- */
+.bucket-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--cell-border);
+}
+
+.bucket-grid-main {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 8), 1fr);
+  gap: 8px;
+}
+
+.grid-cell {
+  background: var(--cell-empty-bg);
+  border: 1px solid var(--cell-border);
+  border-radius: 8px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--cell-text);
+  font-weight: 600;
+  font-size: 14px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.grid-cell.cell-filled {
+  background: var(--cell-filled-bg);
+  border-color: var(--node-default-border);
+}
+
+.grid-cell.cell-probing {
+  border-color: var(--node-highlight-border);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  animation: node-pulse 1s infinite;
+}
+
+.grid-cell.dp-filled {
+  background: linear-gradient(135deg, #1e293b, #0f766e);
+}
+
+.grid-cell.dp-source {
+  border-color: var(--node-new-border);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+/* Chaining row */
+.chain-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.chain-item {
+  background: var(--cell-filled-bg);
+  border: 1px solid var(--node-compare-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--cell-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --- GrowthChart Styles --- */
+.growth-chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 350px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--cell-border);
+}

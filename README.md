@@ -4,6 +4,12 @@
 
 **An interactive full-stack playground for watching algorithms think.**
 
+## Recent Updates
+
+- **Font Improvements**: Switched the body font to **Inter** for a clean, professional look and set numeric displays to **Roboto Mono** for better readability. The title font remains unchanged.
+- **Navigation Icon Fixes**: Restored missing SVG logos on the BST & Trees page. Added correct icons for Sorting, Pathfinding, BST & Trees, and Definitions. The Pathfinding button now uses the proper compass/locator icon, matching the home page.
+
+
 Compare sorting algorithms side by side, explore shortest-path search on an editable grid, and learn the vocabulary behind the visuals through a searchable glossary.
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -109,24 +115,47 @@ The glossary page is a searchable companion to the labs. It explains the terms s
 - heuristic
 - priority queue
 
+## Binary Trees & BSTs
+
+This module provides interactive visualization for hierarchical data structures. Users can toggle between two separate visualizer environments:
+
+- **BST Mode**: Inserts unique values sequentially into a Binary Search Tree (with trace animations for node inserts, tree traversals, BST deletions, and step-by-step Learn Mode playback).
+- **Play Mode**: Interactive controls for inserting, deleting, and traversing nodes with speed adjustment, pause, and clear functionality, allowing users to experiment with BST operations in real time.
+- **Learn Mode**: Step-by-step guided insertion tutorials with navigation controls (Prev, Next, Reset) for detailed algorithm walkthroughs.
+- **General Binary Tree Mode**: Maps arrays directly into binary trees using the $2i+1$ indexing rule, supporting gaps and `null` values dynamically.
+- **Interactive Node Inspector**: Click on any tree node inside the SVG canvas to view its live statistics (calculated Height and Depth) generated directly by the Flask API.
+- **Live Classification badges**: Evaluates whether the current tree structure is Full, Complete, Perfect, or Balanced, showing violation warnings if any properties are broken.
+
 ## Project Structure
 
 ```text
 The Algorithm Laboratory and Comparative Simulation Suite/
 |-- backend/
 |   |-- algs.py              # Sorting step generators
-|   |-- app.py               # Flask API routes and validation
-|   `-- pathfinding.py       # Dijkstra, A*, and Bellman-Ford/SPFA logic
+|   |-- app.py               # Flask API routes, height/depth queries, validation
+|   |-- pathfinding.py       # Dijkstra, A*, and Bellman-Ford/SPFA logic
+|   |-- tracing.py           # make_step and DEFAULT_ROLES tracing support
+|   |-- trees.py             # Binary Tree & BST step engines and calculators
+|   |-- validation.py        # Centralized payload validators
+|   `-- tests/               # Pytest suite (73 tests)
 |-- frontend/
 |   |-- index.html           # Sorting Duel page
 |   |-- pathfinding.html     # Pathfinding visualizer page
+|   |-- bst.html             # Binary Trees & BSTs page
 |   |-- definitions.html     # Glossary page
 |   |-- css/
 |   |   |-- style.css
+|   |   |-- primitives.css
 |   |   `-- definitions.css
 |   `-- js/
+|       |-- primitives/
+|       |   |-- TreeCanvas.js# Generic SVG Tree Renderer
+|       |   |-- BucketGrid.js# DP / Hash visualizer
+|       |   |-- GrowthChart.js# Growth visualizer
+|       |   `-- treeAdapter.js# Tree canvas adapter
 |       |-- algorithmData.js
 |       |-- api.js
+|       |-- bst.js           # BST and Binary Tree page controller
 |       |-- controls.js
 |       |-- definitions.js
 |       |-- pathfinding.js
@@ -331,12 +360,6 @@ This repository is a strong fit for:
 - project presentations
 - interview-prep experiments
 - comparing textbook complexity with visual behavior
-
-## License
-
-No license file is currently included. Add a license before publishing or distributing the project publicly.
-
----
 
 <div align="center">
 
