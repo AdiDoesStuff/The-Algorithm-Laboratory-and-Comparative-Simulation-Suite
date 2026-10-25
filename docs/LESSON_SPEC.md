@@ -1,7 +1,7 @@
 # Lesson Spec
 
-**Status:** Phase B4.
-**Scope:** lesson data format, `LessonRunner` contract, narration (including glossary term markers), checkpoints, and the `quiz_prompt` sentinel. Quiz rendering and progress are Phase B3.
+**Status:** Phases B4 / C / D.
+**Scope:** lesson data format, `LessonRunner` contract, narration (including glossary term markers), checkpoints, and the `quiz_prompt` sentinel. Quiz rendering and progress are Phase B3. Hash lessons may use `phases` (Phase D).
 
 A lesson is **data**. The runner is generic. Adding a lesson means appending an object to a unit's lesson registry; no engine or page-controller edits.
 
@@ -60,7 +60,7 @@ export const bstInsertLesson = {
 
 ### Optional fields
 
-`description`, `narration`, `checkpoints`, `quizId`, `emitQuizPrompt`, `estimatedSteps`.
+`description`, `narration`, `checkpoints`, `quizId`, `emitQuizPrompt`, `estimatedSteps`, `phases` (hash lessons, see §3.1).
 
 ---
 
@@ -101,6 +101,7 @@ A checkpoint must resolve to an **absolute 0-based step index** (`atStep`). Data
 | `beforeValue: X` | The step immediately before the op whose value is `X`. | "Predict what happens next." |
 | `afterValue: X` | The last step of the op whose value is `X`. | "What did we just do?" |
 | `atStep: N` | Exactly `N`. | Escape hatch; brittle if step counts change. |
+| `anchorType: "type"` + `occurrence: N` (+ `anchorOffset`) | The N-th step whose `type` matches, plus an offset (default -1, so the anchor lands on the step *before* the match; 0 asks on the event step itself). | Type-based anchoring when values are not stable (e.g. `mark_sorted`, `hash_compute`, `resize_start`). |
 
 Resolution rules:
 
@@ -111,6 +112,23 @@ Resolution rules:
 - If nothing matches, fall back to the last non-sentinel step and log a dev warning.
 
 `beforeValue`/`afterValue` are preferred because they survive backend annotation changes and new step types.
+
+### 3.1 Phase-based lessons (hash lessons)
+
+A lesson may declare `phases` instead of (or in addition to) a single `ops` log. Each phase is an object:
+
+```js
+phases: [
+  {
+    hashFn: "sum_mod",          // per-phase hash function
+    tableSize: 7,               // per-phase table size
+    actions: [ { op: "insert", key: "ab" }, { op: "insert", key: "ba" } ],
+    intro: "Narration shown on the first step of this phase."
+  }
+]
+```
+
+The builder replays each phase against a fresh table under its own settings, concatenates the step lists, and inserts a narration-only marker on the first step of every phase after the first (`step.phaseStart = true`). The page controller resets its per-phase metrics on that marker, so lessons that compare two hash functions keep their counters scoped. Checkpoint anchors inside a phase still use `anchorType`/`occurrence` against the concatenated step list. `phases` is currently used by `hashLessons.js`; other units keep the plain `ops` form.
 
 ---
 
