@@ -158,17 +158,19 @@
             ]
         },
         {
-            id: "nqueens",
-            title: "N-Queens & Backtracking",
-            page: "nqueens.html",
+            id: "growth",
+            title: "Growth & Recursion",
+            page: "growth.html",
             status: "live",
             guidedOrder: 9,
-            quizId: "nqueensQuiz",
-            blurb: "Backtracking search on the N-Queens board with conflict detection and pruning.",
+            quizId: "growthQuiz",
+            blurb: "Growth curves against Big-O, recursion trees, and Fibonacci: naive vs memoized vs iterative.",
             glossaryTerms: [
-                "Backtracking",
-                "N-Queens",
-                "Partial Solution"
+                "Asymptotic Notation",
+                "Big O Notation (O)",
+                "Recursion",
+                "Memoization",
+                "Dynamic Programming"
             ]
         },
         {
@@ -182,7 +184,23 @@
             glossaryTerms: [
                 "Dynamic Programming",
                 "Greedy Algorithm",
-                "Branch and Bound"
+                "Branch and Bound",
+                "Memoization",
+                "0/1 Knapsack"
+            ]
+        },
+        {
+            id: "nqueens",
+            title: "N-Queens & Backtracking",
+            page: "nqueens.html",
+            status: "live",
+            guidedOrder: 11,
+            quizId: "nqueensQuiz",
+            blurb: "Backtracking search on the N-Queens board with conflict detection and pruning.",
+            glossaryTerms: [
+                "Backtracking",
+                "N-Queens",
+                "Partial Solution"
             ]
         }
     ];

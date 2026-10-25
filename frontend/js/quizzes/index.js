@@ -17,8 +17,9 @@ import { avlQuiz } from "./avlQuiz.js";
 import { trieQuiz } from "./trieQuiz.js";
 import { hashQuiz } from "./hashQuiz.js";
 import { merkleQuiz } from "./merkleQuiz.js";
-import { nqueensQuiz } from "./nqueensQuiz.js";
+import { growthQuiz } from "./growthQuiz.js";
 import { knapsackQuiz } from "./knapsackQuiz.js";
+import { nqueensQuiz } from "./nqueensQuiz.js";
 
 const QUIZZES = new Map([
     [bstQuiz.id, bstQuiz],
@@ -27,8 +28,9 @@ const QUIZZES = new Map([
     [trieQuiz.id, trieQuiz],
     [hashQuiz.id, hashQuiz],
     [merkleQuiz.id, merkleQuiz],
-    [nqueensQuiz.id, nqueensQuiz],
-    [knapsackQuiz.id, knapsackQuiz]
+    [growthQuiz.id, growthQuiz],
+    [knapsackQuiz.id, knapsackQuiz],
+    [nqueensQuiz.id, nqueensQuiz]
 ]);
 
 /**

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Growth & Recursion</title>
+    <meta name="description" content="Growth curves against Big-O, recursion trees, and Fibonacci: naive vs memoized vs iterative.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="stylesheet" href="css/lab.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+    <div class="lab-container">
+        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-direction: column;">
+            <h1>Algorithm Laboratory: Growth & Recursion</h1>
+            <div id="algo-nav" data-algo-nav data-current-id="growth"></div>
+        </div>
+
+        <div style="max-width:900px; margin:40px auto; padding:24px; background:#1e293b; border:1px solid #334155; border-radius:12px; color:#e2e8f0;">
+            <h2 style="margin-top:0;">Coming soon</h2>
+            <p>The interactive UI for this unit is under construction. The backend endpoints are live and can be exercised directly:</p>
+            <ul style="line-height:1.8;">
+                <li><code>POST /bench</code> — growth benchmark (8 algorithms, timed runs, comparison counts)</li>
+                <li><code>POST /recursion</code> — recursion trees for merge sort, quicksort, fib (naive + memoized)</li>
+            </ul>
+            <p>Example: <code>{"algorithm":"fib_naive","n":5}</code> → 15 calls, result 5.</p>
+        </div>
+    </div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+</body>
+</html>
