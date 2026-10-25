@@ -4,11 +4,38 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import algs
 import pathfinding
+import trees
+import validation
+from validation import ValidationError
 
 app = Flask(__name__)
 CORS(app)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+# --- Global Flask Error Handlers (Every error returns {"error": "...", "field": "..."}) ---
+
+@app.errorhandler(ValidationError)
+def handle_validation_error(e):
+    return jsonify({"error": e.message, "field": e.field}), e.status_code
+
+
+@app.errorhandler(400)
+def handle_bad_request(e):
+    msg = e.description if hasattr(e, 'description') else str(e)
+    field = getattr(e, 'field', 'body')
+    return jsonify({"error": msg, "field": field}), 400
+
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    return jsonify({"error": "Resource not found", "field": "url"}), 404
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_exception(e):
+    return jsonify({"error": f"Internal server error: {str(e)}", "field": "server"}), 500
 
 
 @app.route('/', methods=['GET'])
@@ -20,23 +47,24 @@ def index_page():
 def frontend_file(filename):
     return send_from_directory(FRONTEND_DIR, filename)
 
+
 @app.route('/sort', methods=['POST'])
 def sort_handler():
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
-        return jsonify({"error": "Invalid JSON payload"}), 400
+        raise ValidationError("Invalid JSON payload", field="body")
 
     if 'array' not in data or 'algorithm' not in data:
-        return jsonify({"error": "Missing required fields: 'array' and 'algorithm'"}), 400
+        raise ValidationError("Missing required fields: 'array' and 'algorithm'", field="body")
 
     array = data.get('array')
     algo = data.get('algorithm')
 
     if not isinstance(array, list) or len(array) == 0:
-        return jsonify({"error": "'array' must be a non-empty list"}), 400
+        raise ValidationError("'array' must be a non-empty list", field="array")
 
     if not isinstance(algo, str):
-        return jsonify({"error": "'algorithm' must be a string"}), 400
+        raise ValidationError("'algorithm' must be a string", field="algorithm")
 
     if algo == 'bubble':
         result = algs.bubble_sort_steps(array)
@@ -59,16 +87,16 @@ def sort_handler():
     elif algo == "radix":
         result = algs.radix_sort_steps(array)
     else:
-        return jsonify({"error": "Invalid algorithm"}), 400
-    
-    
+        raise ValidationError(f"Invalid sorting algorithm: {algo}", field="algorithm")
+
     return jsonify(result)
+
 
 @app.route('/pathfind', methods=['POST'])
 def pathfind_handler():
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
-        return jsonify({"error": "Invalid JSON payload"}), 400
+        raise ValidationError("Invalid JSON payload", field="body")
 
     algorithm = data.get('algorithm')
     rows = data.get('rows')
@@ -78,31 +106,30 @@ def pathfind_handler():
     walls_list = data.get('walls', [])
 
     if not isinstance(algorithm, str):
-        return jsonify({"error": "Missing or invalid 'algorithm'"}), 400
+        raise ValidationError("Missing or invalid 'algorithm'", field="algorithm")
 
     if not isinstance(rows, int) or not isinstance(cols, int):
-        return jsonify({"error": "'rows' and 'cols' must be integers"}), 400
+        raise ValidationError("'rows' and 'cols' must be integers", field="rows")
 
     if not isinstance(start_node, dict) or not isinstance(end_node, dict):
-        return jsonify({"error": "'startNode' and 'endNode' are required objects"}), 400
+        raise ValidationError("'startNode' and 'endNode' are required objects", field="startNode")
 
     if not isinstance(walls_list, list):
-        return jsonify({"error": "'walls' must be a list"}), 400
+        raise ValidationError("'walls' must be a list", field="walls")
 
     required_node_keys = {'row', 'col'}
     if not required_node_keys.issubset(start_node.keys()) or not required_node_keys.issubset(end_node.keys()):
-        return jsonify({"error": "'startNode' and 'endNode' must include 'row' and 'col'"}), 400
+        raise ValidationError("'startNode' and 'endNode' must include 'row' and 'col'", field="startNode")
 
     if not all(isinstance(start_node[k], int) for k in required_node_keys) or not all(isinstance(end_node[k], int) for k in required_node_keys):
-        return jsonify({"error": "'row' and 'col' must be integers"}), 400
+        raise ValidationError("'row' and 'col' must be integers", field="startNode")
 
     for wall in walls_list:
         if not isinstance(wall, dict) or not required_node_keys.issubset(wall.keys()):
-            return jsonify({"error": "Each wall must include 'row' and 'col'"}), 400
+            raise ValidationError("Each wall must include 'row' and 'col'", field="walls")
         if not isinstance(wall['row'], int) or not isinstance(wall['col'], int):
-            return jsonify({"error": "Wall coordinates must be integers"}), 400
+            raise ValidationError("Wall coordinates must be integers", field="walls")
 
-    # Convert walls to set of tuples for O(1) lookup
     walls = {(w['row'], w['col']) for w in walls_list}
     start = (start_node['row'], start_node['col'])
     end = (end_node['row'], end_node['col'])
@@ -114,9 +141,76 @@ def pathfind_handler():
     elif algorithm == 'bellmanford':
         result = pathfinding.bellman_ford(rows, cols, start, end, walls)
     else:
-        return jsonify({"error": "Invalid pathfinding algorithm"}), 400
+        raise ValidationError(f"Invalid pathfinding algorithm: {algorithm}", field="algorithm")
 
     return jsonify(result)
+
+
+@app.route('/tree', methods=['POST'])
+def tree_handler():
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_tree_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    algo = validated['algorithm']
+    tree_type = validated.get('tree_type', 'bst')
+    input_data = validated.get('array') if tree_type == 'binary' else validated.get('ops', [])
+
+    try:
+        if algo == 'bst_insert':
+            return jsonify(trees.bst_insert_steps(input_data, validated['new_value']))
+
+        elif algo == 'bst_delete':
+            return jsonify(trees.bst_delete_steps(input_data, validated['delete_value']))
+
+        elif algo == 'bst_traverse':
+            return jsonify(trees.bst_traversal_steps(input_data, validated['order'], tree_type))
+
+        elif algo == 'bst_classify':
+            return jsonify(trees.bst_classify(input_data, tree_type))
+
+        elif algo == 'bst_height_depth':
+            return jsonify(trees.bst_height_depth(input_data, validated['target_value'], tree_type, validated.get('target_id')))
+
+        elif algo == 'array_to_tree':
+            return jsonify(trees.array_to_binary_tree_steps(validated['array']))
+
+        elif algo == 'heap_insert':
+            return jsonify(trees.heap_insert_steps(input_data))
+
+        elif algo == 'avl_insert':
+            return jsonify(trees.avl_insert_steps(input_data))
+
+        raise ValidationError(f"Unknown tree algorithm: {algo}", field="algorithm")
+
+    except ValueError as ve:
+        field = "delete_value" if "delete" in str(ve).lower() else ("new_value" if "duplicate" in str(ve).lower() else "body")
+        raise ValidationError(str(ve), field=field, status_code=400)
+
+
+@app.route('/hash', methods=['POST'])
+def hash_handler():
+    data = request.get_json(silent=True) or {}
+    method = data.get('method', 'chaining')
+    keys = data.get('keys', [])
+    table_size = data.get('tableSize', 8)
+    return jsonify(trees.hash_insert_steps(keys, method, table_size))
+
+
+@app.route('/dp', methods=['POST'])
+def dp_handler():
+    return jsonify({"steps": [], "metadata": {"problem": "dp"}})
+
+
+@app.route('/bench', methods=['POST'])
+def bench_handler():
+    return jsonify({"series": [], "metadata": {"benchmark": "growth"}})
+
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
