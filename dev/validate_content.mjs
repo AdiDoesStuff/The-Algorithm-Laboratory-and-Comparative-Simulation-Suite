@@ -118,12 +118,121 @@ function checkQuiz(quiz, unitsById) {
     pass(`quiz "${quiz.id}" (unit ${quiz.unitId}): ${quiz.questions.length} questions, ids and options valid`);
 }
 
+function checkGlossary(glossary, units) {
+    if (!glossary || !Array.isArray(glossary.terms) || glossary.terms.length === 0) {
+        fail("glossaryData.js did not expose a non-empty ALGOLAB_GLOSSARY.terms array");
+        return;
+    }
+
+    const terms = new Set();
+    const slugs = new Set();
+    glossary.terms.forEach((entry) => {
+        if (!entry || typeof entry.term !== "string" || entry.term.trim() === "") {
+            fail("glossary entry has an empty term");
+            return;
+        }
+        if (typeof entry.def !== "string" || entry.def.trim() === "") {
+            fail(`glossary term "${entry.term}" has an empty definition`);
+        }
+        if (typeof entry.slug !== "string" || !/^[a-z0-9-]+$/.test(entry.slug)) {
+            fail(`glossary term "${entry.term}" has an invalid slug "${entry.slug}"`);
+        }
+        const key = entry.term.toLowerCase();
+        if (terms.has(key)) {
+            fail(`duplicate glossary term "${entry.term}"`);
+        }
+        terms.add(key);
+        if (slugs.has(entry.slug)) {
+            fail(`duplicate glossary slug "${entry.slug}"`);
+        }
+        slugs.add(entry.slug);
+        if (glossary.lookup(entry.term) !== entry) {
+            fail(`glossary lookup failed for its own term "${entry.term}"`);
+        }
+        if (glossary.getBySlug(entry.slug) !== entry) {
+            fail(`glossary slug lookup failed for "${entry.slug}"`);
+        }
+    });
+
+    units.forEach((unit) => {
+        const advertised = Array.isArray(unit.glossaryTerms) ? unit.glossaryTerms : [];
+        advertised.forEach((term) => {
+            if (!glossary.lookup(term)) {
+                fail(`unit "${unit.id}" advertises glossary term "${term}", which is not in glossaryData.js`);
+            }
+        });
+    });
+
+    pass(`glossary: ${glossary.terms.length} terms, unique slugs, every units.js glossaryTerms entry resolves`);
+}
+
+const TERM_MARKER = /\{\{term:([^}|]+)(?:\|([^}]+))?\}\}/g;
+
+function checkLessonGlossaryMarkers(lessonList, glossary) {
+    const scan = (label, text, { allowMarkers = true } = {}) => {
+        if (typeof text !== "string" || text === "") return;
+
+        if (!allowMarkers) {
+            if (text.includes("{{term:")) {
+                fail(`${label}: term markers render as plain text here; put them in narration, prompt, reveal, or feedback instead`);
+            }
+            return;
+        }
+
+        let match;
+        TERM_MARKER.lastIndex = 0;
+        while ((match = TERM_MARKER.exec(text)) !== null) {
+            const term = match[1].trim();
+            const labelText = match[2] === undefined ? null : match[2].trim();
+            if (!glossary.lookup(term)) {
+                fail(`${label}: marker term "${term}" is not in glossaryData.js`);
+            }
+            if (labelText !== null && labelText === "") {
+                fail(`${label}: marker "${match[0]}" has an empty display label`);
+            }
+        }
+
+        if (text.replace(TERM_MARKER, "").includes("{{term:")) {
+            fail(`${label}: malformed term marker (missing closing "}}" or empty term)`);
+        }
+    };
+
+    lessonList.forEach((lesson) => {
+        scan(`lesson "${lesson.id}" description`, lesson.description, { allowMarkers: false });
+
+        const narration = lesson.narration;
+        if (narration && typeof narration === "object") {
+            Object.keys(narration).forEach((key) => {
+                scan(`lesson "${lesson.id}" narration.${key}`, narration[key]);
+            });
+        }
+
+        const checkpoints = Array.isArray(lesson.checkpoints) ? lesson.checkpoints : [];
+        checkpoints.forEach((checkpoint, index) => {
+            const label = `lesson "${lesson.id}" checkpoint ${index + 1}`;
+            scan(`${label} prompt`, checkpoint.prompt);
+            scan(`${label} reveal`, checkpoint.reveal);
+            scan(`${label} onCorrect`, checkpoint.onCorrect);
+            scan(`${label} onWrong`, checkpoint.onWrong);
+            const choices = Array.isArray(checkpoint.choices) ? checkpoint.choices : [];
+            choices.forEach((choice, choiceIndex) => {
+                scan(`${label} choice ${choiceIndex + 1}`, choice, { allowMarkers: false });
+            });
+        });
+    });
+
+    pass("lesson term markers resolve (description and choices carry none)");
+}
+
 function main() {
     const units = loadClassicGlobal("js/shell/units.js", "ALGOLAB_UNITS");
     if (!Array.isArray(units) || units.length === 0) {
         fail("units.js did not expose a non-empty ALGOLAB_UNITS array");
     }
     const unitsById = new Map(units.map((unit) => [unit.id, unit]));
+
+    const glossary = loadClassicGlobal("js/shell/glossaryData.js", "ALGOLAB_GLOSSARY");
+    checkGlossary(glossary, units);
 
     const tempDir = buildTempModules();
     return (async () => {
@@ -173,6 +282,8 @@ function main() {
                         fail(`lesson "${lesson.id}" unit "${lesson.unit}" is not in units.js`);
                     }
                 });
+
+                checkLessonGlossaryMarkers(lessonList, glossary);
             }
 
             // Units may advertise a quizId; it must resolve too.
