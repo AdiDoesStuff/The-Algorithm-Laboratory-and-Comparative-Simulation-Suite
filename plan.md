@@ -261,7 +261,7 @@ export const bstInsertLesson = {
 - [ ] Thread `quizId` through `shell/units.js` and the lesson registry (single `"bstQuiz"` string shared by `bstLessons.js` and the quiz registry).
 - [ ] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render({questions, onComplete})`. Re-shuffle options on retake.
 - [ ] `quizzes/bstQuiz.js`: static data, deliberately logic-free. Target 8-10 questions (traversal prediction, deletion cases, classification, height vs depth).
-- [ ] `shell/progress.js`: wraps localStorage (`algolab_progress`), try/catch on every read/write, schema versioned.
+- [x] `shell/progress.js`: wraps localStorage (`algolab_progress`), try/catch on every read/write, schema versioned. ✅ Classic script (`window.AlgoLabProgress`) shared by hub and `bst.js`; in-memory fallback on unavailable/corrupt/unknown-version storage; `quizPassed` recomputed from `bestScore/total` on read; unrecognized raw data backed up before the first overwrite.
   - Entry: `{quizPassed, score, total, bestScore, lastAttempt}`.
   - Pass threshold constant: 80%. Store raw score so the bar can change.
 - [ ] Two entry points to the same engine: end of Learn Mode sentinel, and "Test yourself" button on hub cards.
