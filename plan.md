@@ -259,7 +259,7 @@ export const bstInsertLesson = {
 
 ### B3. Quiz and progress
 - [ ] Thread `quizId` through `shell/units.js` and the lesson registry (single `"bstQuiz"` string shared by `bstLessons.js` and the quiz registry).
-- [ ] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render({questions, onComplete})`. Re-shuffle options on retake.
+- [x] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render(container, {questions, onComplete, passThreshold, rng, secondaryAction})` → `{destroy, restart}`. Shuffles options every start and question order on retake; `onComplete` fires once per attempt; results show score, percentage, pass/not-yet text, topic breakdown, missed questions, and a storage-unavailable note. Fixture self-check in `frontend/test.html`: 11/11 checks pass (flow, single `onComplete`, seeded-rng reshuffle, correctness-by-id survives shuffling). Commit `2a6e1d4`.
 - [ ] `quizzes/bstQuiz.js`: static data, deliberately logic-free. Target 8-10 questions (traversal prediction, deletion cases, classification, height vs depth).
 - [x] `shell/progress.js`: wraps localStorage (`algolab_progress`), try/catch on every read/write, schema versioned. ✅ Classic script (`window.AlgoLabProgress`) shared by hub and `bst.js`; in-memory fallback on unavailable/corrupt/unknown-version storage; `quizPassed` recomputed from `bestScore/total` on read; unrecognized raw data backed up before the first overwrite.
   - Entry: `{quizPassed, score, total, bestScore, lastAttempt}`.
