@@ -23,7 +23,7 @@
 | Lesson engine, quizzes, progress | ✅ **B2-B5 shipped, extended in C3/C5.** `engine/LessonRunner.js` (generic, unit-agnostic), data-only lessons for BST, heaps, and AVL, pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine` plus `bstQuiz.js`, `heapQuiz.js`, and `avlQuiz.js`; `progress.js` keys attempts by unit id. |
 | Heap / AVL / Trie / Hash / DP / Bench | ✅ Heap and AVL are live end to end (C2-C5). Trie, Hash, DP, and Bench are still stubs in `app.py` and the algorithm modules. |
 | Tests | ✅ **156/156 pytest tests green** plus **21/21 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap invariant/step contracts, and AVL rotation cases, per-step invariants, and payload validation. |
-| Repository | ✅ `main` at `1e938da`, pushed to `origin`; working tree clean. Phases A-C are merged and the `phase-*` branches were pruned after merging, so `main` is the only branch. |
+| Repository | ✅ Phases A-C are merged, the `phase-*` branches were pruned after merging, and `main` (Phase C merge `1e938da`) is the only branch, pushed to `origin` with a clean working tree. |
 | Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
