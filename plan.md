@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B1 implemented on branch `phase-b-shell` (78/78 tests green, shared nav + hub live, browser smoke checks passed; not merged to `main`).
+**Last updated:** 25 Oct 2026 — Phase B1 implemented on branch `phase-b-shell` (78/78 tests green, shared nav + hub live, hub owns the landing splash; browser smoke checks passed; not merged to `main`).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -18,9 +18,9 @@
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
 | Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
 | Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. QuizEngine, progress, lessons still Phase B2-B4. |
+| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. QuizEngine, progress, lessons still Phase B2-B4. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
-| Tests | ✅ 78/78 pytest tests green (36 API, 42 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, and B1 static routes. |
+| Tests | ✅ 78/78 pytest tests green (38 API, 40 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, and B1 static routes. |
 
 ### Audit findings that shape the plan
 
@@ -76,12 +76,13 @@ backend/
   tests/
     test_trees.py, test_heaps.py, test_avl.py, ...
 frontend/
-  index.html              # NEW: hub
-  sorting.html            # moved from index.html
+  index.html              # hub + landing splash
+  sorting.html            # moved from index.html, opens directly
   pathfinding.html, bst.html, heaps.html, avl.html, tries.html,
   hashing.html, merkle.html, design.html, definitions.html
   js/
-    shell/                # nav.js, layout.js, progress.js
+    shell/                # units.js, nav.js, hub.js, landing.js (B1);
+                          # layout.js, progress.js (B2-B3)
     engine/               # PlaybackController.js, LessonRunner.js
     primitives/           # TreeCanvas, treeAdapter, BucketGrid, GrowthChart,
                           # ArrayStrip, QuizEngine
@@ -184,7 +185,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] GET `/tree` returns 405 JSON. Generic 500 handler test. Stateless replay matches step-by-step construction. ✅ `941e729`, `8e20f62`
 - [x] **Mirror & structural comparison tests:** 24 unit and API tests covering happy path, identical mode, mismatch reporting, dual snapshots, 40-run brute-force oracle property test, and 5 parametrized bad payloads. ✅ `facdbf8`
 - [x] **Path ancestor chain tests:** verify `payload.path` forms an unbroken ancestor chain from root to current compare node, and ends at the parent node on final insert. ✅ `7655621`
-- **75 / 75 tests passing** (33 API, 42 unit). Last run: `0.32s`.
+- **78 / 78 tests passing** (38 API, 40 unit). Phase A closed at 75/75; B1 added 3 static-route tests. Last run: `0.45s`.
 
 ### A3. Frontend robustness
 - [x] Build `engine/PlaybackController.js`: step list, cursor, play/pause/resume, next/prev/seek, speed, cancel token, annotation callback, `onStep` and `onDone` hooks. ✅ `541154a`
@@ -205,7 +206,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] Live height/depth recalculates after every mutation (called in `onInsertClick`, `onDeleteClick`, `onBuildFromArrayClick`). ✅ `541154a`
 
 ### A5. Exit criteria
-- [x] All tests green. ✅ 75/75 passing (0.32s)
+- [x] All tests green. ✅ 78/78 passing (Phase A closed at 75; B1 added 3 static-route tests).
 - [x] Manual checklist verified: rapid-click gate, delete-then-reinsert same value, node click after two-child delete, binary-mode traversal, empty-tree guard, duplicate rejection, garbage-input filtering, bracketed input parsing, Learn next/prev/reset, mode switch mid-animation, auto fit-view.
 - [x] README says BST is stable (remove "Beta"). ✅
 - [ ] Merge `phase-a-stabilize` to `main`. *(Pending user confirmation.)*
@@ -220,11 +221,12 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] `shell/nav.js` (classic script, `window.AlgoLabNav.mount`) renders one `<nav>` from a route table built from `shell/units.js`. Replaces the duplicated inline SVG nav in sorting/pathfinding/bst and is also mounted on definitions. ✅ `71e91b3`, `2c48c40`
 - [x] Semantic `<nav aria-label="Primary">`, real `<a href>` links, keyboard focus order, `aria-current="page"`, visible `:focus-visible` ring. ✅ Browser-verified: 5 links, correct current item on all 5 pages, tab order starts Home → units → Definitions.
 - [x] Rename current `index.html` to `sorting.html` via `git mv`. Updated all links, `app.py` (`/` hub, explicit `/sorting.html`), `start_app` scripts (root URL only), `definitions.js` back link, and README. ✅ `2c48c40`, `9495d48`
-- [x] Move the landing splash (`MatrixBackground`, Go button, digit-sort transition) from sorting to the hub in `shell/landing.js` (classic script). `sorting.html` now opens straight into the duel. ✅
+- [x] Move the landing splash (`MatrixBackground`, Go button, digit-sort transition) from sorting to the hub in `shell/landing.js` (classic script); the hub sits in `#main-app.app-hidden` until the transition ends. `sorting.html` now opens straight into the duel. Timeout fallbacks stop a throttled `requestAnimationFrame`/CSS animation from trapping the user on the splash or leaving the hub invisible. ✅ `5b75ef2`, `6c839fc`
 - [x] New `index.html` hub: hero blurb, unit cards with status (live / coming soon), empty `<span data-progress-slot="{id}">`, disabled "Test yourself" (`title="Coming with quizzes"`), disabled Guided Path placeholder, Playground grid. ✅ `2c48c40`
 - [x] Unit registry (`shell/units.js`): id, title, page, status, blurb, glossaryTerms. Single source of truth for nav + hub. `lessonId`/`quizId` land with B2/B3. ✅
 - [x] Backend tests: `GET /` 200 + hub marker, `GET /sorting.html` 200, `GET /nonexistent-file.html` JSON 404. 78/78 pytest green. ✅ `9495d48`
 - [x] Hub responsive at 375 px: 1-column grid (332 px cards), nav wraps to 3 rows, no horizontal overflow. ✅ Browser-verified via a 375 px same-origin iframe (`scrollWidth == clientWidth == 360`).
+- [x] Hub splash responsive at 375 px: `.landing-content` 347 px wide, Go button reachable, no horizontal overflow. ✅ Browser-verified via iframe (`scrollWidth == clientWidth == 375`).
 
 ### B2. Lesson engine
 - [ ] `docs/LESSON_SPEC.md` and `engine/LessonRunner.js`.
