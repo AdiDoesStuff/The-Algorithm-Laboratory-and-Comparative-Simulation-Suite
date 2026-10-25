@@ -107,7 +107,59 @@ export const bstDeleteLesson = {
     emitQuizPrompt: true
 };
 
-export const BST_LESSONS = [bstInsertLesson, bstDeleteLesson];
+export const bstTraversalLesson = {
+    id: 'bst-traversal-orders',
+    title: 'Traversing a BST',
+    unit: 'bst',
+    description: 'Build a perfect tree, then read it in inorder, preorder, and postorder.',
+    values: [50, 30, 70, 20, 40, 60, 80],
+    ops: [
+        { op: 'insert', value: 50 },
+        { op: 'insert', value: 30 },
+        { op: 'insert', value: 70 },
+        { op: 'insert', value: 20 },
+        { op: 'insert', value: 40 },
+        { op: 'insert', value: 60 },
+        { op: 'insert', value: 80 },
+        { op: 'traverse', order: 'inorder' },
+        { op: 'traverse', order: 'preorder' },
+        { op: 'traverse', order: 'postorder' }
+    ],
+    narration: {
+        '0': 'Build the same seven values as the insertion lesson. The first value becomes the root.',
+        compare: 'Each value follows one root-to-leaf path: smaller goes left, larger goes right.',
+        insert: 'The value is attached as a leaf. Once all seven are in, every level of the tree is completely filled.',
+        visit: (step) => {
+            const names = { inorder: 'Inorder', preorder: 'Preorder', postorder: 'Postorder' };
+            const rules = {
+                inorder: 'left subtree, then the node, then the right subtree, so a BST reads in ascending order',
+                preorder: 'the node, then the left subtree, then the right subtree, so the root comes first',
+                postorder: 'the left subtree, then the right subtree, then the node, so children come before their parent'
+            };
+            const order = step.traversalOrder || 'inorder';
+            const name = names[order] || order;
+            const sequence = Array.isArray(step.traversalSequence)
+                ? step.traversalSequence
+                : [];
+            const value = sequence.length ? sequence[sequence.length - 1] : '?';
+            const soFar = sequence.join(' → ');
+
+            if (step.visit_order === 1) {
+                const shapeNote = order === 'inorder'
+                    ? 'This tree is perfect: every level is completely filled, so it is also full, complete, and balanced. '
+                    : '';
+                return `${shapeNote}${name} is a {{term:Traversal|traversal}} that visits ${rules[order]}. Visit #1: node ${value}. Sequence so far: ${soFar}.`;
+            }
+
+            return `${name} visit #${step.visit_order}: node ${value}. Sequence so far: ${soFar}.`;
+        }
+    },
+    checkpoints: [],
+    quizId: 'bstQuiz',
+    emitQuizPrompt: true
+};
+
+export const BST_LESSONS = [bstInsertLesson, bstDeleteLesson, bstTraversalLesson];
 
 /** Look up a lesson by id; returns null when absent. */
 export function findBstLesson(id) {

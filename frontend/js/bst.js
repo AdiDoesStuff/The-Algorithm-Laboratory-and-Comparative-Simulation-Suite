@@ -345,12 +345,47 @@ async function buildLessonSteps(lesson) {
     const simOps = [];
 
     for (const action of opsList) {
+        const start = steps.length;
+
+        if (action.op === 'traverse') {
+            const order = action.order || 'inorder';
+            const res = await window.fetchTreeSteps('bst_traverse', {
+                algorithm: 'bst_traverse',
+                tree_type: 'bst',
+                ops: [...simOps],
+                order
+            });
+
+            if (!res.ok) {
+                throw new Error(
+                    res.error?.message ||
+                    `Could not build traversal steps for ${order}`
+                );
+            }
+
+            if (Array.isArray(res.data?.steps)) {
+                const visited = [];
+                for (const step of res.data.steps) {
+                    const node = (step.snapshot?.nodes || [])
+                        .find(candidate => candidate.id === (step.highlighted || [])[0]);
+                    if (node) visited.push(node.label);
+                    steps.push({
+                        ...step,
+                        traversalOrder: order,
+                        traversalSequence: [...visited]
+                    });
+                }
+            }
+
+            blocks.push({ action: { ...action }, start, end: steps.length - 1 });
+            continue;
+        }
+
         const algorithm = action.op === 'delete' ? 'bst_delete' : 'bst_insert';
         const extra = action.op === 'delete'
             ? { delete_value: action.value }
             : { new_value: action.value };
 
-        const start = steps.length;
         const res = await window.fetchTreeSteps(algorithm, {
             algorithm,
             tree_type: 'bst',
@@ -894,9 +929,18 @@ function renderLearnPills(lesson) {
             ? lesson.values.map(value => ({ op: 'insert', value }))
             : []);
 
+    const orderLabels = {
+        inorder: 'IN',
+        preorder: 'PRE',
+        postorder: 'POST',
+        level: 'LEVEL'
+    };
     container.innerHTML = opsList.map((action, idx) => {
         const marker = action.op === 'delete' ? '−' : '';
-        return `<span class="learn-pill ${idx === 0 ? 'pill-active' : ''}">${marker}${action.value}</span>`;
+        const label = action.op === 'traverse'
+            ? (orderLabels[action.order] || 'TRAV')
+            : `${marker}${action.value}`;
+        return `<span class="learn-pill ${idx === 0 ? 'pill-active' : ''}">${label}</span>`;
     }).join('');
 }
 
