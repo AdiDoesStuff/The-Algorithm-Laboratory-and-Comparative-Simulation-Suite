@@ -12,6 +12,7 @@ import hashing
 import merkle
 import validation
 import design.nqueens as nqueens_mod
+import design.knapsack as knapsack_mod
 from validation import ValidationError
 
 app = Flask(__name__)
@@ -334,6 +335,27 @@ def nqueens_handler():
         err_msg, err_field = err_tuple
         raise ValidationError(err_msg, field=err_field, status_code=400)
     result = nqueens_mod.run_nqueens(validated["n"], validated["mode"])
+    return jsonify(result)
+
+
+@app.route('/knapsack.html', methods=['GET'])
+def knapsack_page():
+    return send_from_directory(FRONTEND_DIR, 'knapsack.html')
+
+
+@app.route('/knapsack', methods=['GET', 'POST'])
+def knapsack_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+    validated, err_tuple = validation.validate_knapsack_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+    result = knapsack_mod.run_knapsack(
+        validated["algorithm"], validated["items"], validated["capacity"])
     return jsonify(result)
 
 
