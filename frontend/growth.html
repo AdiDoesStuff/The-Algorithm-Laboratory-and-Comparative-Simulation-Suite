@@ -18,18 +18,42 @@
             <div id="algo-nav" data-algo-nav data-current-id="growth"></div>
         </div>
 
-        <div style="max-width:900px; margin:40px auto; padding:24px; background:#1e293b; border:1px solid #334155; border-radius:12px; color:#e2e8f0;">
-            <h2 style="margin-top:0;">Coming soon</h2>
-            <p>The interactive UI for this unit is under construction. The backend endpoints are live and can be exercised directly:</p>
-            <ul style="line-height:1.8;">
-                <li><code>POST /bench</code> — growth benchmark (8 algorithms, timed runs, comparison counts)</li>
-                <li><code>POST /recursion</code> — recursion trees for merge sort, quicksort, fib (naive + memoized)</li>
-            </ul>
-            <p>Example: <code>{"algorithm":"fib_naive","n":5}</code> → 15 calls, result 5.</p>
-        </div>
+        <main class="lab-layout" id="growth-app">
+            <aside class="side-panel">
+                <div class="mode-tabs" role="tablist" aria-label="Growth mode">
+                    <button class="mode-tab active-tab" id="growth-curves" role="tab" aria-selected="true">Growth curves</button>
+                    <button class="mode-tab" id="growth-tree" role="tab" aria-selected="false">Recursion tree</button>
+                    <button class="mode-tab" id="growth-learn" role="tab" aria-selected="false">Learn</button>
+                </div>
+                <section id="curve-controls">
+                    <div class="control-group"><label>Algorithms</label><label><input type="checkbox" value="bubble" checked> Bubble</label><label><input type="checkbox" value="merge" checked> Merge</label><label><input type="checkbox" value="quick" checked> Quick</label><label><input type="checkbox" value="insertion"> Insertion</label></div>
+                    <div class="control-group"><label for="growth-sizes">Sizes</label><select id="growth-sizes"><option value="50,100,200,400,800">Small (to 800)</option><option value="1000,2500,5000,10000,20000">Large (to 20,000)</option></select></div>
+                    <div class="control-group"><label for="growth-input">Input kind</label><select id="growth-input"><option value="random">Random</option><option value="sorted">Sorted</option><option value="reversed">Reversed</option></select></div>
+                    <div class="control-group"><label for="growth-repeats">Repeats</label><select id="growth-repeats"><option value="3">3</option><option value="5" selected>5</option><option value="7">7</option></select></div>
+                    <button id="growth-run">Run benchmark</button>
+                </section>
+                <section id="tree-controls" class="hidden">
+                    <div class="control-group"><label for="recursion-algorithm">Algorithm</label><select id="recursion-algorithm"><option value="merge_sort">Merge sort</option><option value="quick_sort">Quicksort</option><option value="fib_naive">Fibonacci naive</option><option value="fib_memo">Fibonacci memoized</option></select></div>
+                    <div class="control-group"><label for="recursion-array">Array (2–16 integers)</label><input id="recursion-array" value="8,3,6,1,7,2,5,4"></div>
+                    <div class="control-group"><label for="recursion-n">Fibonacci n (0–10)</label><input id="recursion-n" type="number" min="0" max="10" value="5"></div>
+                    <button id="recursion-run">Build recursion tree</button>
+                </section>
+                <section id="learn-controls" class="hidden"><h2 class="panel-heading">Four lessons</h2><select id="growth-lesson-select"></select><div id="growth-lesson-copy" class="panel-note"></div><button id="growth-quiz">Take the quiz</button></section>
+                <div class="step-row"><button id="growth-prev">Prev</button><button id="growth-play">Play</button><button id="growth-next">Next</button><button id="growth-skip">Skip to end</button></div>
+                <p id="growth-step" class="step-counter" aria-live="polite">No trace loaded.</p>
+            </aside>
+            <section class="visualizer-panel">
+                <div id="growth-error" class="error-banner hidden" role="alert"></div>
+                <div class="panel-card" id="growth-chart-panel"><div class="step-row"><label><input type="radio" name="metric" value="comparisons" checked> Comparisons (exact)</label><label><input type="radio" name="metric" value="time"> Time ms</label><label><input id="growth-log" type="checkbox"> Log–log</label></div><p class="panel-note">Wall-clock time is a measurement, not a proof; comparison counts are exact.</p><div id="growth-chart" class="growth-chart-container"></div></div>
+                <div class="panel-card hidden" id="growth-tree-panel"><div id="growth-tree-canvas" class="tree-canvas-container"></div><div class="step-row"><button id="tree-collapse">Collapse current node</button><button id="tree-expand">Expand all</button></div></div>
+                <div class="panel-card"><p id="growth-annotation" aria-live="polite">Choose a mode and run a trace.</p><div class="metrics-grid"><div class="metric-box"><span class="metric-label">Calls</span><span id="growth-calls" class="metric-value">—</span></div><div class="metric-box"><span class="metric-label">Depth</span><span id="growth-depth" class="metric-value">—</span></div><div class="metric-box"><span class="metric-label">Cache hits</span><span id="growth-hits" class="metric-value">—</span></div></div></div>
+                <div id="growth-quiz-host"></div>
+            </section>
+        </main>
     </div>
 
     <script src="js/shell/units.js"></script>
     <script src="js/shell/nav.js"></script>
+    <script type="module" src="js/growth.js"></script>
 </body>
 </html>
