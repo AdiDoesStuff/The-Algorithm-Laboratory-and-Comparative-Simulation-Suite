@@ -13,7 +13,6 @@ VALID_TREE_ALGORITHMS = {
     'array_to_tree',
     'bst_mirror',
     'heap_insert',
-    'avl_insert',
 }
 
 VALID_TRAVERSAL_ORDERS = {'inorder', 'preorder', 'postorder', 'level'}
@@ -193,5 +192,199 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
             except (ValueError, TypeError):
                 return None, (f"Invalid 'target_value': {t_val} is not an integer", "target_value")
             validated['target_id'] = None
+
+    return validated, None
+
+
+# --- Heap endpoint validation (/heap) ---
+
+VALID_HEAP_ALGORITHMS = {'heap_op', 'heapsort'}
+VALID_HEAP_TYPES = {'min', 'max'}
+MAX_HEAP_SIZE = 31
+MAX_HEAP_STEPS = 1000
+
+
+def _parse_heap_op(item: Any, where: str, field: str):
+    """Parses one heap op. Returns (op_dict, None) or (None, (message, field))."""
+    if not isinstance(item, dict):
+        return None, (f"{where} must be an object with an 'op' field", field)
+
+    name = item.get('op')
+    if name == 'insert':
+        value = item.get('value')
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None, (f"{where}.value must be an integer", field)
+        return {'op': 'insert', 'value': value}, None
+
+    if name == 'extract':
+        return {'op': 'extract'}, None
+
+    if name == 'build':
+        values = item.get('values')
+        if not isinstance(values, list):
+            return None, (f"{where}.values must be a list of integers", field)
+        if len(values) > MAX_HEAP_SIZE:
+            return None, (f"{where}.values supports at most {MAX_HEAP_SIZE} values", field)
+        cleaned = []
+        for i, value in enumerate(values):
+            if isinstance(value, bool) or not isinstance(value, int):
+                return None, (f"{where}.values[{i}] must be an integer", field)
+            cleaned.append(value)
+        return {'op': 'build', 'values': cleaned}, None
+
+    return None, (f"Invalid heap op '{name}' in {where}: expected 'insert', 'extract', or 'build'", field)
+
+
+def validate_heap_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[str, str]]]:
+    """
+    Validates a POST /heap payload.
+    Returns (validated_data_dict, (error_message, field_name)).
+    Never raises, so no invalid input can reach a 500.
+    """
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get('algorithm')
+    if not isinstance(algo, str) or algo not in VALID_HEAP_ALGORITHMS:
+        return None, (f"Unknown heap algorithm: {algo}", "algorithm")
+
+    heap_type = data.get('heap_type', 'min')
+    if not isinstance(heap_type, str) or heap_type not in VALID_HEAP_TYPES:
+        return None, (f"Invalid 'heap_type': {heap_type}; must be 'min' or 'max'", "heap_type")
+
+    validated: Dict[str, Any] = {'algorithm': algo, 'heap_type': heap_type}
+
+    if algo == 'heapsort':
+        if 'ops' in data or 'action' in data:
+            return None, ("heapsort takes an 'array', not 'ops' or 'action'", "ops")
+        array = data.get('array')
+        if not isinstance(array, list):
+            return None, ("Missing or invalid 'array': a list of integers is required", "array")
+        if len(array) > MAX_HEAP_SIZE:
+            return None, (f"'array' supports at most {MAX_HEAP_SIZE} values", "array")
+        cleaned = []
+        for i, value in enumerate(array):
+            if isinstance(value, bool) or not isinstance(value, int):
+                return None, (f"'array'[{i}] must be an integer", "array")
+            cleaned.append(value)
+        validated['array'] = cleaned
+        return validated, None
+
+    raw_ops = data.get('ops', [])
+    if raw_ops is None:
+        raw_ops = []
+    if not isinstance(raw_ops, list):
+        return None, ("'ops' must be a list", "ops")
+    if len(raw_ops) > MAX_HEAP_SIZE * 4:
+        return None, (f"'ops' supports at most {MAX_HEAP_SIZE * 4} entries", "ops")
+
+    ops = []
+    size = 0
+    for i, item in enumerate(raw_ops):
+        parsed, err = _parse_heap_op(item, f"ops[{i}]", "ops")
+        if err:
+            return None, err
+        if parsed['op'] == 'build':
+            if i != 0:
+                return None, ("'build' is only allowed as the first op", "ops")
+            size = len(parsed['values'])
+        elif parsed['op'] == 'insert':
+            size += 1
+        elif parsed['op'] == 'extract':
+            if size == 0:
+                return None, (f"ops[{i}] extracts from an empty heap", "ops")
+            size -= 1
+        if size > MAX_HEAP_SIZE:
+            return None, (f"Heap supports at most {MAX_HEAP_SIZE} elements", "ops")
+        ops.append(parsed)
+    validated['ops'] = ops
+
+    action = data.get('action')
+    if action is not None:
+        parsed, err = _parse_heap_op(action, 'action', 'action')
+        if err:
+            return None, err
+        if parsed['op'] == 'build':
+            if ops:
+                return None, ("'build' is only allowed on an empty heap", "action")
+            if len(parsed['values']) > MAX_HEAP_SIZE:
+                return None, (f"Heap supports at most {MAX_HEAP_SIZE} elements", "action")
+        elif parsed['op'] == 'insert':
+            if size + 1 > MAX_HEAP_SIZE:
+                return None, (f"Heap supports at most {MAX_HEAP_SIZE} elements", "action")
+        elif parsed['op'] == 'extract':
+            if size == 0:
+                return None, ("Cannot extract from an empty heap", "action")
+        validated['action'] = parsed
+
+    return validated, None
+
+
+# --- AVL endpoint validation (/avl) ---
+
+VALID_AVL_ALGORITHMS = {'avl_insert', 'avl_delete', 'avl_replay'}
+MAX_AVL_OPS = 64
+MAX_AVL_STEPS = 1000
+
+
+def validate_avl_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[str, str]]]:
+    """
+    Validates a POST /avl payload. The op log must be internally consistent:
+    an insert cannot duplicate a live value and a delete must target one.
+    Never raises, so no invalid input can reach a 500.
+    """
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get('algorithm')
+    if not isinstance(algo, str) or algo not in VALID_AVL_ALGORITHMS:
+        return None, (f"Unknown AVL algorithm: {algo}", "algorithm")
+
+    raw_ops = data.get('ops', [])
+    if raw_ops is None:
+        raw_ops = []
+    if not isinstance(raw_ops, list):
+        return None, ("'ops' must be a list", "ops")
+    if len(raw_ops) > MAX_AVL_OPS:
+        return None, (f"'ops' supports at most {MAX_AVL_OPS} entries", "ops")
+
+    ops = []
+    present = set()
+    for i, item in enumerate(raw_ops):
+        if not isinstance(item, dict):
+            return None, (f"'ops[{i}]' must be an object with 'op' and 'value'", "ops")
+        name = item.get('op')
+        value = item.get('value')
+        if name not in ('insert', 'delete'):
+            return None, (
+                f"Invalid op '{name}' in ops[{i}]: expected 'insert' or 'delete'",
+                "ops"
+            )
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None, (f"Missing or invalid integer 'value' in ops[{i}]", "ops")
+        if name == 'insert':
+            if value in present:
+                return None, (f"Duplicate insert value {value} in ops at index {i}", "ops")
+            present.add(value)
+        else:
+            if value not in present:
+                return None, (
+                    f"ops[{i}] deletes {value}, which is not in the tree at that point",
+                    "ops"
+                )
+            present.remove(value)
+        ops.append({'op': name, 'value': value})
+
+    validated: Dict[str, Any] = {'algorithm': algo, 'ops': ops}
+
+    if algo != 'avl_replay':
+        value = data.get('value')
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None, ("Missing or invalid 'value': integer required", "value")
+        if algo == 'avl_insert' and value in present:
+            return None, (f"Duplicate value: {value} already exists in the tree", "value")
+        if algo == 'avl_delete' and value not in present:
+            return None, (f"Value {value} not found in tree to delete", "value")
+        validated['value'] = value
 
     return validated, None

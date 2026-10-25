@@ -229,3 +229,293 @@ BST node deletion strictly maintains node identity and pointer integrity:
    - The successor preserves its original `id` (e.g. `succ_id = 3`), while the deleted node (`current.id`) is unlinked and removed.
    - The target node's value is never overwritten with the successor's value.
 4. **Completion Step**: Deletion ends with a `delete_done` step highlighting the resulting position.
+
+---
+
+## 5. Dual-Panel Snapshot Contract (heaps and heapsort)
+
+Heap algorithms show one logical structure twice: as a contiguous array (with its
+sorted tail during heapsort) and as the complete binary tree encoded by that
+array. Both panels are driven by a single `PlaybackController` step, so they can
+never disagree about the current step.
+
+### 5.1 Step shape
+
+```json
+{
+  "type": "swap",
+  "kind": "dual",
+  "snapshot": {
+    "array": {
+      "cells": [
+        {"id": 0, "value": 5},
+        {"id": 1, "value": 9},
+        {"id": 2, "value": 2}
+      ],
+      "heap_size": 3,
+      "heap_type": "min"
+    },
+    "tree": {
+      "nodes": [
+        {"id": 0, "label": "5", "sublabel": "i=0", "parent_id": null, "side": null},
+        {"id": 2, "label": "2", "sublabel": "i=2", "parent_id": 0, "side": "left"},
+        {"id": 1, "label": "9", "sublabel": "i=1", "parent_id": 0, "side": "right"}
+      ],
+      "root_id": 0
+    }
+  },
+  "swapping": [2, 0],
+  "payload": {"from_index": 0, "to_index": 2},
+  "annotation": "Swap 2 with 5 so the smaller value becomes the root"
+}
+```
+
+### 5.2 Rules
+
+- **`kind: "dual"`** marks a step whose `snapshot` has both `array` and `tree`.
+  Single-panel tree steps keep `kind: "tree"` (AVL) and keep their existing
+  top-level `snapshot` shape.
+- **`snapshot.array.cells`** is ordered by array index. Each cell carries the
+  element `id` and its integer `value`. Duplicate values are allowed; `id` is
+  what identifies a cell.
+- **`snapshot.array.heap_size`** is the number of cells inside the heap region.
+  Cells at index `>= heap_size` are the sorted tail and are rendered outside the
+  heap boundary. `heap_size` is the only positional state: it is never inferred
+  from roles.
+- **`snapshot.array.heap_type`** is `"min"` or `"max"`.
+- **`snapshot.tree`** is the standard tree snapshot built from
+  `cells[0:heap_size]` using the 0-based array encoding: left child `2i + 1`,
+  right child `2i + 2`, parent `(i - 1) // 2`. `sublabel` is `"i=<index>"`.
+- **Role arrays carry element ids, not indices**, and are valid for both panels.
+  A consumer highlights an array cell and a tree node by the same id.
+- **`payload`** carries the indices involved in the step (e.g. `from_index`,
+  `to_index`, `focus_index`) for narration and tests, never for rendering.
+- Element ids are assigned deterministically during stateless replay: each
+  inserted value receives the next creation id; a `build` op assigns ids in
+  array order. Swaps move ids, never rename them.
+
+### 5.3 Why this shape
+
+The two panels answer different questions: the array makes the index formulas
+(and the sorted tail) obvious, while the tree makes the heap property and the
+bubble path obvious. Keeping one step and one id space means Prev/Next and
+Play/Pause act on both panels together, and a test can assert the tree is
+exactly `cells[0:heap_size]` at every step.
+
+---
+
+## 6. Heap Trace Contract (`POST /heap`)
+
+Heap traces are produced by a stateless op-log replay, exactly like BST mode:
+the client keeps `ops`, sends them with one `action`, and renders the returned
+steps. This keeps the backend free of session state and makes replay
+deterministic.
+
+### 6.1 Request shapes
+
+Insert / extract / build (incremental heap):
+
+```json
+{
+  "algorithm": "heap_op",
+  "heap_type": "min",
+  "ops": [{"op": "insert", "value": 5}, {"op": "insert", "value": 9}],
+  "action": {"op": "insert", "value": 2}
+}
+```
+
+Heapsort (whole array at once):
+
+```json
+{
+  "algorithm": "heapsort",
+  "heap_type": "max",
+  "array": [5, 1, 9, 3, 7]
+}
+```
+
+Rules:
+
+- `heap_type` is `"min"` (default) or `"max"`.
+- Ops are `insert` (`value` integer), `extract` (no fields), or `build`
+  (`values` list). `build` is only valid as `ops[0]` or as the `action` of an
+  empty heap; anything else is HTTP 400 with `field: "ops"` / `"action"`.
+- Duplicate values are allowed everywhere. A swap happens only when the
+  candidate is **strictly** better (`<` for min, `>` for max), so equal values
+  never swap and traces are stable.
+- Caps: at most 31 elements and 1000 steps. Exceeding either is a 400, never a
+  500.
+- `action` may be omitted. The response then contains `steps: []` and
+  `final_state` describing the heap after replaying `ops` — useful for drawing
+  the current heap without performing an operation.
+
+### 6.2 Response shape
+
+```json
+{
+  "steps": [ /* dual-panel steps, see §5 */ ],
+  "final_state": { "array": {...}, "tree": {...} },
+  "metrics": {"comparisons": 7, "swaps": 3, "steps": 18},
+  "metadata": {"algorithm": "heap_op", "heap_type": "min", "heap_size": 4}
+}
+```
+
+`final_state` is always the snapshot of the last step, so a client that only
+wants the end result does not need to special-case it.
+
+### 6.3 Step types
+
+Every heap step has `kind: "dual"` and the snapshot shape from §5. Roles refer
+to element ids and drive both panels.
+
+| `type` | When | Notable `payload` | Roles |
+| --- | --- | --- | --- |
+| `append` | New element written to the next free index | `index`, `value`, `heap_size` | `new_node` |
+| `compare` | Bubble-up parent check or sift-down child comparison | `child_index`/`parent_index` or `parent_index`/`left_index`/`right_index`/`chosen_index`, `focus_index` | `comparing` |
+| `swap` | Two cells exchange positions | `from_index`, `to_index`, `from_value`, `to_value` | `swapping` |
+| `insert_done` | Insert settled | `index`, `value` | `highlighted` |
+| `extract_root` | Root about to be removed | `index`, `value` | `selected` |
+| `remove_last` | Last cell popped after moving it to the root | `index`, `extracted_value`, `extracted_id`, `heap_size` | — |
+| `extract_done` | Extract settled, new root named | `extracted_value`, `extracted_id` | `highlighted` (new root) |
+| `build_start` | Bottom-up heapify begins | `n`, `last_parent` | `highlighted` (root) |
+| `heapify_node_done` | Subtree at an index is a valid heap | `index` | `selected` |
+| `build_done` | Whole array is a valid heap | `heap_size` | — |
+| `mark_sorted` | One element frozen into the sorted tail | `sorted_from`, `heap_size` | `sorted` (tail) |
+| `heapsort_done` | Sorted region covers the array | `sorted: true` | `sorted` (all) |
+
+`compare` steps snapshot the structure **before** the swap they recommend, which
+is why the invariant tests allow the compared edge to be temporarily violated.
+Every `*_done` step must have zero violations.
+
+### 6.4 Heapsort direction
+
+Heapsort sorts the array in place using the selected heap type:
+
+- `max` heap → ascending output (largest extracted to the end each round).
+- `min` heap → descending output (smallest extracted to the end each round).
+
+The sorted region grows from the right; `heap_size` shrinks to match, and the
+`heap | sorted` divider in the array panel is placed at `heap_size`.
+
+---
+
+## 7. AVL Trace Contract (`POST /avl`)
+
+AVL uses the same stateless op-log model as BST mode: the client keeps `ops`,
+sends them with exactly one action, and renders the returned steps. The replay
+of `ops` is silent, so a trace always describes one operation.
+
+### 7.1 Request shapes
+
+```json
+{
+  "algorithm": "avl_insert",
+  "ops": [{"op": "insert", "value": 30}, {"op": "insert", "value": 20}],
+  "value": 10
+}
+```
+
+```json
+{
+  "algorithm": "avl_delete",
+  "ops": [{"op": "insert", "value": 10}, {"op": "insert", "value": 20}],
+  "value": 20
+}
+```
+
+```json
+{
+  "algorithm": "avl_replay",
+  "ops": [{"op": "insert", "value": 50}, {"op": "delete", "value": 10}]
+}
+```
+
+Rules:
+
+- `ops` entries are `insert` or `delete` with an integer `value`, applied in
+  order. An insert of a live value and a delete of an absent value are rejected
+  with HTTP 400 and `field: "ops"`, because the log must be consistent.
+- `avl_insert` rejects a `value` already present (`field: "value"`);
+  `avl_delete` rejects a `value` that is absent (`field: "value"`).
+- `avl_replay` ignores `value` and returns `steps: []` plus `final_tree`, which
+  is how a client draws the current tree without performing an operation.
+- Node ids follow the same rule as BST mode: the id is the index of the
+  inserting op. A value that is deleted and later reinserted receives the id of
+  the new inserting op. Rotations relink nodes and never change an id.
+- Caps: `MAX_AVL_OPS = 64` ops per request and `MAX_AVL_STEPS = 1000` emitted
+  steps. Exceeding either is a 400, never a 500.
+
+### 7.2 Height and balance factor
+
+- Height is counted **in edges**: a leaf has height `0`, an empty child has
+  height `-1`.
+- Balance factor is `height(left) - height(right)`, so `+1` means left-heavy
+  and `-2` is the start of the right-left/right-right territory.
+- Every snapshot sets `sublabel` to `"bf:+N"` / `"bf:-N"` / `"bf:+0"`, computed
+  from the links in that same snapshot. A rendered badge can therefore never be
+  stale: it is not copied from a stored field that might lag a rotation.
+
+### 7.3 Response shape
+
+```json
+{
+  "steps": [ /* tree steps, kind: "tree" */ ],
+  "final_tree": { "nodes": [ ... ], "root_id": 1 },
+  "metrics": {"comparisons": 2, "rotations": 1, "steps": 8, "height": 2},
+  "metadata": {"algorithm": "avl_insert"}
+}
+```
+
+`final_tree` is always the snapshot of the last step, so the end result needs
+no special case. `metrics.rotations` counts **single** rotations: an LR or RL
+case contributes two.
+
+### 7.4 Step types
+
+Every AVL step has `kind: "tree"` and the single-tree `snapshot` shape
+(`nodes`, `root_id`) from §3.1. Roles refer to node ids.
+
+| `type` | When | Notable `payload` | Roles |
+| --- | --- | --- | --- |
+| `compare` | Search descends one level | `path` (ancestor ids, root first) | `comparing` |
+| `insert` | New leaf linked to its parent | `path`, `value`, `node_id` | `new_node` |
+| `balance_update` | Height/bf recomputed on the way back up | `node_id`, `value`, `height`, `balance_factor` | `highlighted` |
+| `unbalanced` | First ancestor with `abs(bf) > 1` | `node_id`, `value`, `balance_factor`, `case` | `unbalanced` |
+| `rotate_LL` | Left-left case: rotate right at the node | `case`, `phase`, `phases`, `unbalanced`, `pivot`, `new_root`, `subtree` | `rotating` |
+| `rotate_RR` | Right-right case: rotate left at the node | same | `rotating` |
+| `rotate_LR` | Left-right case, emitted twice | same, `phase` `1` then `2` | `rotating` |
+| `rotate_RL` | Right-left case, emitted twice | same, `phase` `1` then `2` | `rotating` |
+| `insert_done` | Insert settled | `value`, `node_id`, `rotations`, `height` | — |
+| `delete_leaf` | Leaf unlinked | `value`, `node_id`, `path` | `highlighted` |
+| `delete_single_child` | One child promoted | `value`, `node_id`, `replacement`, `path` | `highlighted` |
+| `delete_two_children` | Successor relinked into place | `value`, `node_id`, `successor`, `path` | `highlighted` |
+| `delete_done` | Delete settled | `value`, `rotations`, `height` | `highlighted` (root) |
+
+### 7.5 Rotation replay
+
+A rotation is shown as a sequence, not a single jump:
+
+1. `unbalanced` with the **pre-rotation** snapshot, naming the case and the
+   node whose `bf` left `[-1, 1]`.
+2. One `rotate_*` step per single rotation. LL and RR rotate once; LR and RL
+   rotate twice and carry `phase: 1|2` so a player can narrate "first make it
+   left-left, then rotate right".
+3. `rotation_done` on the balanced subtree, naming its new root, height, and bf.
+
+Insert stops the retrace after its first rotation: in insertion the subtree
+height returns to its pre-insert value, so no ancestor above can be unbalanced.
+Delete keeps walking ancestors after a rotation, because removing a node can
+shorten a subtree and expose a new imbalance higher up.
+
+### 7.6 Invariants
+
+The tests check every snapshot, not just the final one:
+
+- The in-order walk is strictly increasing (no duplicates).
+- `parent_id`/`side` links are consistent, with exactly one root.
+- Every `sublabel` equals the balance factor recomputed from that snapshot.
+- Node ids never change value within a call.
+- Per plan D9, while an operation is in flight an unbalanced node is allowed
+  only on the path from the operation focus to the root. Every
+  `insert_done`/`delete_done` step must have **zero** nodes with `abs(bf) > 1`.
+

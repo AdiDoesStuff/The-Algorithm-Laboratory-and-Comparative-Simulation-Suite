@@ -44,13 +44,26 @@ function loadClassicGlobal(relativePath, globalName) {
     return sandbox.window[globalName];
 }
 
+/**
+ * Copies every module in js/quizzes and js/lessons into a temp dir as .mjs so
+ * Node can import them without a package.json. New quiz or lesson files are
+ * picked up automatically: nothing here names a unit.
+ */
 function buildTempModules() {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "algolab-content-"));
-    const files = [
-        "js/quizzes/bstQuiz.js",
-        "js/quizzes/index.js",
-        "js/lessons/bstLessons.js"
-    ];
+    const scan = (relativeDir) => {
+        const absoluteDir = path.join(FRONTEND, relativeDir);
+        if (!fs.existsSync(absoluteDir)) return [];
+        return fs.readdirSync(absoluteDir)
+            .filter((name) => name.endsWith(".js"))
+            .sort()
+            .map((name) => path.posix.join(relativeDir, name).replace(/\\/g, "/"));
+    };
+
+    const quizModules = scan("js/quizzes");
+    const lessonModules = scan("js/lessons");
+    const files = [...quizModules, ...lessonModules];
+
     for (const relativePath of files) {
         const source = fs.readFileSync(path.join(FRONTEND, relativePath), "utf8");
         // Point relative imports at the .mjs copies living beside each other.
@@ -58,7 +71,13 @@ function buildTempModules() {
         const outName = `${path.basename(relativePath, ".js")}.mjs`;
         fs.writeFileSync(path.join(dir, outName), rewritten);
     }
-    return dir;
+
+    const toTempName = (relativePath) => `${path.basename(relativePath, ".js")}.mjs`;
+    return {
+        dir,
+        quizModules: quizModules.map(toTempName),
+        lessonModules: lessonModules.map(toTempName)
+    };
 }
 
 function checkQuiz(quiz, unitsById) {
@@ -224,6 +243,75 @@ function checkLessonGlossaryMarkers(lessonList, glossary) {
     pass("lesson term markers resolve (description and choices carry none)");
 }
 
+/**
+ * Checkpoint anchors are unit-agnostic: LessonRunner understands `atStep` and
+ * `beforeValue`/`afterValue` (+ optional `op`), while page controllers may
+ * resolve `anchorType`/`occurrence` to an absolute step before handing the
+ * lesson over. A checkpoint with none of these can never fire.
+ */
+function checkCheckpoints(lesson) {
+    const checkpoints = Array.isArray(lesson.checkpoints) ? lesson.checkpoints : [];
+    checkpoints.forEach((checkpoint, index) => {
+        const label = `lesson "${lesson.id}" checkpoint ${index + 1}`;
+        if (!checkpoint || typeof checkpoint !== "object") {
+            fail(`${label}: not an object`);
+            return;
+        }
+        if (typeof checkpoint.prompt !== "string" || checkpoint.prompt.trim() === "") {
+            fail(`${label}: empty prompt`);
+        }
+
+        const hasAtStep = Number.isInteger(checkpoint.atStep);
+        const hasValueAnchor = checkpoint.beforeValue !== undefined || checkpoint.afterValue !== undefined;
+        const hasTypeAnchor = typeof checkpoint.anchorType === "string" && checkpoint.anchorType.trim() !== "";
+        if (!hasAtStep && !hasValueAnchor && !hasTypeAnchor) {
+            fail(`${label}: no anchor (needs atStep, beforeValue/afterValue, or anchorType)`);
+        }
+        if (checkpoint.anchorType !== undefined && !hasTypeAnchor) {
+            fail(`${label}: anchorType must be a non-empty string`);
+        }
+        if (checkpoint.occurrence !== undefined &&
+            (!Number.isInteger(checkpoint.occurrence) || checkpoint.occurrence < 1)) {
+            fail(`${label}: occurrence must be a positive integer`);
+        }
+
+        const choices = Array.isArray(checkpoint.choices) ? checkpoint.choices : [];
+        if (choices.length > 0) {
+            choices.forEach((choice, choiceIndex) => {
+                if (typeof choice !== "string" || choice.trim() === "") {
+                    fail(`${label}: choice ${choiceIndex + 1} is empty`);
+                }
+            });
+            if (!Number.isInteger(checkpoint.answer) ||
+                checkpoint.answer < 0 ||
+                checkpoint.answer >= choices.length) {
+                fail(`${label}: answer "${checkpoint.answer}" is not an index into its ${choices.length} choices`);
+            }
+        }
+    });
+}
+
+/**
+ * Imports every temp lesson module and returns each non-empty `*_LESSONS`
+ * export. The suffix is the convention every lesson module already follows, so
+ * a new unit needs no validator edit.
+ */
+async function collectLessonGroups(tempModuleDir, lessonModules) {
+    const groups = [];
+    for (const moduleName of lessonModules) {
+        const module = await import(pathToFileURL(path.join(tempModuleDir, moduleName)).href);
+        for (const [exportName, value] of Object.entries(module)) {
+            if (!exportName.endsWith("_LESSONS")) continue;
+            if (!Array.isArray(value) || value.length === 0) {
+                fail(`${moduleName}: export ${exportName} is not a non-empty array`);
+                continue;
+            }
+            groups.push({ moduleName, exportName, lessons: value });
+        }
+    }
+    return groups;
+}
+
 function main() {
     const units = loadClassicGlobal("js/shell/units.js", "ALGOLAB_UNITS");
     if (!Array.isArray(units) || units.length === 0) {
@@ -234,11 +322,10 @@ function main() {
     const glossary = loadClassicGlobal("js/shell/glossaryData.js", "ALGOLAB_GLOSSARY");
     checkGlossary(glossary, units);
 
-    const tempDir = buildTempModules();
+    const temp = buildTempModules();
     return (async () => {
         try {
-            const registry = await import(pathToFileURL(path.join(tempDir, "index.mjs")).href);
-            const lessons = await import(pathToFileURL(path.join(tempDir, "bstLessons.mjs")).href);
+            const registry = await import(pathToFileURL(path.join(temp.dir, "index.mjs")).href);
 
             const quizzes = registry.listQuizzes();
             if (!Array.isArray(quizzes) || quizzes.length === 0) {
@@ -265,26 +352,56 @@ function main() {
                 pass("getQuiz throws for an unknown id");
             }
 
-            const lessonList = lessons.BST_LESSONS;
-            if (!Array.isArray(lessonList) || lessonList.length === 0) {
-                fail("BST_LESSONS is empty");
-            } else {
-                lessonList.forEach((lesson) => {
+            const lessonGroups = await collectLessonGroups(temp.dir, temp.lessonModules);
+            if (lessonGroups.length === 0) {
+                fail("no *_LESSONS export found in js/lessons");
+            }
+
+            const lessonFilesById = new Map();
+            const allLessons = [];
+
+            lessonGroups.forEach((group) => {
+                group.lessons.forEach((lesson, index) => {
+                    const label = `lesson ${index + 1} in ${group.exportName} (${group.moduleName})`;
+                    if (!lesson || typeof lesson !== "object") {
+                        fail(`${label}: not an object`);
+                        return;
+                    }
+                    if (typeof lesson.id !== "string" || lesson.id.trim() === "") {
+                        fail(`${label}: missing id`);
+                    } else if (lessonFilesById.has(lesson.id)) {
+                        fail(`duplicate lesson id "${lesson.id}" in ${group.moduleName} and ${lessonFilesById.get(lesson.id)}`);
+                    } else {
+                        lessonFilesById.set(lesson.id, group.moduleName);
+                    }
+                    if (typeof lesson.title !== "string" || lesson.title.trim() === "") {
+                        fail(`${label}: empty title`);
+                    }
+                    if (typeof lesson.description !== "string" || lesson.description.trim() === "") {
+                        fail(`${label}: empty description`);
+                    }
+                    if (lesson.unit && !unitsById.has(lesson.unit)) {
+                        fail(`lesson "${lesson.id}" unit "${lesson.unit}" is not in units.js`);
+                    }
                     if (lesson.quizId) {
                         try {
-                            registry.getQuiz(lesson.quizId);
+                            const quiz = registry.getQuiz(lesson.quizId);
+                            if (lesson.unit && quiz.unitId !== lesson.unit) {
+                                fail(`lesson "${lesson.id}" unit "${lesson.unit}" uses quiz "${lesson.quizId}" from unit "${quiz.unitId}"`);
+                            }
                             pass(`lesson "${lesson.id}" quizId "${lesson.quizId}" resolves`);
                         } catch (error) {
                             fail(`lesson "${lesson.id}" quizId "${lesson.quizId}" does not resolve: ${error.message}`);
                         }
                     }
-                    if (lesson.unit && !unitsById.has(lesson.unit)) {
-                        fail(`lesson "${lesson.id}" unit "${lesson.unit}" is not in units.js`);
-                    }
+                    checkCheckpoints(lesson);
+                    allLessons.push(lesson);
                 });
 
-                checkLessonGlossaryMarkers(lessonList, glossary);
-            }
+                pass(`lesson list ${group.exportName} (${group.moduleName}): ${group.lessons.length} lessons, ids unique`);
+            });
+
+            checkLessonGlossaryMarkers(allLessons, glossary);
 
             // Units may advertise a quizId; it must resolve too.
             units.forEach((unit) => {
@@ -298,7 +415,7 @@ function main() {
                 }
             });
         } finally {
-            fs.rmSync(tempDir, { recursive: true, force: true });
+            fs.rmSync(temp.dir, { recursive: true, force: true });
         }
     })();
 }

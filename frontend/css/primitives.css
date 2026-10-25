@@ -134,6 +134,61 @@
   animation: node-pulse 1.2s infinite;
 }
 
+/* Balance violation marker (AVL). The sublabel text carries "bf:+2 !" so the
+   state is never conveyed by colour alone. */
+.tree-node.node-unbalanced circle {
+  stroke: #f43f5e;
+  stroke-width: 4px;
+  stroke-dasharray: 6 3;
+  animation: node-pulse 1s infinite;
+}
+
+.tree-node.node-unbalanced .node-sublabel {
+  fill: #fda4af;
+  font-weight: 700;
+}
+
+/* Opt-in tweening: enter / leave affordances. Position tweening is done in JS
+   frame-by-frame (~250-500ms), so these are only opacity/scale hints. */
+.tree-node.node-entering {
+  animation: tree-node-fade-in 0.3s ease;
+}
+
+.tree-node.node-entering circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tree-node-scale-in 0.3s ease;
+}
+
+.tree-node.node-leaving {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+@keyframes tree-node-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tree-node-scale-in {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+
+.tree-node:focus {
+  outline: none;
+}
+
+.tree-node:focus-visible {
+  outline: 2px dashed #fbbf24;
+  outline-offset: 4px;
+}
+
+.tree-node:focus-visible circle {
+  stroke: #fbbf24;
+  stroke-width: 5px;
+}
+
 /* Search / Insertion Path Highlight */
 .tree-node.path circle {
   stroke: #38bdf8;
@@ -405,6 +460,219 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* --- ArrayStrip Styles --- */
+.array-strip-container {
+  width: 100%;
+  max-width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--cell-border);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.array-strip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.array-cell {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--cell-filled-bg);
+  border: 1px solid var(--cell-border);
+  border-radius: 8px;
+  color: var(--cell-text);
+  font-weight: 600;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.array-cell-value {
+  line-height: 1.1;
+}
+
+.array-cell-index {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--node-subtext);
+  line-height: 1;
+}
+
+.array-cell-interactive {
+  cursor: pointer;
+}
+
+.array-cell-interactive:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Role states: every state carries a visible glyph as well as a colour. */
+.array-cell.role-comparing {
+  border-color: var(--node-compare-border);
+  border-width: 2px;
+}
+
+.array-cell.role-comparing::before {
+  content: "?";
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0f172a;
+  background: var(--node-highlight-border);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.array-cell.role-swapping {
+  border-color: var(--node-rotate-border);
+  border-width: 2px;
+}
+
+.array-cell.role-swapping::before {
+  content: "⇄";
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  background: var(--node-rotate-border);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.array-cell.role-sorted {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: var(--node-new-border);
+}
+
+.array-cell.role-sorted::after {
+  content: "✓";
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0f172a;
+  background: var(--node-new-border);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.array-cell.role-selected {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: var(--node-selected-border);
+  border-width: 3px;
+}
+
+.array-cell.role-new-node {
+  background: var(--node-new-bg);
+  border-color: var(--node-new-border);
+  border-width: 2px;
+}
+
+.array-cell.role-removed {
+  opacity: 0.45;
+  border-style: dashed;
+  text-decoration: line-through;
+}
+
+.array-cell.role-inactive {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.array-cell.array-cell-enter {
+  animation: cell-flash 0.5s ease;
+}
+
+/* Labelled boundary between the heap region and the sorted tail. */
+.array-strip-divider {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.array-strip-divider-label {
+  writing-mode: vertical-rl;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--node-subtext);
+  border-left: 1px dashed var(--node-subtext);
+  border-right: 1px dashed var(--node-subtext);
+  padding: 2px;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .array-strip-container {
+    padding: 10px;
+  }
+
+  .array-cell {
+    min-width: 38px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .array-cell {
+    transition: none;
+  }
+
+  .array-cell.array-cell-enter {
+    animation: none;
+  }
+
+  .tree-node.node-entering,
+  .tree-node.node-entering circle,
+  .tree-node.node-unbalanced circle,
+  .tree-node.node-highlight circle,
+  .tree-node.node-selected circle,
+  .tree-node.node-rotate circle {
+    animation: none;
+  }
+
+  .tree-node.node-leaving {
+    transition: none;
+    opacity: 0;
+  }
 }
 
 /* --- GrowthChart Styles --- */

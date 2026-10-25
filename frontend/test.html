@@ -72,6 +72,38 @@
                 <div id="quiz-container"></div>
                 <pre id="quiz-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
             </div>
+
+            <!-- Rotation replay fixture (Phase C gate) -->
+            <div class="test-card full-width">
+                <h2>5. TreeCanvas rotation replay (identity + tween)</h2>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.85rem;">
+                    Renders before → during → after for each rotation and asserts that the same DOM
+                    element is reused for every surviving node id.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button type="button" data-rot="LL">LL (right rotation)</button>
+                    <button type="button" data-rot="RR">RR (left rotation)</button>
+                    <button type="button" data-rot="LR">LR (double)</button>
+                    <button type="button" data-rot="RL">RL (double)</button>
+                    <button type="button" data-rot="LLT2">LL with T2 subtree move</button>
+                </div>
+                <div id="rot-tree" style="height: 320px;"></div>
+                <div id="rot-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+                <pre id="rot-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
+            </div>
+
+            <!-- Dual-panel fixture (ArrayStrip + TreeCanvas under one controller) -->
+            <div class="test-card full-width">
+                <h2>6. Dual panel: ArrayStrip + TreeCanvas, one PlaybackController</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button type="button" id="dual-prev">← Prev</button>
+                    <button type="button" id="dual-next">Next →</button>
+                </div>
+                <div id="dual-array"></div>
+                <div id="dual-tree" style="height: 260px;"></div>
+                <div id="dual-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+                <pre id="dual-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
+            </div>
         </div>
     </div>
 
@@ -79,6 +111,8 @@
         import { TreeCanvas } from './js/primitives/TreeCanvas.js';
         import { BucketGrid } from './js/primitives/BucketGrid.js';
         import { GrowthChart } from './js/primitives/GrowthChart.js';
+        import { ArrayStrip } from './js/primitives/ArrayStrip.js';
+        import { PlaybackController } from './js/engine/PlaybackController.js';
 
         // 1. Setup TreeCanvas & Fixtures
         const treeContainer = document.getElementById('tree-container');
@@ -367,6 +401,360 @@
             window.__quizSelftest = { passed, total: checks.length, checks };
             controller.destroy();
         });
+
+        // 5. Rotation replay fixture (Phase C gate) ------------------------
+        const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        const rotAnnotation = document.getElementById('rot-annotation');
+        const rotOutput = document.getElementById('rot-selftest-output');
+        const rotCanvas = new TreeCanvas(document.getElementById('rot-tree'), { tweenMs: 220 });
+        const rotChecks = [];
+        const checkRot = (name, condition, detail) => {
+            rotChecks.push({ name, pass: !!condition, detail: String(detail) });
+        };
+
+        const mkNode = (id, label, parentId, side, sublabel) => ({
+            id,
+            label: String(label),
+            sublabel,
+            parent_id: parentId,
+            side
+        });
+
+        const rotationFixtures = {
+            LL: {
+                rotating: [0, 1],
+                before: { root: 0, nodes: [mkNode(0, 30, null, null, 'bf:+2'), mkNode(1, 20, 0, 'left', 'bf:+1'), mkNode(2, 10, 1, 'left', 'bf:0')] },
+                during: null,
+                after: { root: 1, nodes: [mkNode(1, 20, null, null, 'bf:0'), mkNode(2, 10, 1, 'left', 'bf:0'), mkNode(0, 30, 1, 'right', 'bf:0')] }
+            },
+            RR: {
+                rotating: [0, 1],
+                before: { root: 0, nodes: [mkNode(0, 10, null, null, 'bf:-2'), mkNode(1, 20, 0, 'right', 'bf:-1'), mkNode(2, 30, 1, 'right', 'bf:0')] },
+                during: null,
+                after: { root: 1, nodes: [mkNode(1, 20, null, null, 'bf:0'), mkNode(0, 10, 1, 'left', 'bf:0'), mkNode(2, 30, 1, 'right', 'bf:0')] }
+            },
+            LR: {
+                rotating: [0, 1, 2],
+                before: { root: 0, nodes: [mkNode(0, 30, null, null, 'bf:+2'), mkNode(1, 10, 0, 'left', 'bf:-1'), mkNode(2, 20, 1, 'right', 'bf:0')] },
+                during: { root: 0, nodes: [mkNode(0, 30, null, null, 'bf:+2'), mkNode(2, 20, 0, 'left', 'bf:0'), mkNode(1, 10, 2, 'left', 'bf:0')] },
+                after: { root: 2, nodes: [mkNode(2, 20, null, null, 'bf:0'), mkNode(1, 10, 2, 'left', 'bf:0'), mkNode(0, 30, 2, 'right', 'bf:0')] }
+            },
+            RL: {
+                rotating: [0, 1, 2],
+                before: { root: 0, nodes: [mkNode(0, 10, null, null, 'bf:-2'), mkNode(1, 30, 0, 'right', 'bf:+1'), mkNode(2, 20, 1, 'left', 'bf:0')] },
+                during: { root: 0, nodes: [mkNode(0, 10, null, null, 'bf:-2'), mkNode(2, 20, 0, 'right', 'bf:0'), mkNode(1, 30, 2, 'right', 'bf:0')] },
+                after: { root: 2, nodes: [mkNode(2, 20, null, null, 'bf:0'), mkNode(0, 10, 2, 'left', 'bf:0'), mkNode(1, 30, 2, 'right', 'bf:0')] }
+            },
+            LLT2: {
+                rotating: [1, 2],
+                before: { root: 0, nodes: [mkNode(0, 50, null, null, 'bf:0'), mkNode(1, 30, 0, 'left', 'bf:+1'), mkNode(3, 70, 0, 'right', 'bf:0'), mkNode(2, 20, 1, 'left', 'bf:-1'), mkNode(5, 40, 1, 'right', 'bf:0'), mkNode(4, 25, 2, 'right', 'bf:0')] },
+                during: null,
+                after: { root: 0, nodes: [mkNode(0, 50, null, null, 'bf:0'), mkNode(2, 20, 0, 'left', 'bf:0'), mkNode(1, 30, 2, 'right', 'bf:0'), mkNode(4, 25, 1, 'left', 'bf:0'), mkNode(5, 40, 1, 'right', 'bf:0'), mkNode(3, 70, 0, 'right', 'bf:0')] }
+            }
+        };
+
+        const asSnapshot = (frame) => ({ nodes: frame.nodes, root_id: frame.root });
+
+        function elementFor(id) {
+            return rotCanvas.nodesLayer.querySelector(`[data-id="${id}"]`);
+        }
+
+        function lineConnects(fromId, toId) {
+            const a = rotCanvas.lastPositions.get(fromId);
+            const b = rotCanvas.lastPositions.get(toId);
+            if (!a || !b) return false;
+            return [...rotCanvas.edgesLayer.querySelectorAll('line')].some((line) =>
+                Math.abs(parseFloat(line.getAttribute('x1')) - a.x) < 0.6 &&
+                Math.abs(parseFloat(line.getAttribute('y1')) - a.y) < 0.6 &&
+                Math.abs(parseFloat(line.getAttribute('x2')) - b.x) < 0.6 &&
+                Math.abs(parseFloat(line.getAttribute('y2')) - b.y) < 0.6);
+        }
+
+        async function runRotation(key) {
+            const fixture = rotationFixtures[key];
+            const frames = [fixture.before, fixture.during, fixture.after].filter(Boolean);
+            const beforeIds = fixture.before.nodes.map((n) => n.id);
+            const afterIds = fixture.after.nodes.map((n) => n.id);
+            const surviving = beforeIds.filter((id) => afterIds.includes(id));
+
+            rotAnnotation.textContent = `${key}: before`;
+            rotCanvas.render(asSnapshot(frames[0]), {
+                rotating: fixture.rotating,
+                unbalanced: [fixture.before.root]
+            });
+            await waitMs(rotCanvas.options.tweenMs + 140);
+
+            const firstEls = new Map();
+            surviving.forEach((id) => firstEls.set(id, elementFor(id)));
+            const unbalancedClass = elementFor(fixture.before.root).classList.contains('node-unbalanced');
+
+            for (let i = 1; i < frames.length; i++) {
+                rotAnnotation.textContent = `${key}: frame ${i + 1} of ${frames.length}`;
+                rotCanvas.render(asSnapshot(frames[i]), { rotating: fixture.rotating });
+                await waitMs(rotCanvas.options.tweenMs + 140);
+            }
+
+            const lastEls = new Map();
+            surviving.forEach((id) => lastEls.set(id, elementFor(id)));
+
+            checkRot(`${key}: unbalanced node gets node-unbalanced`,
+                unbalancedClass, `id ${fixture.before.root}`);
+            checkRot(`${key}: surviving node elements kept identity`,
+                surviving.every((id) => firstEls.get(id) && firstEls.get(id) === lastEls.get(id)),
+                `${surviving.length} surviving id(s)`);
+
+            const ids = [...rotCanvas.nodesLayer.querySelectorAll('.tree-node')].map((g) => g.getAttribute('data-id'));
+            checkRot(`${key}: no duplicate ids in DOM`, new Set(ids).size === ids.length, ids.join(','));
+            const edgeCount = rotCanvas.edgesLayer.querySelectorAll('line').length;
+            checkRot(`${key}: edge count is nodes-1`, edgeCount === ids.length - 1,
+                `${edgeCount} edges / ${ids.length} nodes`);
+
+            let maxDelta = 0;
+            fixture.after.nodes.forEach((n) => {
+                const g = elementFor(n.id);
+                const target = rotCanvas.lastPositions.get(n.id);
+                const match = /translate\(([-\d.]+),\s*([-\d.]+)\)/.exec(g ? g.getAttribute('transform') || '' : '');
+                if (!match || !target) {
+                    maxDelta = Infinity;
+                    return;
+                }
+                maxDelta = Math.max(maxDelta,
+                    Math.abs(parseFloat(match[1]) - target.x),
+                    Math.abs(parseFloat(match[2]) - target.y));
+            });
+            checkRot(`${key}: tween finished at target positions`, maxDelta < 0.6,
+                `max delta ${Number.isFinite(maxDelta) ? maxDelta.toFixed(2) : 'n/a'}px`);
+
+            if (key === 'LLT2') {
+                checkRot('LLT2: moved subtree T2 now hangs from 30', lineConnects(1, 4), 'edge 1 -> 4');
+                checkRot('LLT2: T2 no longer hangs from 20', !lineConnects(2, 4), 'edge 2 -> 4 absent');
+            }
+        }
+
+        async function checkReducedMotionPath() {
+            const originalMatchMedia = window.matchMedia;
+            let stubApplied = false;
+            try {
+                window.matchMedia = function () {
+                    return {
+                        matches: true,
+                        media: '(prefers-reduced-motion: reduce)',
+                        onchange: null,
+                        addEventListener() {},
+                        removeEventListener() {},
+                        addListener() {},
+                        removeListener() {},
+                        dispatchEvent() { return false; }
+                    };
+                };
+                stubApplied = window.matchMedia('(prefers-reduced-motion: reduce)').matches === true;
+            } catch (_) {
+                stubApplied = false;
+            }
+
+            const prevTween = rotCanvas.options.tweenMs;
+            rotCanvas.options.tweenMs = 240;
+            rotCanvas.render(asSnapshot(rotationFixtures.LL.before), {});
+            rotCanvas.render(asSnapshot(rotationFixtures.LL.after), {});
+            const g = elementFor(1);
+            const target = rotCanvas.lastPositions.get(1);
+            const match = /translate\(([-\d.]+),\s*([-\d.]+)\)/.exec(g ? g.getAttribute('transform') || '' : '');
+            const jumped = !!match && !!target &&
+                Math.abs(parseFloat(match[1]) - target.x) < 0.01 &&
+                Math.abs(parseFloat(match[2]) - target.y) < 0.01 &&
+                rotCanvas._tweenRaf === 0;
+            rotCanvas.options.tweenMs = prevTween;
+            try {
+                window.matchMedia = originalMatchMedia;
+            } catch (_) { /* ignore */ }
+
+            checkRot('reduced motion: tween is skipped and jumps to target',
+                stubApplied && jumped, `stub=${stubApplied} jumped=${jumped}`);
+        }
+
+        function renderRotOutput() {
+            const lines = [];
+            rotChecks.forEach((c) => lines.push(`${c.pass ? 'PASS' : 'FAIL'} — ${c.name} (${c.detail})`));
+            const passed = rotChecks.filter((c) => c.pass).length;
+            lines.push(`--- ${passed}/${rotChecks.length} rotation checks passed ---`);
+            rotOutput.textContent = lines.join('\n');
+            rotOutput.setAttribute('data-selftest', passed === rotChecks.length ? 'pass' : 'fail');
+            window.__rotationSelftest = { passed, total: rotChecks.length, checks: rotChecks.slice() };
+        }
+
+        async function runAllRotations() {
+            rotChecks.length = 0;
+            for (const key of Object.keys(rotationFixtures)) {
+                await runRotation(key);
+            }
+            await checkReducedMotionPath();
+            renderRotOutput();
+        }
+
+        document.querySelectorAll('[data-rot]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                rotChecks.length = 0;
+                await runRotation(button.getAttribute('data-rot'));
+                renderRotOutput();
+            });
+        });
+
+        setTimeout(runAllRotations, 100);
+
+        // 6. Dual panel: ArrayStrip + TreeCanvas, one controller -----------
+        const dualOutput = document.getElementById('dual-selftest-output');
+        const dualChecks = [];
+        const checkDual = (name, condition, detail) => {
+            dualChecks.push({ name, pass: !!condition, detail: String(detail) });
+        };
+
+        const dualCanvas = new TreeCanvas(document.getElementById('dual-tree'), { tweenMs: 180 });
+        const dualStrip = new ArrayStrip(document.getElementById('dual-array'), {
+            onSelect: (id) => { window.__dualSelected = id; }
+        });
+
+        const cellsOf = (pairs) => pairs.map(([id, value]) => ({ id, value }));
+
+        function treeFromArray(cells, heapSize) {
+            const nodes = cells.slice(0, heapSize).map((cell, index) => ({
+                id: cell.id,
+                label: String(cell.value),
+                sublabel: `i=${index}`,
+                parent_id: index === 0 ? null : cells[Math.floor((index - 1) / 2)].id,
+                side: index === 0 ? null : (index % 2 === 1 ? 'left' : 'right')
+            }));
+            return { nodes, root_id: heapSize > 0 ? cells[0].id : null };
+        }
+
+        const dualSnapshots = [
+            { cells: cellsOf([[0, 5], [1, 9]]), heap: 2, roles: {} },
+            { cells: cellsOf([[0, 5], [1, 9], [2, 2]]), heap: 3, roles: { new_node: [2] } },
+            { cells: cellsOf([[2, 2], [1, 9], [0, 5]]), heap: 3, roles: { swapping: [2, 0] } },
+            { cells: cellsOf([[2, 2], [1, 9], [0, 5]]), heap: 2, roles: { sorted: [0] } }
+        ];
+
+        const dualAnnotations = [
+            'Heap has two elements: 5 at index 0 and 9 at index 1.',
+            'Insert 2: append at index 2, then compare with parent 5 at index 0.',
+            'Swap 2 with 5: 2 is now the root and smaller than its child 9.',
+            'Sorted tail: index 2 holds 5, which is now outside the heap region.'
+        ];
+
+        const dualSteps = dualSnapshots.map((snap, i) => Object.assign({
+            kind: 'dual',
+            snapshot: {
+                array: { cells: snap.cells, heap_size: snap.heap, heap_type: 'min' },
+                tree: treeFromArray(snap.cells, snap.heap)
+            },
+            annotation: dualAnnotations[i]
+        }, snap.roles));
+
+        const dualPc = new PlaybackController({
+            onStep: (step) => {
+                const arr = step.snapshot.array;
+                dualStrip.update({
+                    cells: arr.cells,
+                    heapSize: arr.heap_size,
+                    roles: {
+                        comparing: step.comparing,
+                        swapping: step.swapping,
+                        sorted: step.sorted,
+                        new_node: step.new_node,
+                        selected: step.selected
+                    },
+                    showIndices: true,
+                    showParentChild: true,
+                    ariaLabel: 'Min-heap array'
+                }, { durationMs: 180 });
+                dualCanvas.render(step.snapshot.tree, step);
+            },
+            onAnnotation: (text) => {
+                document.getElementById('dual-annotation').textContent = text;
+            }
+        });
+
+        dualPc.load(dualSteps);
+
+        document.getElementById('dual-prev').addEventListener('click', () => dualPc.prev());
+        document.getElementById('dual-next').addEventListener('click', () => dualPc.next());
+
+        function renderDualOutput() {
+            const lines = [];
+            dualChecks.forEach((c) => lines.push(`${c.pass ? 'PASS' : 'FAIL'} — ${c.name} (${c.detail})`));
+            const passed = dualChecks.filter((c) => c.pass).length;
+            lines.push(`--- ${passed}/${dualChecks.length} dual-panel checks passed ---`);
+            dualOutput.textContent = lines.join('\n');
+            dualOutput.setAttribute('data-selftest', passed === dualChecks.length ? 'pass' : 'fail');
+            window.__dualSelftest = { passed, total: dualChecks.length, checks: dualChecks.slice() };
+        }
+
+        function dualCellIds() {
+            return [...document.querySelectorAll('#dual-array .array-cell')].map((el) => Number(el.dataset.id));
+        }
+
+        function dualNodeLabels() {
+            return [...document.querySelectorAll('#dual-tree .tree-node')].map((g) => ({
+                id: Number(g.getAttribute('data-id')),
+                label: g.querySelector('.node-label').textContent
+            }));
+        }
+
+        async function runDualChecks() {
+            dualChecks.length = 0;
+            await waitMs(60);
+
+            checkDual('array panel renders 2 cells at step 0', dualCellIds().length === 2, dualCellIds().join(','));
+            checkDual('tree panel renders 2 nodes at step 0', dualNodeLabels().length === 2, JSON.stringify(dualNodeLabels()));
+            checkDual('tree index 1 parent is array index 0',
+                dualSteps[0].snapshot.tree.nodes[1].parent_id === dualSteps[0].snapshot.array.cells[0].id,
+                String(dualSteps[0].snapshot.tree.nodes[1].parent_id));
+            checkDual('tree shows heap index sublabels',
+                document.querySelector('#dual-tree .node-sublabel').textContent.startsWith('i='),
+                document.querySelector('#dual-tree .node-sublabel').textContent);
+
+            dualPc.seek(3);
+            await waitMs(20);
+            const row = document.querySelector('#dual-array .array-strip-row');
+            const divider = row.querySelector('.array-strip-divider');
+            const dividerLabel = divider ? divider.querySelector('.array-strip-divider-label').textContent : '';
+            checkDual('heap|sorted divider present when heap is smaller than array',
+                !!divider && dividerLabel.includes('heap') && dividerLabel.includes('sorted'),
+                dividerLabel || 'missing');
+            checkDual('divider sits at the heap boundary',
+                row.children[2] === divider, `child index ${[...row.children].indexOf(divider)}`);
+            checkDual('sorted cell exposes text state in aria-label',
+                (document.querySelector('#dual-array .array-cell[data-id="0"]').getAttribute('aria-label') || '').includes('sorted region'),
+                document.querySelector('#dual-array .array-cell[data-id="0"]').getAttribute('aria-label'));
+
+            dualPc.seek(2);
+            await waitMs(20);
+            const firstCell = document.querySelector('#dual-array .array-cell');
+            checkDual('swapped array puts id 2 first', firstCell.dataset.id === '2', firstCell.dataset.id);
+            const rootLabel = document.querySelector('#dual-tree .tree-node[data-id="2"] .node-label');
+            checkDual('tree root updates to the swapped value', rootLabel && rootLabel.textContent === '2',
+                rootLabel ? rootLabel.textContent : 'missing');
+
+            const syncOk = dualSteps[2].snapshot.array.cells.every((cell) => {
+                const node = dualSteps[2].snapshot.tree.nodes.find((n) => n.id === cell.id);
+                return node && String(node.label) === String(cell.value);
+            });
+            checkDual('array labels and tree labels agree at step 2', syncOk, '3 cells');
+
+            dualPc.prev();
+            checkDual('Prev moves the shared cursor back', dualPc.state.cursor === 1, String(dualPc.state.cursor));
+            dualPc.next();
+            checkDual('Next returns to the same step', dualPc.state.cursor === 2, String(dualPc.state.cursor));
+
+            const target = document.querySelector('#dual-array .array-cell[data-id="2"]');
+            target.focus();
+            target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+            checkDual('array cell is keyboard selectable', window.__dualSelected === 2, String(window.__dualSelected));
+
+            renderDualOutput();
+        }
+
+        setTimeout(runDualChecks, 400);
     </script>
 </body>
 </html>

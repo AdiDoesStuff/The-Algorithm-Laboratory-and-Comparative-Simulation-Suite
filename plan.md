@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B (B1-B5) complete on branch `phase-b-shell`: 87/87 pytest, 8/8 content checks, three BST lessons, a 10-question quiz aligned to those lessons, live progress/Guided Path, and post-B5 UI fixes.
+**Last updated:** 25 Oct 2026 — Phase B (B1-B5) merged to `main` (merge `8ac974c`); Phase C (C1-C5) complete on branch `phase-c-heaps-avl`, **not yet pushed**. Baseline: **156/156 pytest**, **21/21 content checks**, three BST lessons, three heap lessons, three AVL lessons, and three 10-question quizzes, live progress/Guided Path. Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -14,15 +14,15 @@
 | Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html` and opens directly; `index.html` is the hub and owns the landing splash. |
 | Pathfinding Lab (3 algos) | Done, mature. |
 | Glossary | ✅ **B4 shipped.** Separate page plus contextual inline `?` tooltips on BST narration; 94 terms with stable slugs. |
-| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view. Covered by the current 87-test pytest suite. Committed on `phase-a-stabilize`; exercised by B2-B5 lessons and quizzes. |
+| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view. Committed on `phase-a-stabilize`; exercised by B2-B5 lessons and quizzes and by the current pytest suite. |
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
-| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
-| Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `QuizEngine` (production, B3), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, shared nav, unit registry | ✅ **B1-B3 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, live progress badges, enabled "Test yourself" deep links, and the Guided Path wrapper with its soft nudge. |
-| Lesson engine, quizzes, progress | ✅ **B2-B5 shipped.** `engine/LessonRunner.js` (generic, unit-agnostic), `lessons/bstLessons.js` (three data-only lessons: insertion, deletion, traversal), pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine`, `bstQuiz.js`, and `progress.js` shipped in B3. |
-| Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
-| Tests | ✅ **87/87 pytest tests green** plus **8/8 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, B1 static routes, and B3-B5 lesson/quiz wiring. |
-| Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. |
+| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js`, `heaps.js`, and `avl.js` share the op-log, busy gate, stale-response guard, error banner, and auto fit-view. AVL adds a `createLatest()` guard on the plain-BST comparison. |
+| Primitives | `TreeCanvas` (production: keyed nodes, optional position tween, animated fit-view, path highlight, `unbalanced`/`rotating` roles), `ArrayStrip` (production, heaps), `treeAdapter` (production), `QuizEngine` (production, B3), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
+| Hub, shared nav, unit registry | ✅ **B1-B3 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, live progress badges, enabled "Test yourself" deep links, and the Guided Path wrapper with its soft nudge. AVL is live at guidedOrder 5; Trie and Design remain "soon". |
+| Lesson engine, quizzes, progress | ✅ **B2-B5 shipped, extended in C3/C5.** `engine/LessonRunner.js` (generic, unit-agnostic), data-only lessons for BST, heaps, and AVL, pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine` plus `bstQuiz.js`, `heapQuiz.js`, and `avlQuiz.js`; `progress.js` keys attempts by unit id. |
+| Heap / AVL / Trie / Hash / DP / Bench | ✅ Heap and AVL are live end to end (C2-C5). Trie, Hash, DP, and Bench are still stubs in `app.py` and the algorithm modules. |
+| Tests | ✅ **156/156 pytest tests green** plus **21/21 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap invariant/step contracts, and AVL rotation cases, per-step invariants, and payload validation. |
+| Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
 
@@ -33,8 +33,8 @@
 5. ~~Duplicate handling disagrees between `_silent_insert` (discards) and `bst_insert_steps` (inserts right).~~ ✅ Both paths reject duplicates with `ValidationError` → HTTP 400 (`b201ff8`).
 6. ~~Traversal ignores `tree_type`, so array-built binary trees are traversed as a rebuilt BST.~~ ✅ `tree_type` respected; binary mode takes `array` field; `ops` rejected for `tree_type="binary"` (`d186ef3`).
 7. ~~No busy gate or sequence counter: overlapping requests and stale responses repaint wrongly.~~ ✅ `isBusy` gate in `runAction()`; `createLatest()` sequence guard on classify/height-depth (`541154a`).
-8. `TreeCanvas` redraws the DOM and has no tweening, so rotation animation needs new work. *(Open — Phase C1.)*
-9. The bar renderer is tied to sorting. The heap dual panel needs it extracted. *(Open — Phase C1.)*
+8. ~~`TreeCanvas` redraws the DOM and has no tweening, so rotation animation needs new work.~~ ✅ Keyed nodes plus opt-in position tweening (`tweenMs`), with reduced-motion support; existing pages keep the instant redraw default. (`822b4a9`)
+9. ~~The bar renderer is tied to sorting. The heap dual panel needs it extracted.~~ ✅ `primitives/ArrayStrip.js` is a standalone renderer; `renderer.js` (sorting) is untouched. (`659730c`)
 10. ~~Navigation markup is duplicated across pages. `index.html` is the sorting page, not a hub.~~ ✅ `shell/nav.js` renders one `<nav aria-label="Primary">` from `shell/units.js`; sorting moved to `sorting.html`; `index.html` is the hub. *(B1, `71e91b3`, `2c48c40`.)*
 
 ---
@@ -150,7 +150,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 
 *A session is about 3-4 focused hours. Total is roughly 35-43 sessions. D can run in parallel with C if you want, but they share the shell, so finish B first.
 
-**Current status:** Phase A ✅ (merged to `main`) and Phase B ✅ (B1-B5 on `phase-b-shell`) are complete. Phases C-F remain.
+**Current status:** Phase A ✅ (merged to `main`), Phase B ✅ (B1-B5, merged to `main`), and Phase C ✅ (C1-C5, on `phase-c-heaps-avl`, unpushed) are complete. Phases D-F remain.
 
 ---
 
@@ -296,29 +296,34 @@ export const bstInsertLesson = {
 - Not verified: real screen-reader announcement order, touch/pointer behaviour on phones, and load-time focus into the glossary modal in a focused window (the harness tab reports `document.hasFocus() === false`; click-open, Escape, and focus return were verified).
 - 375px re-check: hub, BST Learn, quiz, and glossary pages have no horizontal overflow; the tooltip popover clamps inside a 375px viewport.
 - Post-B5 UI polish: `.glossary-ref` keeps a term and its `?` toggle on one line with a 6px gap, `.lab-container` adds an 8px side gutter to the lab pages, and `.step-annotation-box` uses normal block/inline flow so glossary markers do not turn a narration sentence into flex columns. Browser-verified at 1000px and 375px.
-- B3-B5 verification: 87/87 pytest, 8/8 content checks (`dev/validate_content.mjs`), a clean 10/10 quiz attempt with the expected topic breakdown, and no horizontal overflow at 375px on the hub, BST Learn, quiz, and glossary pages. Commits `020e504`…`ad4df81` on `phase-b-shell`.
+- B3-B5 verification: 87/87 pytest, 8/8 content checks (`dev/validate_content.mjs`), a clean 10/10 quiz attempt with the expected topic breakdown, and no horizontal overflow at 375px on the hub, BST Learn, quiz, and glossary pages. Commits `020e504`…`ad4df81` on `phase-b-shell`, plus post-B5 fixes `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 
 ---
 
 ## Phase C: Unit 2, Heaps and AVL
 
 ### C1. Prerequisites (do before any unit logic)
-- [ ] Extract `primitives/ArrayStrip.js` from the sorting `renderer.js`: generic array-of-cells with highlight roles (`comparing`, `swapping`, `sorted`, `heap-boundary`).
-- [ ] Add node tweening to `TreeCanvas`: keep SVG elements keyed by node ID, animate position changes (CSS transitions or requestAnimationFrame lerp) instead of full redraw. Needed for rotations.
-- [ ] Define the dual-panel contract: a step carries both `snapshot.array` and `snapshot.tree`. Two renderers subscribe to one `PlaybackController`.
+- [x] `primitives/ArrayStrip.js`: generic array-of-cells with highlight roles (`comparing`, `swapping`, `sorted`, `heap-boundary`), identity-preserving FLIP swaps, labelled `heap | sorted` divider, and per-cell aria labels. Built as a new primitive; `renderer.js` was deliberately left untouched (F1 owns the sorting refactor), logged as a deviation. (`659730c`, aria polish in `aea8641`.)
+- [x] Node tweening in `TreeCanvas`: SVG elements are keyed by node id and updated in place; opt-in `tweenMs` lerps positions per frame, default `0` keeps every existing page instant. Enter/leave and reduced-motion paths included. (`822b4a9`.)
+- [x] Dual-panel contract in `docs/TRACE_SPEC.md` §5: one step carries `snapshot.array` + `snapshot.tree`; one `PlaybackController` drives both renderers. (`7302c4a`.)
+- [x] Gate evidence: `test.html` rotation fixtures **28/28 PASS** (LL, RR, LR, RL, LL-with-T2, stable DOM identity, no duplicate ids, target positions, reduced-motion jump) and dual-panel fixtures **13/13 PASS**, run in the real browser. BST/sorting regression checked in the browser; pytest 87/87 and validator 8/8 after the changes. (`aea8641`.)
 
 ### C2. Heap (backend `heaps.py`)
-- [ ] Min-heap and max-heap toggle.
-- [ ] `heap_insert_steps`: append, then `bubble_up` compare/swap steps, with array and tree snapshots.
-- [ ] `heap_extract_steps`: swap root with last, remove, then `bubble_down`/`heapify` steps.
-- [ ] `heap_build_steps` (bottom-up heapify) as a Play option.
-- [ ] `heapsort_steps`: build-heap, then repeated extract; `heap-boundary` marks the sorted region.
-- [ ] Tests: heap invariant holds after every step snapshot; heapsort output sorted; empty and single element.
+- [x] Min-heap and max-heap toggle: `heap_type` `"min"` / `"max"`, validated, carried in `metadata` and every `snapshot.array`. Generators live in `backend/trees.py` next to `serialize_tree` rather than a new `heaps.py`, logged as a deviation. (`a0af120`.)
+- [x] `heap_op_steps` insert: `append` then `bubble_up` `compare`/`swap` steps, dual array+tree snapshot on every step. (`a0af120`.)
+- [x] `heap_op_steps` extract: `extract_root`, root↔last `swap`, `remove_last`, `bubble_down` `compare`/`swap`, `extract_done`. (`a0af120`.)
+- [x] `heap_op_steps` build: bottom-up heapify from `n//2-1` with `build_start`, per-subtree `heapify_node_done`, `build_done`; also the first step of heapsort. (`a0af120`.)
+- [x] `heapsort_steps`: build-heap, then repeated extract with `mark_sorted` shrinking `heap_size` (the `heap | sorted` boundary in ArrayStrip) and `heapsort_done`. Max→ascending, min→descending. (`a0af120`.)
+- [x] Tests (relaxed, D9): `backend/tests/test_heaps.py` checks every snapshot for tree/array consistency and heap order, allowing only edges named by the step payload; every `*_done` step has zero violations; heapq oracle agreement; heapsort sorted output; empty/single-element; id stability; metrics; and a 17-case 400 validation matrix. Full suite **120 passed**. (`30a47c5`.)
+- [x] Contract documented in `docs/TRACE_SPEC.md` §6: request shapes, response envelope, step-type table, tie rule, caps, heapsort direction. (`6c45fab`.)
 
 ### C3. Heap frontend
-- [ ] `heaps.html` + `pages/heaps.js`: dual panel (array on top, tree below), index labels, parent/child index formulas shown in narration (`2i+1`, `2i+2`, `(i-1)//2`).
-- [ ] Learn lessons: insert with bubble-up, extract with bubble-down, heapsort.
-- [ ] `heapQuiz.js`.
+- [x] `heaps.html` + heap controller with a dual panel (array above, complete tree below) driven by one `PlaybackController`; 0-based index labels on every cell and a selectable "Index formulas" panel showing `2i+1`, `2i+2`, `(i-1)//2` (plus parent/child values and out-of-heap markers). The controller lives at `frontend/js/heaps.js` to match `bst.js` rather than `pages/heaps.js`, logged as a deviation. (`d26ae08`)
+- [x] Learn lessons: insert with bubble-up, build + extract with bubble-down, and heapsort. Checkpoints use `beforeValue` inline and `anchorType`/`occurrence` for `mark_sorted` in the heapsort lesson, resolved by the controller before the runner sees them. (`5811e9f`)
+- [x] `heapQuiz.js`: ten questions whose array states were produced by `backend/trees.py`, ordered to follow the lessons (indexing, insertion, extraction, build, heapsort, tie rule). (`5811e9f`)
+- [x] Play extras required by C2's step contract: min/max toggle clears with a visible notice, multi-value insert, extract joins the op log, build replaces the heap, heapsort both directions with the `heap | sorted` divider at `heap_size`, Clear resets the trace, Prev/Next and Play/Pause. (`d26ae08`, sorted-cell legibility fix `e944ef7`)
+- [x] Unit registration and shared nav: heaps is live at guidedOrder 4 with `quizId: "heapQuiz"`; the old heaps-avl placeholder split into `heaps` + `avl` (soon, 5), tries/design moved to 6/7; the nav gained a heaps icon and emerald accent. (`5811e9f`, `4321de8`)
+- [x] Browser gate: min-heap insert `5,9,2,7` → `[2,7,5,9]`, insert `1` → `[1,2,5,9,7]`, extract twice → `[2,7,5,9]` → `[5,7,9]`; build max `[5,9,2,7,1]` → `[9,7,2,5,1]`; heapsort max → `[1,3,5,7,9]`, min → `[9,7,5,3,1]`; divider appears at `heap | sorted` mid-sort; cells keep stable ids through swaps; formula panel, clear-reset, min/max toggle, all three lessons with "Correct." checkpoints, quiz prompt, `?quiz=heapQuiz` Q1 of 10, unknown-quiz banner with usable Learn panel; no console errors, no failed requests, 375px overflow 0. (`d26ae08`, `e944ef7`)
 
 ### C4. AVL (backend `avl.py`)
 **Design the rotation trace on paper before coding.**
@@ -332,28 +337,26 @@ rotate_LL step:
   annotation: "Node 30 balance factor +2 (left-left case): rotate right at 30"
 ```
 
-- [ ] Node fields: `height`, `balance_factor` serialized into `sublabel` (e.g., `bf:+1`).
-- [ ] Order of build:
-  1. Standard insert plus height/balance update, emitting `update_balance` steps up the path.
-  2. Detect first unbalanced ancestor.
-  3. `rotate_LL` and `rotate_RR`.
-  4. `rotate_LR` and `rotate_RL`, composed as two single rotations with a combined annotation.
-  5. Cascading demo: canned sequences (e.g., ascending inserts 1..n, and a LR/RL-heavy sequence).
-  6. **Delete with rebalancing last.** Cut this first if time is short.
-- [ ] Rotation preserves node IDs. Only parent/child links change.
-- [ ] Tests: BST property and AVL property hold after every insert; |bf| <= 1 everywhere in final tree; each of four rotation cases triggered by a specific minimal input; random insert sequences stay balanced; IDs stable.
+- [x] Node fields: `height`, `balance_factor` are **not stored**; every snapshot recomputes both from the current links and serializes the result into `sublabel` as `bf:+N`. This makes a stale badge impossible after a rotation. Generator lives in `backend/trees.py` (`AVLNode`, `serialize_avl_tree`, `_AVLTree`, `_replay_avl_ops`, `avl_op_steps`) rather than a new `avl.py`, matching the heap deviation; `tests/test_avl.py` checks the declared sublabel against an independent recomputation on every step. (`550749f`, `78a2ab8`)
+- [x] Order of build: search `compare` steps with a `path` payload, `insert`, then `balance_update` steps up the retrace path, then the first `unbalanced` ancestor, then the rotation steps, then `rotation_done` and `insert_done`. The step is named `balance_update` (not `update_balance`) to match the role-mapping vocabulary used by the rest of `tracing.py`. (`550749f`)
+- [x] `rotate_LL` / `rotate_RR` rotate once; `rotate_LR` / `rotate_RL` emit two `rotate_*` steps with `phase: 1|2`, each with its own annotation and post-step snapshot. Deviation from the sketch: the trace uses one step per single rotation and puts the pre-rotation snapshot on the preceding `unbalanced` step, instead of packing `snapshot_before`/`during`/`after` into one step. This matches the one-step-one-snapshot `PlaybackController` contract and lets each phase be stepped through. (`550749f`, `92ffcf3`)
+- [x] Cascading demo supported by the normal trace: ascending inserts (e.g. `10,20,30,40,50,25`) produce successive rotations and stay balanced; a LR/RL-heavy sequence is used by the frontend lessons. The backend test `test_avl_ascending_inserts_stay_balanced` checks every insert's final step. (`78a2ab8`)
+- [x] **Delete with rebalancing is implemented, not cut**: `delete_leaf`, `delete_single_child`, and `delete_two_children` (successor relinked, ids preserved), followed by a retrace that keeps walking ancestors after each rotation because a delete can shorten a subtree and expose a higher imbalance. (`550749f`)
+- [x] Rotation preserves node IDs. Only parent/child links change; ids remain the inserting op's index. A deleted-then-reinserted value gets the new insert's id. Tests assert the id→value map across rotations and deletes. (`550749f`, `78a2ab8`)
+- [x] Tests (relaxed, D9): independent plain-BST oracle; BST in-order strictly increasing after every step; parent/side links and a single root; declared bf sublabels match recomputation; during an operation, |bf| > 1 is allowed only on the focus-to-root path; zero violations at each operation's last step; each of the four rotation cases triggered by a specific minimal input; random insert sequences and random insert/delete logs compared to the oracle; ids stable; 400 payload matrix and 405 GET contract; step cap proven by monkeypatching `MAX_AVL_STEPS`. **156 tests pass** (120 existing + 36 AVL). (`78a2ab8`)
+- [x] `POST /avl` returns 200 for valid insert/delete/replay, 400 with `{"error","field"}` for every invalid payload tested, and 405 JSON for GET; the legacy `/tree` `avl_insert` branch and its stub were removed. HTTP smoke: LL insert 200, duplicate value 400 `field:"value"`, bad op 400 `field:"ops"`, GET 405 `field:"request"`. (`550749f`, `78a2ab8`)
 
 ### C5. AVL frontend
-- [ ] `avl.html` + `pages/avl.js`. Balance factor badge on every node (color-coded at +/-2).
-- [ ] Rotation replay: before, during (highlight `rotating`), after, with the tween from C1.
-- [ ] "Compare with plain BST" toggle: same inserts into a BST and an AVL side by side (reuse two `TreeCanvas` instances).
-- [ ] Lessons: LL/RR, LR/RL, cascading rotations. `avlQuiz.js` (predict which rotation).
+- [x] `avl.html` + the controller. Balance factor badge on every node, flagged outside −1…+1. Deviation: the controller lives at `frontend/js/avl.js` (matching `heaps.js` and `bst.js`) rather than `pages/avl.js`, because the app has no `pages/` directory. Every node shows the backend's live `bf:+N`; when |bf| > 1 the badge gains a trailing `!` and the node gets the dashed `unbalanced` ring, so the state is carried by text and shape, not colour alone. (`0879173`, `69acd9f`)
+- [x] Rotation replay: before, during (highlight `rotating`), after, with the tween from C1. One snapshot per backend step: `unbalanced` is the pre-rotation shape, each `rotate_*` step is its own post-rotation snapshot (LR/RL as phase 1 then 2), and `rotation_done` is the settled subtree. Positions tween with node ids unchanged, so the two halves of a double rotation are separately steppable. (`69acd9f`)
+- [x] "Compare with plain BST" toggle: same inserts into a BST and an AVL side by side (reuse two `TreeCanvas` instances). The second canvas is fed by `bst_classify` over the same op log (one request per action), and a caption states both heights and node counts, e.g. ascending `10,20,30,40,50` → AVL height 2, plain BST height 4. In Learn mode the comparison advances one action at a time with the lesson. (`69acd9f`)
+- [x] Lessons: LL/RR, LR/RL, cascading rotations. `avlQuiz.js` (predict which rotation). Three lessons with two checkpoints each, anchored two steps before the trace names the case; checkpoints answered `Correct.` in all three. Ten quiz questions, every sequence/case/root/height produced by `backend/trees.py`. `node dev/validate_content.mjs` → **21 checks pass**. Manual browser pass by the user: keyboard, reduced motion, responsive layout, all four rotations, compare toggle, delete-to-empty, full quiz, and BST/heaps regression all OK. (`0879173`, `69acd9f`)
 
 ### C6. Exit criteria
-- [ ] Heap and AVL tests green; invariants checked per step.
-- [ ] All four rotations animate correctly with stable identity.
-- [ ] Hub cards flip to "live" with Learn, Play, quiz.
-- [ ] `TRACE_SPEC.md` updated with new types.
+- [x] Heap and AVL tests green; invariants checked per step. **156 passed** (120 existing + 36 AVL); heap invariants per step, AVL ordering/links/bf per step, zero violations at every `*_done`. (`30a47c5`, `78a2ab8`)
+- [x] All four rotations animate correctly with stable identity. LL/RR one rotation, LR/RL two phases, node ids unchanged across each; verified step-by-step in the browser and in `test_avl.py`'s id→value assertions. (`78a2ab8`, `69acd9f`)
+- [x] Hub cards flip to "live" with Learn, Play, quiz. AVL is `status:"live"` at guidedOrder 5 with `quizId:"avlQuiz"`; the card exposes Open (page with Play/Learn tabs) and Test yourself (`avl.html?quiz=avlQuiz`). (`69acd9f`)
+- [x] `TRACE_SPEC.md` updated with new types. §6 documents heap/heapsort, §7 documents the AVL request, step table, rotation replay, and invariants. (`6c45fab`, `92ffcf3`)
 
 ---
 

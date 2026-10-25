@@ -148,7 +148,7 @@ def test_api_binary_mode_requires_array(client):
     ({"algorithm": "bst_height_depth"}, "target_value"),
     ({"algorithm": "array_to_tree"}, "array"),
     ({"algorithm": "heap_insert", "ops": "not_a_list"}, "ops"),
-    ({"algorithm": "avl_insert", "ops": [{"op": "invalid"}]}, "ops"),
+    ({"algorithm": "bst_insert", "ops": [{"op": "invalid"}]}, "ops"),
 ])
 def test_api_bad_payload_for_each_algorithm(client, payload, expected_field):
     res = client.post('/tree', json=payload)

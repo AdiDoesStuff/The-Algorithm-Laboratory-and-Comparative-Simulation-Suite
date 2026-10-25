@@ -838,16 +838,1026 @@ def bst_mirror_steps(tree_a_spec: Dict, tree_b_spec: Dict, mode: str = 'mirror')
     }
 
 
-# Stub functions for remaining units (unchanged)
+# --- Unit 2: Heaps (array + tree dual-panel traces) ---
+
+HEAP_MAX_SIZE = 31
+HEAP_MAX_STEPS = 1000
+
+
+def _heap_better(heap_type: str, candidate: int, current: int) -> bool:
+    """Strict improvement only, so equal values never swap (documented tie-break)."""
+    return candidate < current if heap_type == 'min' else candidate > current
+
+
+class _HeapState:
+    def __init__(self, heap_type: str):
+        self.heap_type = heap_type
+        self.cells: List[Dict[str, Any]] = []   # [{'id': int, 'value': int}]
+        self.heap_size = 0
+        self.next_id = 0
+
+
+def _heap_tree_snapshot(cells: List[Dict[str, Any]], heap_size: int) -> Dict[str, Any]:
+    """Derives the complete-binary-tree snapshot from cells[0:heap_size]."""
+    nodes = []
+    for index in range(heap_size):
+        cell = cells[index]
+        if index == 0:
+            parent_id = None
+            side = None
+        else:
+            parent_index = (index - 1) // 2
+            parent_id = cells[parent_index]['id']
+            side = 'left' if index % 2 == 1 else 'right'
+        nodes.append({
+            'id': cell['id'],
+            'label': str(cell['value']),
+            'sublabel': f'i={index}',
+            'parent_id': parent_id,
+            'side': side,
+        })
+    return {'nodes': nodes, 'root_id': cells[0]['id'] if heap_size > 0 else None}
+
+
+def _heap_dual_snapshot(state: _HeapState) -> Dict[str, Any]:
+    return {
+        'array': {
+            'cells': [{'id': c['id'], 'value': c['value']} for c in state.cells],
+            'heap_size': state.heap_size,
+            'heap_type': state.heap_type,
+        },
+        'tree': _heap_tree_snapshot(state.cells, state.heap_size),
+    }
+
+
+class _HeapTracer:
+    def __init__(self, state: _HeapState, field: str = 'action'):
+        self.state = state
+        self.field = field
+        self.steps: List[Dict[str, Any]] = []
+        self.comparisons = 0
+        self.swaps = 0
+
+    def add(self, step_type: str, ids: List[Any], note: str, **extra) -> Dict[str, Any]:
+        if len(self.steps) >= HEAP_MAX_STEPS:
+            raise ValidationError(
+                f"Trace exceeded {HEAP_MAX_STEPS} steps; reduce the input size",
+                field=self.field, status_code=400
+            )
+        step = make_step(step_type, ids, _heap_dual_snapshot(self.state), note, kind='dual', **extra)
+        self.steps.append(step)
+        if step_type == 'compare':
+            self.comparisons += 1
+        elif step_type == 'swap':
+            self.swaps += 1
+        return step
+
+
+def _heap_swap(state: _HeapState, tracer: _HeapTracer, i: int, j: int, note: Optional[str] = None) -> None:
+    first = state.cells[i]
+    second = state.cells[j]
+    state.cells[i], state.cells[j] = second, first
+    if note is None:
+        note = (
+            f"Swap index {i} ({first['value']}) with index {j} ({second['value']}) "
+            f"to restore the {state.heap_type}-heap property."
+        )
+    tracer.add('swap', [first['id'], second['id']], note, payload={
+        'from_index': i,
+        'to_index': j,
+        'from_value': first['value'],
+        'to_value': second['value'],
+    })
+
+
+def _heap_bubble_up(state: _HeapState, tracer: _HeapTracer, index: int) -> int:
+    while index > 0:
+        parent_index = (index - 1) // 2
+        child = state.cells[index]
+        parent = state.cells[parent_index]
+        swap_needed = _heap_better(state.heap_type, child['value'], parent['value'])
+        relation = 'smaller' if state.heap_type == 'min' else 'larger'
+        tracer.add(
+            'compare',
+            [child['id'], parent['id']],
+            (
+                f"Compare child index {index} ({child['value']}) with parent index {parent_index} "
+                f"({parent['value']}) using (i-1)//2 = ({index}-1)//2 = {parent_index}. "
+                + (
+                    f"Swap because the child is {relation} than the parent."
+                    if swap_needed else
+                    "No swap: the parent is correctly ordered (equal values never swap)."
+                )
+            ),
+            payload={
+                'child_index': index,
+                'parent_index': parent_index,
+                'child_id': child['id'],
+                'parent_id': parent['id'],
+                'swap_needed': swap_needed,
+                'focus_index': index,
+            }
+        )
+        if not swap_needed:
+            break
+        _heap_swap(state, tracer, index, parent_index)
+        index = parent_index
+    return index
+
+
+def _heap_sift_down(state: _HeapState, tracer: _HeapTracer, index: int,
+                    heap_size: Optional[int] = None, sift_root: Optional[int] = None) -> int:
+    size = state.heap_size if heap_size is None else heap_size
+    root_index = sift_root if sift_root is not None else index
+    relation = 'smallest' if state.heap_type == 'min' else 'largest'
+
+    while True:
+        left = 2 * index + 1
+        right = 2 * index + 2
+        if left >= size:
+            break
+
+        best = index
+        if _heap_better(state.heap_type, state.cells[left]['value'], state.cells[best]['value']):
+            best = left
+        if right < size and _heap_better(state.heap_type, state.cells[right]['value'], state.cells[best]['value']):
+            best = right
+
+        right_text = f"{state.cells[right]['value']}" if right < size else 'none'
+        chosen = best if best != index else None
+        tracer.add(
+            'compare',
+            [state.cells[index]['id'], state.cells[left]['id']]
+            + ([state.cells[right]['id']] if right < size else []),
+            (
+                f"Compare parent index {index} ({state.cells[index]['value']}) with left child "
+                f"{left} ({state.cells[left]['value']}) and right child {right} ({right_text}). "
+                + (
+                    f"Swap with index {best} because it is the {relation} child and outranks the parent."
+                    if chosen is not None else "Heap order already holds for this subtree."
+                )
+            ),
+            payload={
+                'parent_index': index,
+                'left_index': left,
+                'right_index': right,
+                'chosen_index': chosen,
+                'sift_root': root_index,
+                'focus_index': chosen if chosen is not None else index,
+            }
+        )
+        if chosen is None:
+            break
+        _heap_swap(state, tracer, index, chosen)
+        index = chosen
+
+    return index
+
+
+def _heap_apply_insert(state: _HeapState, value: int, tracer: _HeapTracer) -> None:
+    if state.heap_size >= HEAP_MAX_SIZE:
+        raise ValidationError(
+            f"Heap supports at most {HEAP_MAX_SIZE} elements",
+            field=tracer.field, status_code=400
+        )
+    cell = {'id': state.next_id, 'value': value}
+    state.next_id += 1
+    state.cells.append(cell)
+    state.heap_size += 1
+    index = state.heap_size - 1
+    tracer.add(
+        'append',
+        [cell['id']],
+        f"Append {value} at index {index}, the next free slot in the array.",
+        payload={'index': index, 'value': value, 'heap_size': state.heap_size}
+    )
+    final_index = _heap_bubble_up(state, tracer, index)
+    tracer.add(
+        'insert_done',
+        [cell['id']],
+        f"{value} settled at index {final_index} and the {state.heap_type}-heap property holds.",
+        payload={'index': final_index, 'value': value}
+    )
+
+
+def _heap_apply_extract(state: _HeapState, tracer: _HeapTracer) -> None:
+    if state.heap_size == 0:
+        raise ValidationError(
+            "Cannot extract from an empty heap",
+            field=tracer.field, status_code=400
+        )
+    root_cell = state.cells[0]
+    tracer.add(
+        'extract_root',
+        [root_cell['id']],
+        f"Extract the root: index 0 holds {root_cell['value']}, the heap {state.heap_type}imum.",
+        payload={'index': 0, 'value': root_cell['value']}
+    )
+
+    last = state.heap_size - 1
+    if last > 0:
+        last_value = state.cells[last]['value']
+        _heap_swap(
+            state, tracer, 0, last,
+            note=f"Move the last element ({last_value}) to the root before removing the old root."
+        )
+    removed = state.cells.pop()
+    state.heap_size -= 1
+    tracer.add(
+        'remove_last',
+        [],
+        (
+            f"Remove {removed['value']} (id {removed['id']}) from index {last}. "
+            f"Heap size is now {state.heap_size}."
+        ),
+        payload={
+            'index': last,
+            'extracted_value': removed['value'],
+            'extracted_id': removed['id'],
+            'heap_size': state.heap_size,
+        }
+    )
+
+    if state.heap_size > 0:
+        _heap_sift_down(state, tracer, 0)
+
+    new_root = state.cells[0] if state.heap_size > 0 else None
+    tracer.add(
+        'extract_done',
+        [new_root['id']] if new_root else [],
+        (
+            f"Extracted {root_cell['value']}. "
+            + (f"New root is {new_root['value']}." if new_root else "The heap is empty.")
+        ),
+        payload={'extracted_value': root_cell['value'], 'extracted_id': root_cell['id']}
+    )
+
+
+def _heap_build(state: _HeapState, values: List[int], tracer: _HeapTracer) -> None:
+    state.cells = [{'id': i, 'value': value} for i, value in enumerate(values)]
+    state.heap_size = len(values)
+    state.next_id = len(values)
+
+    n = len(values)
+    last_parent = n // 2 - 1
+
+    tracer.add(
+        'build_start',
+        [state.cells[0]['id']] if n else [],
+        (
+            f"Build-heap from {n} values. Start at the last parent, "
+            f"index n//2-1 = {n}//2-1 = {last_parent}."
+            if n else "Build-heap from an empty array — nothing to heapify."
+        ),
+        payload={'n': n, 'last_parent': last_parent}
+    )
+    for i in range(last_parent, -1, -1):
+        _heap_sift_down(state, tracer, i, heap_size=n, sift_root=i)
+        tracer.add(
+            'heapify_node_done',
+            [state.cells[i]['id']],
+            f"Subtree rooted at index {i} satisfies the {state.heap_type}-heap property.",
+            payload={'index': i}
+        )
+    tracer.add(
+        'build_done',
+        [],
+        f"Build-heap complete: {n} element(s) form a valid {state.heap_type}-heap.",
+        payload={'heap_size': n}
+    )
+
+
+class _NullHeapTracer:
+    """Silent tracer used while replaying ops; applies mutations without recording."""
+    def __init__(self, state: _HeapState):
+        self.state = state
+        self.field = 'ops'
+
+    def add(self, step_type: str, ids: List[Any], note: str, **extra) -> None:
+        return None
+
+
+def _heap_heapsort_rounds(state: _HeapState, tracer: _HeapTracer) -> None:
+    n = len(state.cells)
+    for end in range(n - 1, 0, -1):
+        top = state.cells[0]
+        _heap_swap(
+            state, tracer, 0, end,
+            note=(
+                f"Swap the heap {'minimum' if state.heap_type == 'min' else 'maximum'} "
+                f"({top['value']}) at index 0 with index {end}."
+            )
+        )
+        state.heap_size = end
+        sorted_ids = [state.cells[k]['id'] for k in range(end, n)]
+        tracer.add(
+            'mark_sorted',
+            sorted_ids,
+            (
+                f"Index {end} is final ({state.cells[end]['value']}); the sorted region is "
+                f"indices {end}..{n - 1} and the heap is indices 0..{end - 1}."
+            ),
+            payload={'sorted_from': end, 'heap_size': end}
+        )
+        if end > 1:
+            _heap_sift_down(state, tracer, 0, heap_size=end)
+
+    state.heap_size = 0
+    all_ids = [cell['id'] for cell in state.cells]
+    tracer.add(
+        'heapsort_done',
+        all_ids,
+        (
+            f"Heapsort complete: the array is sorted in "
+            f"{'ascending' if state.heap_type == 'max' else 'descending'} order."
+        ),
+        payload={'sorted': True}
+    )
+
+
+def _apply_heap_action(state: _HeapState, action: Dict[str, Any], tracer: _HeapTracer) -> None:
+    name = action.get('op')
+    if name == 'build':
+        if state.cells:
+            raise ValidationError(
+                "'build' is only allowed on an empty heap",
+                field='action', status_code=400
+            )
+        _heap_build(state, action['values'], tracer)
+    elif name == 'insert':
+        _heap_apply_insert(state, action['value'], tracer)
+    elif name == 'extract':
+        _heap_apply_extract(state, tracer)
+    else:
+        raise ValidationError(f"Unknown heap op: {name}", field='action', status_code=400)
+
+
+def _replay_heap_ops(state: _HeapState, ops: List[Dict[str, Any]]) -> None:
+    silent = _NullHeapTracer(state)
+    for index, op in enumerate(ops):
+        name = op.get('op')
+        if name == 'build':
+            if index != 0:
+                raise ValidationError(
+                    "'build' is only allowed as the first op",
+                    field='ops', status_code=400
+                )
+            _heap_build(state, op['values'], silent)
+        elif name == 'insert':
+            _heap_apply_insert(state, op['value'], silent)
+        elif name == 'extract':
+            _heap_apply_extract(state, silent)
+        else:
+            raise ValidationError(f"Unknown heap op: {name}", field='ops', status_code=400)
+
+
+def heap_op_steps(heap_type: str, ops: Optional[List[Dict[str, Any]]] = None,
+                  action: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Statelessly replays ops, then emits dual-panel steps for the requested action."""
+    state = _HeapState(heap_type)
+    _replay_heap_ops(state, ops or [])
+
+    tracer = _HeapTracer(state, field='action')
+    if action:
+        _apply_heap_action(state, action, tracer)
+
+    steps = tracer.steps
+    final_state = steps[-1]['snapshot'] if steps else _heap_dual_snapshot(state)
+    return {
+        'steps': steps,
+        'final_state': final_state,
+        'metrics': {
+            'comparisons': tracer.comparisons,
+            'swaps': tracer.swaps,
+            'steps': len(steps),
+        },
+        'metadata': {
+            'algorithm': 'heap_op',
+            'heap_type': heap_type,
+            'heap_size': state.heap_size,
+        },
+    }
+
+
+def heapsort_steps(heap_type: str, array: List[int]) -> Dict[str, Any]:
+    """Builds a heap from `array`, then sorts it in place, retaining the sorted tail."""
+    state = _HeapState(heap_type)
+    tracer = _HeapTracer(state, field='array')
+    _heap_build(state, list(array), tracer)
+    _heap_heapsort_rounds(state, tracer)
+
+    steps = tracer.steps
+    final_state = steps[-1]['snapshot'] if steps else _heap_dual_snapshot(state)
+    return {
+        'steps': steps,
+        'final_state': final_state,
+        'metrics': {
+            'comparisons': tracer.comparisons,
+            'swaps': tracer.swaps,
+            'steps': len(steps),
+        },
+        'metadata': {
+            'algorithm': 'heapsort',
+            'heap_type': heap_type,
+            'heap_size': 0,
+            'array_size': len(array),
+        },
+    }
+
+
+# --- Unit 2b: AVL Trees (Phase C) ---
+#
+# Height is counted in edges: a leaf has height 0, an empty child has height -1.
+# Balance factor is height(left) - height(right), so +1 means left-heavy.
+# Node ids stay equal to the inserting op's index, exactly like BST mode.
+# Every snapshot recomputes heights from the current links, so a sublabel can
+# never show a stale balance factor.
+
+class AVLNode(Node):
+    def __init__(self, value: int, node_id: Optional[int] = None):
+        super().__init__(value, node_id)
+        self.parent: Optional['AVLNode'] = None
+
+
+def _avl_height(node: Optional[AVLNode]) -> int:
+    if node is None:
+        return -1
+    return 1 + max(_avl_height(node.left), _avl_height(node.right))
+
+
+def _avl_balance(node: Optional[AVLNode]) -> int:
+    if node is None:
+        return 0
+    return _avl_height(node.left) - _avl_height(node.right)
+
+
+def serialize_avl_tree(root: Optional[AVLNode]) -> Dict[str, Any]:
+    """Tree snapshot with a live `bf:+N` sublabel on every node."""
+    heights: Dict[int, int] = {}
+
+    def height(node: Optional[AVLNode]) -> int:
+        if node is None:
+            return -1
+        key = id(node)
+        if key not in heights:
+            heights[key] = 1 + max(height(node.left), height(node.right))
+        return heights[key]
+
+    nodes: List[Dict[str, Any]] = []
+
+    def walk(node: Optional[AVLNode], parent_id: Optional[int] = None,
+             side: Optional[str] = None) -> None:
+        if node is None:
+            return
+        bf = height(node.left) - height(node.right)
+        nodes.append({
+            'id': node.id,
+            'label': str(node.value),
+            'sublabel': f'bf:{bf:+d}',
+            'parent_id': parent_id,
+            'side': side
+        })
+        walk(node.left, node.id, 'left')
+        walk(node.right, node.id, 'right')
+
+    walk(root)
+    return {'nodes': nodes, 'root_id': root.id if root else None}
+
+
+class _AVLTracer:
+    """Collects steps; `enabled = False` makes an op-log replay silent."""
+
+    def __init__(self, tree: '_AVLTree'):
+        self.tree = tree
+        self.enabled = True
+        self.steps: List[Dict[str, Any]] = []
+        self.comparisons = 0
+        self.rotations = 0
+
+    def reset(self) -> None:
+        self.enabled = True
+        self.steps = []
+        self.comparisons = 0
+        self.rotations = 0
+
+    def add(self, step_type: str, node_ids: List[int], note: str,
+            payload: Optional[Dict[str, Any]] = None,
+            **extra: Any) -> Optional[Dict[str, Any]]:
+        if not self.enabled:
+            return None
+        step = make_step(
+            step_type,
+            node_ids,
+            serialize_avl_tree(self.tree.root),
+            note,
+            payload=payload or {},
+            kind='tree',
+            **extra
+        )
+        self.steps.append(step)
+        return step
+
+
+class _AVLTree:
+    def __init__(self):
+        self.root: Optional[AVLNode] = None
+        self.tracer = _AVLTracer(self)
+
+
+def _avl_replace_child(tree: _AVLTree, old: AVLNode, new: Optional[AVLNode]) -> None:
+    parent = old.parent
+    if new is not None:
+        new.parent = parent
+    if parent is None:
+        tree.root = new
+    elif parent.left is old:
+        parent.left = new
+    else:
+        parent.right = new
+
+
+def _avl_rotate_right(tree: _AVLTree, x: AVLNode) -> AVLNode:
+    y = x.left
+    x.left = y.right
+    if y.right is not None:
+        y.right.parent = x
+    _avl_replace_child(tree, x, y)
+    y.right = x
+    x.parent = y
+    return y
+
+
+def _avl_rotate_left(tree: _AVLTree, x: AVLNode) -> AVLNode:
+    y = x.right
+    x.right = y.left
+    if y.left is not None:
+        y.left.parent = x
+    _avl_replace_child(tree, x, y)
+    y.left = x
+    x.parent = y
+    return y
+
+
+def _avl_case(node: AVLNode) -> str:
+    bf = _avl_balance(node)
+    if bf > 1:
+        return 'LL' if _avl_balance(node.left) >= 0 else 'LR'
+    return 'RR' if _avl_balance(node.right) <= 0 else 'RL'
+
+
+def _avl_rotation_payload(case: str, node: AVLNode, pivot: Optional[AVLNode],
+                          new_root: AVLNode, phase: int, phases: int) -> Dict[str, Any]:
+    return {
+        'case': case,
+        'phase': phase,
+        'phases': phases,
+        'unbalanced': node.id,
+        'pivot': pivot.id if pivot is not None else None,
+        'new_root': new_root.id,
+        'subtree': {
+            'left': new_root.left.id if new_root.left else None,
+            'right': new_root.right.id if new_root.right else None
+        }
+    }
+
+
+def _avl_apply_rotation(tree: _AVLTree, node: AVLNode, case: str) -> AVLNode:
+    """Performs one single or one double rotation and emits its steps."""
+    tracer = tree.tracer
+    bf = _avl_balance(node)
+
+    if case == 'LL':
+        pivot = node.left
+        new_root = _avl_rotate_right(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LL', [node.id, pivot.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-left case): rotate right at "
+                f"{node.value}. {pivot.value} becomes the new subtree root."
+            ),
+            payload=_avl_rotation_payload('LL', node, pivot, new_root, 1, 1)
+        )
+        return new_root
+
+    if case == 'RR':
+        pivot = node.right
+        new_root = _avl_rotate_left(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_RR', [node.id, pivot.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (right-right case): rotate left at "
+                f"{node.value}. {pivot.value} becomes the new subtree root."
+            ),
+            payload=_avl_rotation_payload('RR', node, pivot, new_root, 1, 1)
+        )
+        return new_root
+
+    if case == 'LR':
+        pivot = node.left
+        inner = pivot.right
+        _avl_rotate_left(tree, pivot)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LR', [pivot.id, inner.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-right case): step 1 of 2, "
+                f"rotate left at {pivot.value} to turn it into a left-left case."
+            ),
+            payload={
+                'case': 'LR', 'phase': 1, 'phases': 2,
+                'unbalanced': node.id, 'pivot': pivot.id, 'new_root': inner.id,
+                'subtree': {
+                    'left': inner.left.id if inner.left else None,
+                    'right': inner.right.id if inner.right else None
+                }
+            }
+        )
+        new_root = _avl_rotate_right(tree, node)
+        tracer.rotations += 1
+        tracer.add(
+            'rotate_LR', [node.id, inner.id],
+            (
+                f"Node {node.value} has bf {bf:+d} (left-right case): step 2 of 2, "
+                f"rotate right at {node.value}. {inner.value} becomes the new subtree root."
+            ),
+            payload={
+                'case': 'LR', 'phase': 2, 'phases': 2,
+                'unbalanced': node.id, 'pivot': inner.id, 'new_root': inner.id,
+                'subtree': {
+                    'left': inner.left.id if inner.left else None,
+                    'right': inner.right.id if inner.right else None
+                }
+            }
+        )
+        return new_root
+
+    # RL
+    pivot = node.right
+    inner = pivot.left
+    _avl_rotate_right(tree, pivot)
+    tracer.rotations += 1
+    tracer.add(
+        'rotate_RL', [pivot.id, inner.id],
+        (
+            f"Node {node.value} has bf {bf:+d} (right-left case): step 1 of 2, "
+            f"rotate right at {pivot.value} to turn it into a right-right case."
+        ),
+        payload={
+            'case': 'RL', 'phase': 1, 'phases': 2,
+            'unbalanced': node.id, 'pivot': pivot.id, 'new_root': inner.id,
+            'subtree': {
+                'left': inner.left.id if inner.left else None,
+                'right': inner.right.id if inner.right else None
+            }
+        }
+    )
+    new_root = _avl_rotate_left(tree, node)
+    tracer.rotations += 1
+    tracer.add(
+        'rotate_RL', [node.id, inner.id],
+        (
+            f"Node {node.value} has bf {bf:+d} (right-left case): step 2 of 2, "
+            f"rotate left at {node.value}. {inner.value} becomes the new subtree root."
+        ),
+        payload={
+            'case': 'RL', 'phase': 2, 'phases': 2,
+            'unbalanced': node.id, 'pivot': inner.id, 'new_root': inner.id,
+            'subtree': {
+                'left': inner.left.id if inner.left else None,
+                'right': inner.right.id if inner.right else None
+            }
+        }
+    )
+    return new_root
+
+
+def _avl_note_balance(node: AVLNode, bf: int) -> str:
+    return (
+        f"On the way back up: node {node.value} has height {_avl_height(node)} "
+        f"and bf {bf:+d} (left height {_avl_height(node.left)}, "
+        f"right height {_avl_height(node.right)})."
+    )
+
+
+def _avl_insert(tree: _AVLTree, value: int, node_id: int) -> None:
+    tracer = tree.tracer
+
+    if tree.root is None:
+        node = AVLNode(value, node_id)
+        tree.root = node
+        tracer.add(
+            'insert', [node.id],
+            f"Inserted {value} as the root of the empty tree.",
+            payload={'path': [], 'value': value, 'node_id': node.id}
+        )
+        tracer.add(
+            'insert_done', [node.id],
+            f"Inserted {value}. The tree is balanced.",
+            payload={
+                'value': value, 'node_id': node.id, 'rotations': 0, 'height': 0
+            }
+        )
+        return
+
+    path_ids: List[int] = []
+    parent: Optional[AVLNode] = None
+    current: Optional[AVLNode] = tree.root
+    while current is not None:
+        path_ids.append(current.id)
+        direction = 'left' if value < current.value else 'right'
+        tracer.comparisons += 1
+        tracer.add(
+            'compare', [current.id],
+            (
+                f"Compare {value} with {current.value}: "
+                f"{value} {'<' if value < current.value else '>'} {current.value} "
+                f"→ go {direction}."
+            ),
+            payload={'path': list(path_ids)}
+        )
+        parent = current
+        current = current.left if value < current.value else current.right
+
+    node = AVLNode(value, node_id)
+    node.parent = parent
+    side = 'left' if value < parent.value else 'right'
+    if side == 'left':
+        parent.left = node
+    else:
+        parent.right = node
+
+    tracer.add(
+        'insert', [node.id],
+        (
+            f"Inserted {value} as the {side} child of {parent.value}. "
+            f"Now retrace the path to update heights and balance factors."
+        ),
+        payload={'path': list(path_ids), 'value': value, 'node_id': node.id}
+    )
+
+    current = parent
+    rotations = 0
+    while current is not None:
+        bf = _avl_balance(current)
+        if abs(bf) > 1:
+            case = _avl_case(current)
+            tracer.add(
+                'unbalanced', [current.id],
+                (
+                    f"Node {current.value} is unbalanced: bf {bf:+d} ({case} case). "
+                    f"Stop here and rotate."
+                ),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'balance_factor': bf, 'case': case
+                }
+            )
+            new_root = _avl_apply_rotation(tree, current, case)
+            rotations += 2 if case in ('LR', 'RL') else 1
+            tracer.add(
+                'rotation_done', [new_root.id],
+                (
+                    f"Subtree rooted at {new_root.value} is balanced again "
+                    f"(height {_avl_height(new_root)}, bf {_avl_balance(new_root):+d}). "
+                    f"For insertion the height is back to its pre-insert value, so "
+                    f"no ancestor above can be unbalanced."
+                ),
+                payload={
+                    'new_root': new_root.id,
+                    'height': _avl_height(new_root),
+                    'balance_factor': _avl_balance(new_root)
+                }
+            )
+            break
+        tracer.add(
+            'balance_update', [current.id],
+            _avl_note_balance(current, bf),
+            payload={
+                'node_id': current.id, 'value': current.value,
+                'height': _avl_height(current), 'balance_factor': bf
+            }
+        )
+        current = current.parent
+
+    tracer.add(
+        'insert_done', [node.id],
+        (
+            f"Inserted {value}. "
+            + (f"Rebalanced with {rotations} rotation{'s' if rotations != 1 else ''}."
+               if rotations else "No rotation was needed; bf is within ±1 everywhere.")
+        ),
+        payload={
+            'value': value, 'node_id': node.id, 'rotations': rotations,
+            'height': _avl_height(tree.root)
+        }
+    )
+
+
+def _avl_delete(tree: _AVLTree, value: int) -> None:
+    tracer = tree.tracer
+
+    current = tree.root
+    path_ids: List[int] = []
+    while current is not None and current.value != value:
+        path_ids.append(current.id)
+        direction = 'left' if value < current.value else 'right'
+        tracer.comparisons += 1
+        tracer.add(
+            'compare', [current.id],
+            (
+                f"Search for {value}: compare with {current.value}, "
+                f"{value} {'<' if value < current.value else '>'} {current.value} "
+                f"→ go {direction}."
+            ),
+            payload={'path': list(path_ids)}
+        )
+        current = current.left if value < current.value else current.right
+
+    if current is None:
+        # The validator checks existence, so this only guards direct calls.
+        raise ValidationError(
+            f"Value {value} not found in tree to delete",
+            field="value", status_code=400
+        )
+
+    z = current
+    path_ids.append(z.id)
+    start: Optional[AVLNode] = None
+
+    if z.left is None or z.right is None:
+        child = z.left if z.left is not None else z.right
+        parent = z.parent
+        _avl_replace_child(tree, z, child)
+        start = parent
+        if child is None:
+            tracer.add(
+                'delete_leaf', [z.id],
+                (
+                    f"Deleted leaf {value} (id {z.id}): it had no children, so its "
+                    f"parent link is cleared. Retrace from the parent to rebalance."
+                ),
+                payload={'value': value, 'node_id': z.id, 'path': path_ids}
+            )
+        else:
+            tracer.add(
+                'delete_single_child', [z.id],
+                (
+                    f"Deleted {value} (id {z.id}) with one child: child "
+                    f"{child.value} is promoted into its place."
+                ),
+                payload={
+                    'value': value, 'node_id': z.id,
+                    'replacement': child.id, 'path': path_ids
+                }
+            )
+    else:
+        successor = z.right
+        while successor.left is not None:
+            successor = successor.left
+
+        if successor is z.right:
+            _avl_replace_child(tree, z, successor)
+            successor.left = z.left
+            z.left.parent = successor
+            start = successor
+        else:
+            old_parent = successor.parent
+            old_parent.left = successor.right
+            if successor.right is not None:
+                successor.right.parent = old_parent
+            _avl_replace_child(tree, z, successor)
+            successor.left = z.left
+            z.left.parent = successor
+            successor.right = z.right
+            z.right.parent = successor
+            start = old_parent
+
+        tracer.add(
+            'delete_two_children', [z.id, successor.id],
+            (
+                f"Deleted {value} (id {z.id}) with two children: the in-order "
+                f"successor {successor.value} (id {successor.id}) is relinked into "
+                f"its place, so node ids survive the delete."
+            ),
+            payload={
+                'value': value, 'node_id': z.id,
+                'successor': successor.id, 'path': path_ids
+            }
+        )
+
+    rotations = 0
+    current = start
+    while current is not None:
+        bf = _avl_balance(current)
+        if abs(bf) > 1:
+            case = _avl_case(current)
+            tracer.add(
+                'unbalanced', [current.id],
+                (
+                    f"Node {current.value} is unbalanced after the delete: "
+                    f"bf {bf:+d} ({case} case)."
+                ),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'balance_factor': bf, 'case': case
+                }
+            )
+            new_root = _avl_apply_rotation(tree, current, case)
+            rotations += 2 if case in ('LR', 'RL') else 1
+            tracer.add(
+                'rotation_done', [new_root.id],
+                (
+                    f"Subtree rooted at {new_root.value} is balanced again "
+                    f"(height {_avl_height(new_root)}, bf {_avl_balance(new_root):+d}). "
+                    f"Deletion can shorten a subtree, so keep checking ancestors."
+                ),
+                payload={
+                    'new_root': new_root.id,
+                    'height': _avl_height(new_root),
+                    'balance_factor': _avl_balance(new_root)
+                }
+            )
+            current = new_root.parent
+        else:
+            tracer.add(
+                'balance_update', [current.id],
+                _avl_note_balance(current, bf),
+                payload={
+                    'node_id': current.id, 'value': current.value,
+                    'height': _avl_height(current), 'balance_factor': bf
+                }
+            )
+            current = current.parent
+
+    root_id = tree.root.id if tree.root is not None else None
+    tracer.add(
+        'delete_done', [root_id] if root_id is not None else [],
+        (
+            f"Deleted {value}. "
+            + (f"Rebalanced with {rotations} rotation{'s' if rotations != 1 else ''}."
+               if rotations else "Every node still has bf within ±1.")
+        ),
+        payload={
+            'value': value, 'rotations': rotations,
+            'height': _avl_height(tree.root) if tree.root is not None else -1
+        }
+    )
+
+
+def _replay_avl_ops(tree: _AVLTree, ops: List[Dict[str, Any]]) -> None:
+    """Silently replays an op-log. Ids come from the inserting op's index."""
+    for idx, op in enumerate(ops):
+        if op['op'] == 'insert':
+            _avl_insert(tree, op['value'], node_id=idx)
+        else:
+            _avl_delete(tree, op['value'])
+
+
+def avl_op_steps(algorithm: str, ops: Optional[List[Dict[str, Any]]] = None,
+                 value: Optional[int] = None) -> Dict[str, Any]:
+    """Action steps for POST /avl. The op-log replay itself emits no steps."""
+    ops = ops or []
+    tree = _AVLTree()
+    tree.tracer.enabled = False
+    _replay_avl_ops(tree, ops)
+    tree.tracer.reset()
+
+    if algorithm == 'avl_insert':
+        _avl_insert(tree, int(value), node_id=len(ops))
+    elif algorithm == 'avl_delete':
+        _avl_delete(tree, int(value))
+    elif algorithm != 'avl_replay':
+        raise ValidationError(f"Unknown AVL algorithm: {algorithm}", field="algorithm")
+
+    if len(tree.tracer.steps) > validation.MAX_AVL_STEPS:
+        raise ValidationError(
+            (
+                f"Trace would exceed {validation.MAX_AVL_STEPS} steps; "
+                f"shorten the op log or the value list."
+            ),
+            field="ops", status_code=400
+        )
+
+    return {
+        'steps': tree.tracer.steps,
+        'final_tree': serialize_avl_tree(tree.root),
+        'metrics': {
+            'comparisons': tree.tracer.comparisons,
+            'rotations': tree.tracer.rotations,
+            'steps': len(tree.tracer.steps),
+            'height': _avl_height(tree.root)
+        },
+        'metadata': {'algorithm': algorithm}
+    }
+
 
 def heap_insert_steps(values: Any) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "heap_insert"}}
 
 def heap_extract_steps(values: Any) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "heap_extract"}}
-
-def avl_insert_steps(values: Any) -> Dict[str, Any]:
-    return {"steps": [], "metadata": {"algorithm": "avl_insert"}}
 
 def trie_insert_steps(words: List[str]) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "trie_insert"}}
