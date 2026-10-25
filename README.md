@@ -137,17 +137,23 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |   |-- tracing.py           # make_step and DEFAULT_ROLES tracing support
 |   |-- trees.py             # Binary Tree & BST step engines and calculators
 |   |-- validation.py        # Centralized payload validators
-|   `-- tests/               # Pytest suite (73 tests)
+|   `-- tests/               # Pytest suite (78 tests)
 |-- frontend/
-|   |-- index.html           # Sorting Duel page
+|   |-- index.html           # Hub: unit cards and shared navigation
+|   |-- sorting.html         # Sorting Duel page
 |   |-- pathfinding.html     # Pathfinding visualizer page
 |   |-- bst.html             # Binary Trees & BSTs page
 |   |-- definitions.html     # Glossary page
 |   |-- css/
 |   |   |-- style.css
+|   |   |-- hub.css           # Hub card grid and Guided Path placeholder
 |   |   |-- primitives.css
 |   |   `-- definitions.css
 |   `-- js/
+|       |-- shell/
+|       |   |-- units.js      # Unit registry (single source of truth)
+|       |   |-- nav.js        # Shared Primary navigation
+|       |   `-- hub.js        # Hub card renderer
 |       |-- primitives/
 |       |   |-- TreeCanvas.js# Generic SVG Tree Renderer
 |       |   |-- BucketGrid.js# DP / Hash visualizer

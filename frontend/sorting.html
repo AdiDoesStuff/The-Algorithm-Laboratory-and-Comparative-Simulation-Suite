@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Sorting Duel</title>
+    <meta name="description"
+        content="Compare sorting algorithms visually in real-time. Race Bubble Sort, Quick Sort, Merge Sort and more side-by-side.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+</head>
+
+<body>
+
+    <!-- Landing Page (Splash Screen) -->
+    <div id="landing-page" class="landing-page">
+        <!-- Canvas Background Effect -->
+        <div class="glitch-wrapper">
+            <canvas id="glitch-canvas"></canvas>
+            <div class="vignette-overlay center"></div>
+            <div class="vignette-overlay outer"></div>
+        </div>
+
+        <div class="landing-content" style="z-index: 10;">
+            <h1 class="landing-title">Algorithm Laboratory</h1>
+            <p class="landing-description">
+                Explore algorithm battles in motion—race sorting duels, visualize pathfinding on a grid,
+                and uncover the time complexity logic behind every move.
+            </p>
+            <button class="btn-go" onclick="enterApp()">
+                Go!
+                <svg xmlns="http://www.w3.org/2000/svg" class="arrow-icon" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app" class="lab-container app-hidden">
+        <h1>Algorithm Laboratory: Sorting Duel</h1>
+        <div id="algo-nav" data-algo-nav data-current-id="sorting"></div>
+
+        <div class="controls">
+            <button onclick="startComparison()">Start Race</button>
+            <button id="pause-btn" onclick="togglePause()">Pause</button>
+            <button onclick="resetLab()">Reset</button>
+
+            <div class="slider-group">
+                <label>Elements: <span id="element-val">20</span></label>
+                <input type="range" id="element-slider" min="5" max="60" value="20" oninput="updateElementCount()">
+
+                <label>Speed: <span id="speed-val">1x</span></label>
+                <input type="range" id="speed-slider" min="0.5" max="4" step="0.1" value="1"
+                    oninput="updateSpeedDisplay()">
+            </div>
+
+            <div class="switch-group">
+                <span class="switch-label">Show Numbers</span>
+                <label class="switch">
+                    <input type="checkbox" id="show-numbers-checkbox" onchange="toggleNumbersDisplay()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+
+        </div>
+
+        <div class="duel-floor">
+            <div class="arena" id="arena-left">
+                <select id="algo-left" class="algo-selector">
+                    <option value="bubble">Bubble Sort</option>
+                    <option value="selection">Selection Sort</option>
+                    <option value="insertion">Insertion Sort</option>
+                    <option value="quick">Quick Sort</option>
+                    <option value="merge">Merge Sort</option>
+                    <option value="heap">Heap Sort</option>
+                    <option value="bogo">Bogo Sort</option>
+                    <option value="optbogo">Optimized Bogo</option>
+                    <option value="counting">Counting Sort</option>
+                    <option value="radix">Radix Sort</option>
+                </select>
+                <div id="visualizer-left" class="bar-container"></div>
+                <p>
+                    Comparisons: <span id="count-left">0</span> |
+                    Logic Time: <span id="time-left">0</span>ms
+                </p>
+                <div class="algo-info-card" id="info-left">
+                    <!-- Dynamic algorithm info goes here -->
+                </div>
+            </div>
+
+            <div class="arena" id="arena-right">
+                <select id="algo-right" class="algo-selector">
+                    <option value="bubble">Bubble Sort</option>
+                    <option value="selection" selected>Selection Sort</option>
+                    <option value="insertion">Insertion Sort</option>
+                    <option value="quick">Quick Sort</option>
+                    <option value="merge">Merge Sort</option>
+                    <option value="heap">Heap Sort</option>
+                    <option value="bogo">Bogo Sort</option>
+                    <option value="optbogo">Optimized Bogo</option>
+                    <option value="counting">Counting Sort</option>
+                    <option value="radix">Radix Sort</option>
+                </select>
+                <div id="visualizer-right" class="bar-container"></div>
+                <p>
+                    Comparisons: <span id="count-right">0</span> |
+                    Logic Time: <span id="time-right">0</span>ms
+                </p>
+                <div class="algo-info-card" id="info-right">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script src="js/utils.js"></script>
+
+    <script src="js/algorithmData.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/controls.js"></script>
+</body>
+
+</html>

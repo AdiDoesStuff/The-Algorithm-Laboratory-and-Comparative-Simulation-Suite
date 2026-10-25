@@ -4,157 +4,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algorithm Laboratory | Sorting Duel</title>
+    <title>Algorithm Laboratory | Hub</title>
     <meta name="description"
-        content="Compare sorting algorithms visually in real-time. Race Bubble Sort, Quick Sort, Merge Sort and more side-by-side.">
+        content="The Algorithm Laboratory hub: choose a live algorithm unit, preview upcoming units, and follow the guided learning path.">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/hub.css">
     <link rel="icon" type="image/png" href="assets/favicon.png">
-
 </head>
 
-<body>
+<body class="hub-body">
 
-    <!-- Landing Page (Splash Screen) -->
-    <div id="landing-page" class="landing-page">
-        <!-- Canvas Background Effect -->
-        <div class="glitch-wrapper">
-            <canvas id="glitch-canvas"></canvas>
-            <div class="vignette-overlay center"></div>
-            <div class="vignette-overlay outer"></div>
-        </div>
+    <div class="hub-shell">
+        <div id="algo-nav" data-algo-nav data-current-id="home"></div>
 
-        <div class="landing-content" style="z-index: 10;">
-            <h1 class="landing-title">Algorithm Laboratory</h1>
-            <p class="landing-description">
-                Explore algorithm battles in motion—race sorting duels, visualize pathfinding on a grid,
-                and uncover the time complexity logic behind every move.
-            </p>
-            <button class="btn-go" onclick="enterApp()">
-                Go!
-                <svg xmlns="http://www.w3.org/2000/svg" class="arrow-icon" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-            </button>
-        </div>
-    </div>
-
-    <div id="main-app" class="lab-container app-hidden">
-        <h1>Algorithm Laboratory: Sorting Duel</h1>
-        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 15px;">
-            <button onclick="window.location.href='pathfinding.html'"
-                style="background: linear-gradient(135deg, #06b6d4, #0891b2); padding: 10px 24px; font-size: 1rem; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-                </svg>
-                Pathfinding
-            </button>
-            <button onclick="window.location.href='bst.html'"
-                style="background: linear-gradient(135deg, #a855f7, #7e22ce); padding: 10px 24px; font-size: 1rem; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="5" r="3" /><circle cx="6" cy="19" r="3" /><circle cx="18" cy="19" r="3" />
-                    <line x1="10.5" y1="7.5" x2="7.5" y2="16.5" /><line x1="13.5" y1="7.5" x2="16.5" y2="16.5" />
-                </svg>
-                BST & Trees
-            </button>
-            <button onclick="window.location.href='definitions.html'"
-                style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 10px 24px; font-size: 1rem; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                </svg>
-                Definitions
-            </button>
-        </div>
-
-        <div class="controls">
-            <button onclick="startComparison()">Start Race</button>
-            <button id="pause-btn" onclick="togglePause()">Pause</button>
-            <button onclick="resetLab()">Reset</button>
-
-            <div class="slider-group">
-                <label>Elements: <span id="element-val">20</span></label>
-                <input type="range" id="element-slider" min="5" max="60" value="20" oninput="updateElementCount()">
-
-                <label>Speed: <span id="speed-val">1x</span></label>
-                <input type="range" id="speed-slider" min="0.5" max="4" step="0.1" value="1"
-                    oninput="updateSpeedDisplay()">
-            </div>
-
-            <div class="switch-group">
-                <span class="switch-label">Show Numbers</span>
-                <label class="switch">
-                    <input type="checkbox" id="show-numbers-checkbox" onchange="toggleNumbersDisplay()">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
-
-        </div>
-
-        <div class="duel-floor">
-            <div class="arena" id="arena-left">
-                <select id="algo-left" class="algo-selector">
-                    <option value="bubble">Bubble Sort</option>
-                    <option value="selection">Selection Sort</option>
-                    <option value="insertion">Insertion Sort</option>
-                    <option value="quick">Quick Sort</option>
-                    <option value="merge">Merge Sort</option>
-                    <option value="heap">Heap Sort</option>
-                    <option value="bogo">Bogo Sort</option>
-                    <option value="optbogo">Optimized Bogo</option>
-                    <option value="counting">Counting Sort</option>
-                    <option value="radix">Radix Sort</option>
-                </select>
-                <div id="visualizer-left" class="bar-container"></div>
-                <p>
-                    Comparisons: <span id="count-left">0</span> |
-                    Logic Time: <span id="time-left">0</span>ms
+        <main id="algo-hub" class="hub-main">
+            <header class="hub-hero">
+                <p class="hub-eyebrow">The Algorithm Laboratory</p>
+                <h1>Watch algorithms move. Then prove you understand them.</h1>
+                <p class="hub-blurb">
+                    A comparative simulation suite for the algorithms textbooks leave static. Run a live unit,
+                    step through its execution trace, and check what you learned with quizzes and progress
+                    badges as they arrive.
                 </p>
-                <div class="algo-info-card" id="info-left">
-                    <!-- Dynamic algorithm info goes here -->
+                <div class="hub-actions">
+                    <a class="hub-primary-link" href="sorting.html">Start with Sorting</a>
+                    <a class="hub-secondary-link" href="definitions.html">Browse the glossary</a>
                 </div>
-            </div>
+            </header>
 
-            <div class="arena" id="arena-right">
-                <select id="algo-right" class="algo-selector">
-                    <option value="bubble">Bubble Sort</option>
-                    <option value="selection" selected>Selection Sort</option>
-                    <option value="insertion">Insertion Sort</option>
-                    <option value="quick">Quick Sort</option>
-                    <option value="merge">Merge Sort</option>
-                    <option value="heap">Heap Sort</option>
-                    <option value="bogo">Bogo Sort</option>
-                    <option value="optbogo">Optimized Bogo</option>
-                    <option value="counting">Counting Sort</option>
-                    <option value="radix">Radix Sort</option>
-                </select>
-                <div id="visualizer-right" class="bar-container"></div>
-                <p>
-                    Comparisons: <span id="count-right">0</span> |
-                    Logic Time: <span id="time-right">0</span>ms
-                </p>
-                <div class="algo-info-card" id="info-right">
-
+            <section class="guided-path" aria-labelledby="guided-path-title" aria-disabled="true">
+                <div>
+                    <p class="hub-kicker">Structured route</p>
+                    <h2 id="guided-path-title">Guided Path</h2>
+                    <p>
+                        A linear route from sorting basics through trees, heaps, hashing, and algorithm design,
+                        with optional checkpoints and a soft nudge when a quiz is still open.
+                    </p>
                 </div>
-            </div>
-        </div>
+                <div class="guided-path-actions">
+                    <span class="unit-badge unit-badge--soon">Coming soon</span>
+                    <button type="button" class="unit-test" disabled title="Coming soon">Start Guided Path</button>
+                </div>
+            </section>
+
+            <section class="hub-units" aria-labelledby="units-title">
+                <div class="hub-section-head">
+                    <div>
+                        <p class="hub-kicker">Playground</p>
+                        <h2 id="units-title">Units</h2>
+                    </div>
+                    <p>Live units are ready now. Unreleased units are dimmed so the roadmap stays visible.</p>
+                </div>
+                <div id="unit-grid" class="unit-grid"></div>
+                <noscript>
+                    <p class="hub-noscript">Enable JavaScript to load the unit cards.</p>
+                </noscript>
+            </section>
+        </main>
     </div>
-    </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <script src="js/utils.js"></script>
-
-    <script src="js/algorithmData.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/renderer.js"></script>
-    <script src="js/controls.js"></script>
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script src="js/shell/hub.js"></script>
 </body>
 
 </html>

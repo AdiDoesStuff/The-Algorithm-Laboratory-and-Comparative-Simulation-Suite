@@ -38,7 +38,13 @@ def handle_unexpected_exception(e):
 
 @app.route('/', methods=['GET'])
 def index_page():
+    # The hub. Sorting lives at /sorting.html.
     return send_from_directory(FRONTEND_DIR, 'index.html')
+
+
+@app.route('/sorting.html', methods=['GET'])
+def sorting_page():
+    return send_from_directory(FRONTEND_DIR, 'sorting.html')
 
 
 @app.route('/<path:filename>', methods=['GET'])
