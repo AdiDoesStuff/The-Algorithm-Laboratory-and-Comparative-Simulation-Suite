@@ -388,3 +388,222 @@ def validate_avl_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[
         validated['value'] = value
 
     return validated, None
+
+
+# --- Trie endpoint validation (/trie) ---
+
+VALID_TRIE_ALGORITHMS = {"trie_insert", "trie_search", "trie_prefix"}
+MAX_TRIE_WORDS = 30
+MAX_TRIE_NODES = 200
+MAX_TRIE_WORD_LEN = 12
+MAX_TRIE_STEPS = 500
+TRIE_WORD_RE = __import__("re").compile(r"^[a-z]+$")
+
+
+def _normalize_trie_text(raw, field, allow_empty=False):
+    if not isinstance(raw, str):
+        return None, (f"'{field}' must be a string", field)
+    text = raw.lower()
+    if text == "":
+        if allow_empty:
+            return "", None
+        return None, (f"'{field}' must not be empty", field)
+    if len(text) > MAX_TRIE_WORD_LEN:
+        return None, (f"'{field}' supports at most {MAX_TRIE_WORD_LEN} letters", field)
+    if not TRIE_WORD_RE.match(text):
+        return None, (f"'{field}' must contain only a-z letters", field)
+    return text, None
+
+
+def validate_trie_payload(data):
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get("algorithm")
+    if not isinstance(algo, str) or algo not in VALID_TRIE_ALGORITHMS:
+        return None, (f"Unknown trie algorithm: {algo}", "algorithm")
+
+    raw_ops = data.get("ops", [])
+    if raw_ops is None:
+        raw_ops = []
+    if not isinstance(raw_ops, list):
+        return None, ("'ops' must be a list", "ops")
+    if len(raw_ops) > MAX_TRIE_WORDS:
+        return None, (f"'ops' supports at most {MAX_TRIE_WORDS} words", "ops")
+
+    ops = []
+    words = set()
+    prefixes = set()
+    for i, item in enumerate(raw_ops):
+        if not isinstance(item, dict):
+            return None, (f"'ops[{i}]' must be an object with 'op' and 'word'", "ops")
+        if item.get("op") != "insert":
+            return None, (f"Invalid op '{item.get('op')}' in ops[{i}]: expected 'insert'", "ops")
+        word, err = _normalize_trie_text(item.get("word"), f"ops[{i}].word")
+        if err:
+            return None, err
+        if word in words:
+            return None, (f"Duplicate insert word '{word}' in ops at index {i}", "ops")
+        words.add(word)
+        for j in range(1, len(word) + 1):
+            prefixes.add(word[:j])
+        ops.append({"op": "insert", "word": word})
+
+    if len(prefixes) + 1 > MAX_TRIE_NODES:
+        return None, (f"Trie would exceed {MAX_TRIE_NODES} nodes", "word")
+
+    validated = {"algorithm": algo, "ops": ops}
+
+    if algo == "trie_prefix":
+        prefix, err = _normalize_trie_text(data.get("prefix"), "prefix", allow_empty=True)
+        if err:
+            return None, err
+        validated["prefix"] = prefix
+    else:
+        word, err = _normalize_trie_text(data.get("word"), "word")
+        if err:
+            return None, err
+        if algo == "trie_insert" and word in words:
+            return None, (f"Duplicate word: {word} already exists", "word")
+        validated["word"] = word
+
+    return validated, None
+
+
+# --- Hash endpoint validation (/hash) ---
+
+VALID_HASH_ALGORITHMS = {"hash_insert", "hash_delete", "hash_search"}
+VALID_HASH_FUNCTIONS = {"sum_mod", "poly"}
+VALID_HASH_PROBING = {"linear"}
+MIN_INITIAL_TABLE_SIZE = 5
+MAX_INITIAL_TABLE_SIZE = 13
+MAX_TABLE_SIZE = 63
+MAX_HASH_OPS = 100
+MAX_LIVE_KEYS = 40
+MAX_HASH_STEPS = 2000
+MAX_HASH_KEY_LEN = 12
+
+
+def _validate_hash_key(raw: Any):
+    if not isinstance(raw, str):
+        return None, "'key' must be a string"
+    if not 1 <= len(raw) <= MAX_HASH_KEY_LEN:
+        return None, f"'key' must be 1-{MAX_HASH_KEY_LEN} characters"
+    for ch in raw:
+        code = ord(ch)
+        if code < 33 or code > 126:
+            return None, "'key' must use printable ASCII without whitespace"
+    return raw, None
+
+
+def validate_hash_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[str, str]]]:
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get("algorithm")
+    if not isinstance(algo, str) or algo not in VALID_HASH_ALGORITHMS:
+        return None, (f"Unknown hash algorithm: {algo}", "algorithm")
+
+    hash_fn = data.get("hash_fn", "sum_mod")
+    if not isinstance(hash_fn, str) or hash_fn not in VALID_HASH_FUNCTIONS:
+        return None, (f"Unknown hash function: {hash_fn}", "hash_fn")
+
+    table_size = data.get("table_size", 7)
+    if (not isinstance(table_size, int) or isinstance(table_size, bool)
+            or not MIN_INITIAL_TABLE_SIZE <= table_size <= MAX_INITIAL_TABLE_SIZE):
+        return None, (
+            f"'table_size' must be an integer from {MIN_INITIAL_TABLE_SIZE} to "
+            f"{MAX_INITIAL_TABLE_SIZE}", "table_size")
+
+    probing = data.get("probing", "linear")
+    if not isinstance(probing, str) or probing not in VALID_HASH_PROBING:
+        return None, (f"Unknown probing strategy: {probing}", "probing")
+
+    raw_ops = data.get("ops", [])
+    if raw_ops is None:
+        raw_ops = []
+    if not isinstance(raw_ops, list):
+        return None, ("'ops' must be a list", "ops")
+    if len(raw_ops) > MAX_HASH_OPS:
+        return None, (f"'ops' supports at most {MAX_HASH_OPS} operations", "ops")
+
+    ops = []
+    for i, item in enumerate(raw_ops):
+        if not isinstance(item, dict):
+            return None, (f"'ops[{i}]' must be an object with 'op' and 'key'", "ops")
+        op_name = item.get("op")
+        if op_name not in ("insert", "delete"):
+            return None, (f"Invalid op '{op_name}' in ops[{i}]", "ops")
+        key, err = _validate_hash_key(item.get("key"))
+        if err:
+            return None, (err, "key")
+        ops.append({"op": op_name, "key": key})
+
+    key, err = _validate_hash_key(_hash_action_key(data.get("action")))
+    if err:
+        return None, (err, "key")
+
+    return {
+        "algorithm": algo,
+        "hash_fn": hash_fn,
+        "table_size": table_size,
+        "probing": probing,
+        "ops": ops,
+        "action": {"key": key},
+    }, None
+
+
+def _hash_action_key(action: Any) -> Any:
+    if isinstance(action, dict):
+        return action.get("key")
+    return action
+
+
+# --- Merkle endpoint validation (/merkle) ---
+
+VALID_MERKLE_ALGORITHMS = {"merkle_build", "merkle_tamper"}
+MAX_MERKLE_LEAVES = 16
+MAX_MERKLE_DATA_LEN = 40
+MAX_MERKLE_STEPS = 2000
+
+
+def validate_merkle_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[str, str]]]:
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+
+    algo = data.get("algorithm")
+    if not isinstance(algo, str) or algo not in VALID_MERKLE_ALGORITHMS:
+        return None, (f"Unknown Merkle algorithm: {algo}", "algorithm")
+
+    leaves = data.get("leaves")
+    if not isinstance(leaves, list):
+        return None, ("'leaves' must be a list", "leaves")
+    if not 1 <= len(leaves) <= MAX_MERKLE_LEAVES:
+        return None, (f"'leaves' must contain 1-{MAX_MERKLE_LEAVES} blocks", "leaves")
+    clean_leaves = []
+    for i, leaf in enumerate(leaves):
+        if not isinstance(leaf, str):
+            return None, (f"'leaves[{i}]' must be a string", "leaves")
+        if len(leaf) > MAX_MERKLE_DATA_LEN:
+            return None, (
+                f"'leaves[{i}]' supports at most {MAX_MERKLE_DATA_LEN} characters", "leaves")
+        clean_leaves.append(leaf)
+
+    validated = {"algorithm": algo, "leaves": clean_leaves}
+
+    if algo == "merkle_tamper":
+        index = data.get("index")
+        if (not isinstance(index, int) or isinstance(index, bool)
+                or not 0 <= index < len(clean_leaves)):
+            return None, (
+                f"'index' must be an integer from 0 to {len(clean_leaves) - 1}", "index")
+        new_data = data.get("new_data")
+        if not isinstance(new_data, str):
+            return None, ("'new_data' must be a string", "new_data")
+        if len(new_data) > MAX_MERKLE_DATA_LEN:
+            return None, (
+                f"'new_data' supports at most {MAX_MERKLE_DATA_LEN} characters", "new_data")
+        validated["index"] = index
+        validated["new_data"] = new_data
+
+    return validated, None

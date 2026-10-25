@@ -449,3 +449,82 @@ def test_static_quiz_assets(client, path, expected_type):
     assert res.status_code == 200
     assert expected_type in res.content_type
     assert len(res.data) > 0
+
+
+# --- Phase D: Unit 3 pages and trace routes ---------------------------------
+
+@pytest.mark.parametrize("path,marker", [
+    ("/trie.html", b"Algorithm Laboratory: Tries"),
+    ("/hashing.html", b"Algorithm Laboratory: Hashing"),
+    ("/merkle.html", b"Algorithm Laboratory: Merkle Trees"),
+])
+def test_phase_d_static_routes(client, path, marker):
+    res = client.get(path)
+    assert res.status_code == 200
+    assert marker in res.data
+    assert b'data-current-id="' in res.data
+
+
+@pytest.mark.parametrize("route", ["/trie", "/hash", "/merkle"])
+def test_phase_d_get_returns_405_json(client, route):
+    res = client.get(route)
+    assert res.status_code == 405
+    data = res.get_json()
+    assert data is not None
+    assert data["field"] == "request"
+    assert "method is not allowed" in data["error"].lower()
+
+
+@pytest.mark.parametrize("route,payload,expected_field", [
+    ("/trie", {"algorithm": "trie_insert", "ops": [{"op": "insert", "word": ""}]}, "ops[0].word"),
+    ("/hash", {"algorithm": "hash_insert", "table_size": 3}, "table_size"),
+    ("/merkle", {"algorithm": "merkle_build", "leaves": []}, "leaves"),
+])
+def test_phase_d_bad_payload_returns_400_json(client, route, payload, expected_field):
+    res = client.post(route, json=payload)
+    assert res.status_code == 400
+    data = res.get_json()
+    assert data is not None
+    assert "error" in data and "field" in data
+    assert data["field"] == expected_field
+
+
+def test_phase_d_trie_route_round_trip(client):
+    res = client.post('/trie', json={
+        "algorithm": "trie_insert",
+        "ops": [],
+        "word": "car"
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["steps"]
+    assert data["final_tree"]["nodes"]
+
+
+def test_phase_d_hash_route_round_trip(client):
+    res = client.post('/hash', json={
+        "algorithm": "hash_insert",
+        "hash_fn": "sum_mod",
+        "table_size": 7,
+        "probing": "linear",
+        "ops": [],
+        "action": {"key": "ab"}
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["steps"]
+    assert data["final_state"]["chaining"]["size"] == 7
+    assert data["final_state"]["open"]["size"] == 7
+
+
+def test_phase_d_merkle_route_round_trip(client):
+    res = client.post('/merkle', json={
+        "algorithm": "merkle_build",
+        "leaves": ["a", "b", "c", "d"]
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["steps"]
+    assert data["final_tree"]["root_id"] is not None
+    assert data["metrics"]["nodes"] == 7
+

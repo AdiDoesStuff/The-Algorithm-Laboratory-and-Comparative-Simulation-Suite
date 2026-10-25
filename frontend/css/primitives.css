@@ -69,7 +69,7 @@
   transition: transform 0.4s ease;
 }
 
-.tree-node circle {
+.tree-node circle.node-shape {
   fill: var(--node-default-bg);
   stroke: var(--node-default-border);
   stroke-width: 2px;
@@ -95,39 +95,39 @@
 }
 
 /* Highlight roles */
-.tree-node.node-highlight circle {
+.tree-node.node-highlight circle.node-shape {
   fill: rgba(245, 158, 11, 0.2);
   stroke: var(--node-highlight-border);
   stroke-width: 3px;
   animation: node-pulse 1.5s infinite;
 }
 
-.tree-node.node-compare circle {
+.tree-node.node-compare circle.node-shape {
   stroke: var(--node-compare-border);
   stroke-width: 3px;
 }
 
-.tree-node.node-rotate circle {
+.tree-node.node-rotate circle.node-shape {
   stroke: var(--node-rotate-border);
   stroke-width: 4px;
   animation: node-pulse 1s infinite;
 }
 
-.tree-node.node-pruned circle {
+.tree-node.node-pruned circle.node-shape {
   fill: var(--node-pruned-bg);
   stroke: var(--node-pruned-border);
   stroke-dasharray: 3 3;
   opacity: 0.6;
 }
 
-.tree-node.node-new circle {
+.tree-node.node-new circle.node-shape {
   fill: var(--node-new-bg);
   stroke: var(--node-new-border);
   stroke-width: 3px;
   animation: cell-flash 0.5s ease;
 }
 
-.tree-node.node-selected circle {
+.tree-node.node-selected circle.node-shape {
   fill: rgba(168, 85, 247, 0.4) !important;
   stroke: #c084fc !important;
   stroke-width: 5px !important;
@@ -136,7 +136,7 @@
 
 /* Balance violation marker (AVL). The sublabel text carries "bf:+2 !" so the
    state is never conveyed by colour alone. */
-.tree-node.node-unbalanced circle {
+.tree-node.node-unbalanced circle.node-shape {
   stroke: #f43f5e;
   stroke-width: 4px;
   stroke-dasharray: 6 3;
@@ -154,7 +154,7 @@
   animation: tree-node-fade-in 0.3s ease;
 }
 
-.tree-node.node-entering circle {
+.tree-node.node-entering circle.node-shape {
   transform-box: fill-box;
   transform-origin: center;
   animation: tree-node-scale-in 0.3s ease;
@@ -184,19 +184,19 @@
   outline-offset: 4px;
 }
 
-.tree-node:focus-visible circle {
+.tree-node:focus-visible circle.node-shape {
   stroke: #fbbf24;
   stroke-width: 5px;
 }
 
 /* Search / Insertion Path Highlight */
-.tree-node.path circle {
+.tree-node.path circle.node-shape {
   stroke: #38bdf8;
   stroke-width: 3px;
   fill: rgba(56, 189, 248, 0.15);
 }
 
-.tree-node.path.node-compare circle {
+.tree-node.path.node-compare circle.node-shape {
   stroke: #60a5fa;
   stroke-width: 4px;
   fill: rgba(59, 130, 246, 0.3);
@@ -204,17 +204,91 @@
 }
 
 /* Mirror / Structural Comparison Dual Highlights */
-.tree-node.node-matched circle {
+.tree-node.node-matched circle.node-shape {
   stroke: #10b981 !important;
   fill: rgba(16, 185, 129, 0.25) !important;
   stroke-width: 3.5px !important;
 }
 
-.tree-node.node-mismatch circle {
+.tree-node.node-mismatch circle.node-shape {
   stroke: #ef4444 !important;
   fill: rgba(239, 68, 68, 0.25) !important;
   stroke-width: 3.5px !important;
   animation: node-pulse 1s infinite;
+}
+
+/* --- Phase D roles: created / reused / matched / probing / mismatch ---
+   Every role below also carries a glyph badge (? != + ✓), so the state never
+   depends on colour alone. */
+
+.tree-node.node-created circle.node-shape {
+  stroke: #10b981;
+  stroke-width: 3.5px;
+  fill: rgba(16, 185, 129, 0.22);
+  animation: cell-flash 0.4s ease;
+}
+
+.tree-node.node-reused circle.node-shape {
+  stroke: #38bdf8;
+  stroke-width: 3px;
+  fill: rgba(56, 189, 248, 0.16);
+}
+
+.tree-node.node-probing circle.node-shape {
+  stroke: #fbbf24;
+  stroke-width: 4px;
+  fill: rgba(245, 158, 11, 0.2);
+  animation: node-pulse 1s infinite;
+}
+
+.tree-node.node-matched circle.node-shape {
+  stroke: #10b981;
+  stroke-width: 3px;
+}
+
+/* Trie end-of-word marker: a second ring outside the main circle, so a
+   terminal node stays readable even when another role is also active. */
+.tree-node circle.node-terminal-ring {
+  fill: none;
+  stroke: #22d3ee;
+  stroke-width: 2px;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+.tree-node.node-terminal text.node-sublabel {
+  fill: #67e8f9;
+  font-weight: 700;
+}
+
+.tree-node text.node-dup-badge,
+.tree-node text.node-role-badge {
+  fill: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.tree-node text.node-dup-badge {
+  fill: #f0abfc;
+}
+
+.tree-node.node-probing text.node-role-badge {
+  fill: #fcd34d;
+}
+
+.tree-node.node-mismatch text.node-role-badge {
+  fill: #fda4af;
+}
+
+.tree-node.node-created text.node-role-badge {
+  fill: #6ee7b7;
+}
+
+.tree-node.node-matched text.node-role-badge {
+  fill: #6ee7b7;
 }
 
 .traversal-output-box {
@@ -393,6 +467,9 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
   background: rgba(15, 23, 42, 0.6);
   padding: 16px;
   border-radius: 12px;
@@ -401,8 +478,9 @@
 
 .bucket-grid-main {
   display: grid;
-  grid-template-columns: repeat(var(--grid-cols, 8), 1fr);
+  grid-template-columns: repeat(var(--grid-cols, 8), minmax(44px, 1fr));
   gap: 8px;
+  min-width: 0;
 }
 
 .grid-cell {
@@ -461,6 +539,126 @@
   align-items: center;
   gap: 4px;
 }
+
+/* --- Phase D hash-table cells ------------------------------------------- */
+
+.slot-cell,
+.bucket-cell {
+  gap: 0;
+  padding: 4px 2px;
+  min-height: 56px;
+  overflow: hidden;
+}
+
+.grid-cell-value {
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-cell-index {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--node-subtext);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-cell-label {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.grid-cell.slot-tombstone .grid-cell-index {
+  color: #fca5a5;
+}
+
+.grid-cell-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.grid-cell.slot-empty {
+  color: #475569;
+  background: var(--cell-empty-bg);
+}
+
+.grid-cell.slot-tombstone {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(100, 116, 139, 0.35),
+    rgba(100, 116, 139, 0.35) 5px,
+    rgba(15, 23, 42, 0.6) 5px,
+    rgba(15, 23, 42, 0.6) 10px
+  );
+  border: 1px dashed #64748b;
+  color: #cbd5e1;
+}
+
+.grid-cell.bucket-empty {
+  color: #475569;
+  background: var(--cell-empty-bg);
+}
+
+.grid-cell.cell-created {
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.grid-cell.cell-reused {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.grid-cell.cell-probing {
+  border-color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
+  animation: node-pulse 1s infinite;
+}
+
+.grid-cell.cell-matched {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.grid-cell.cell-mismatch {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.18);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
+}
+
+.bucket-grid-caption {
+  font-size: 0.78rem;
+  color: var(--node-subtext);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+
+.bucket-grid-caption.hidden {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid-cell.cell-probing {
+    animation: none;
+  }
+}
+
 
 /* --- ArrayStrip Styles --- */
 .array-strip-container {
@@ -661,11 +859,11 @@
   }
 
   .tree-node.node-entering,
-  .tree-node.node-entering circle,
-  .tree-node.node-unbalanced circle,
-  .tree-node.node-highlight circle,
-  .tree-node.node-selected circle,
-  .tree-node.node-rotate circle {
+  .tree-node.node-entering circle.node-shape,
+  .tree-node.node-unbalanced circle.node-shape,
+  .tree-node.node-highlight circle.node-shape,
+  .tree-node.node-selected circle.node-shape,
+  .tree-node.node-rotate circle.node-shape {
     animation: none;
   }
 

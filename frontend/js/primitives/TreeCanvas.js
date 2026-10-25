@@ -22,6 +22,25 @@ function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
 
+
+function roleBadgeText(stepRoles, id) {
+    if (!stepRoles) return null;
+    const has = (role) => {
+        if (Array.isArray(stepRoles[role]) && stepRoles[role].includes(id)) return true;
+        for (const k of Object.keys(stepRoles)) {
+            if (k === role || k.startsWith(role + '_')) {
+                if (Array.isArray(stepRoles[k]) && stepRoles[k].includes(id)) return true;
+            }
+        }
+        return false;
+    };
+    if (has('probing')) return '?';
+    if (has('mismatch')) return '\u2260';
+    if (has('created')) return '+';
+    if (has('matched')) return '\u2713';
+    return null;
+}
+
 export class TreeCanvas {
     /**
      * @param {HTMLElement} containerEl - DOM container element
@@ -39,7 +58,8 @@ export class TreeCanvas {
         this.options = Object.assign({
             nodeRadius: 20,
             levelHeight: 70,
-            tweenMs: 0
+            tweenMs: 0,
+            layout: 'auto'
         }, options);
 
         this.isPaused = false;
@@ -164,6 +184,8 @@ export class TreeCanvas {
         const leftMap = new Map();
         const rightMap = new Map();
         let hasSideEdges = false;
+        const forceNary = this.options.layout === 'nary';
+        const forceBinary = this.options.layout === 'binary';
 
         nodes.forEach(n => {
             nodeMap.set(n.id, n);
@@ -196,7 +218,7 @@ export class TreeCanvas {
         const positions = new Map();
         let nextX = 0;
 
-        if (hasSideEdges) {
+        if (!forceNary && (forceBinary || hasSideEdges)) {
             // Calculate max depth of tree
             const getDepth = (id) => {
                 const left = leftMap.get(id);
@@ -274,6 +296,7 @@ export class TreeCanvas {
         g.setAttribute('data-id', String(id));
 
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('class', 'node-shape');
         const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         textLabel.setAttribute('class', 'node-label');
         g.appendChild(circle);
@@ -310,6 +333,22 @@ export class TreeCanvas {
         if (stepRoles.comparing?.includes(id) || stepRoles.comparing_a?.includes(id) || stepRoles.comparing_b?.includes(id)) classList.push('node-compare');
         if (stepRoles.matched_a?.includes(id) || stepRoles.matched_b?.includes(id)) classList.push('node-matched');
         if (stepRoles.mismatch_a?.includes(id) || stepRoles.mismatch_b?.includes(id)) classList.push('node-mismatch');
+        const hasRole = (role) => {
+            if (Array.isArray(stepRoles[role]) && stepRoles[role].includes(id)) return true;
+            for (const k of Object.keys(stepRoles || {})) {
+                if (k === role || k.startsWith(role + '_')) {
+                    if (Array.isArray(stepRoles[k]) && stepRoles[k].includes(id)) return true;
+                }
+            }
+            return false;
+        };
+        if (hasRole('created')) classList.push('node-created');
+        if (hasRole('reused')) classList.push('node-reused');
+        if (hasRole('matched')) classList.push('node-matched');
+        if (hasRole('probing')) classList.push('node-probing');
+        if (hasRole('mismatch')) classList.push('node-mismatch');
+        if (n.terminal) classList.push('node-terminal');
+        if (n.duplicate_of !== null && n.duplicate_of !== undefined) classList.push('node-dup');
         if (stepRoles.rotating?.includes(id)) classList.push('node-rotate');
         if (stepRoles.unbalanced?.includes(id)) classList.push('node-unbalanced');
         if (stepRoles.pruned?.includes(id)) classList.push('node-pruned');
@@ -338,12 +377,58 @@ export class TreeCanvas {
 
         this._applyNodeClasses(g, n, stepRoles, pathIds);
 
-        const circle = g.querySelector('circle');
+        const circle = g.querySelector('circle.node-shape');
         const textLabel = g.querySelector('.node-label');
         const len = labelStr.length;
         // Scale circle radius by label length (~5.2px per character + 6px padding).
         const dynamicRadius = Math.max(this.options.nodeRadius, Math.floor(len * 5.2) + 6);
         circle.setAttribute('r', dynamicRadius);
+
+        // Terminal double ring (tries). Drawn behind the main circle.
+        let termRing = g.querySelector('.node-terminal-ring');
+        if (n.terminal) {
+            if (!termRing) {
+                termRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                termRing.setAttribute('class', 'node-terminal-ring');
+                g.insertBefore(termRing, g.firstChild);
+            }
+            termRing.setAttribute('r', String(dynamicRadius + 6));
+            termRing.setAttribute('cx', '0');
+            termRing.setAttribute('cy', '0');
+        } else if (termRing) {
+            termRing.remove();
+        }
+
+        // Duplicate badge (Merkle duplicate-last policy).
+        let dupBadge = g.querySelector('.node-dup-badge');
+        if (n.duplicate_of !== null && n.duplicate_of !== undefined) {
+            if (!dupBadge) {
+                dupBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dupBadge.setAttribute('class', 'node-dup-badge');
+                dupBadge.setAttribute('dy', '-18');
+                g.appendChild(dupBadge);
+            }
+            if (dupBadge.textContent !== 'dup') dupBadge.textContent = 'dup';
+        } else if (dupBadge) {
+            dupBadge.remove();
+        }
+
+        // Role cue badge. Terminal / duplicate nodes keep their own marker so
+        // the two cues never overwrite each other.
+        let roleBadge = g.querySelector('.node-role-badge');
+        const isSpecial = !!n.terminal || (n.duplicate_of !== null && n.duplicate_of !== undefined);
+        const rbText = isSpecial ? null : roleBadgeText(stepRoles, n.id);
+        if (rbText) {
+            if (!roleBadge) {
+                roleBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                roleBadge.setAttribute('class', 'node-role-badge');
+                roleBadge.setAttribute('dy', '-18');
+                g.appendChild(roleBadge);
+            }
+            if (roleBadge.textContent !== rbText) roleBadge.textContent = rbText;
+        } else if (roleBadge) {
+            roleBadge.remove();
+        }
 
         if (textLabel.textContent !== labelStr) textLabel.textContent = labelStr;
         textLabel.setAttribute('dy', subStr ? '-4' : '0');
@@ -361,11 +446,12 @@ export class TreeCanvas {
             textSub.remove();
         }
 
-        if (this.options.onNodeClick) {
-            const ariaParts = [`Node ${labelStr}`];
-            if (subStr) ariaParts.push(subStr);
-            g.setAttribute('aria-label', ariaParts.join(', '));
-        }
+        // Accessible name: every node is reachable even without onNodeClick.
+        const ariaParts = [`Node ${labelStr}`];
+        if (subStr) ariaParts.push(subStr);
+        if (n.terminal) ariaParts.push('end of word');
+        if (n.duplicate_of !== null && n.duplicate_of !== undefined) ariaParts.push('duplicate');
+        g.setAttribute('aria-label', ariaParts.join(', '));
     }
 
     _renderNodes(treeSnap, stepRoles, positions, pathIds, duration) {

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Tries</title>
+    <meta name="description" content="Build a prefix tree one character at a time, see which nodes are shared, search stored words, and run prefix autocomplete.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="stylesheet" href="css/lab.css">
+    <link rel="stylesheet" href="css/quiz.css">
+    <link rel="stylesheet" href="css/glossary.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+    <div class="lab-container">
+        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-direction: column;">
+            <h1>Algorithm Laboratory: Tries</h1>
+            <div id="algo-nav" data-algo-nav data-current-id="trie"></div>
+        </div>
+
+        <div class="lab-layout">
+            <!-- Controls -->
+            <div class="side-panel">
+                <div class="mode-tabs" role="tablist" aria-label="Mode">
+                    <button id="btn-mode-play" class="mode-tab active-tab" role="tab" aria-selected="true">Play Mode</button>
+                    <button id="btn-mode-learn" class="mode-tab" role="tab" aria-selected="false">Learn Mode</button>
+                </div>
+
+                <!-- Play Mode -->
+                <div id="play-controls-panel" class="control-group">
+                    <div class="control-group">
+                        <label for="input-word">Word</label>
+                        <div class="input-row">
+                            <input type="text" id="input-word" inputmode="text" autocomplete="off" spellcheck="false" placeholder="letters a-z, e.g. car, card" />
+                            <button id="btn-insert">Insert</button>
+                        </div>
+                        <p class="control-hint">Inserting an existing word is rejected; inserting a word that extends another is fine.</p>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 4px;">
+                        <label for="input-search">Search</label>
+                        <div class="input-row">
+                            <input type="text" id="input-search" inputmode="text" autocomplete="off" spellcheck="false" placeholder="a stored word" />
+                            <button id="btn-search">Search</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 4px;">
+                        <label for="input-prefix">Prefix autocomplete</label>
+                        <div class="input-row">
+                            <input type="text" id="input-prefix" inputmode="text" autocomplete="off" spellcheck="false" placeholder="type a prefix, e.g. ca" />
+                            <button id="btn-prefix">Prefix</button>
+                        </div>
+                        <p class="control-hint">Suggestions update as you type. Empty prefix lists the first words.</p>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 8px;">
+                        <span class="control-label">Stored words</span>
+                        <div id="word-chips" class="chip-row" role="list" aria-label="Stored words">
+                            <span class="control-hint" style="margin: 0;">No words yet.</span>
+                        </div>
+                        <p class="control-hint">Select a word to load it into the search box.</p>
+                    </div>
+
+                    <button id="btn-clear" style="margin-top: 10px; background: #475569;">Clear</button>
+
+                    <div class="control-group" style="margin-top: 12px;">
+                        <label for="speed-slider">Speed</label>
+                        <div class="input-row" style="align-items: center;">
+                            <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1" style="flex: 1;" />
+                            <button id="btn-play-pause" style="padding: 6px 14px; min-width: 76px;">Pause</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 12px;">
+                        <span class="control-label">Step through</span>
+                        <div class="step-row">
+                            <button id="btn-step-prev" type="button">← Prev</button>
+                            <button id="btn-step-next" type="button">Next →</button>
+                        </div>
+                        <p id="step-counter" class="step-counter" aria-live="polite">No trace yet.</p>
+                    </div>
+                </div>
+
+                <!-- Learn Mode -->
+                <div id="learn-controls-panel" class="control-group hidden">
+                    <p class="control-hint" style="margin: 0;">
+                        Pick a lesson, then step through it with next/prev or reset.
+                    </p>
+
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                        <label for="lesson-select" style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap;">Lesson:</label>
+                        <select id="lesson-select" class="algo-selector" style="flex: 1; min-width: 0; min-height: 44px;"></select>
+                    </div>
+                    <p id="lesson-description" class="control-hint" style="margin: 6px 0 0 0;"></p>
+
+                    <div id="learn-pills-row" class="learn-pills-row"></div>
+
+                    <div class="step-row" style="margin-top: 12px;">
+                        <button id="btn-learn-prev" type="button" disabled>← Prev Step</button>
+                        <button id="btn-learn-next" type="button">Next Step →</button>
+                    </div>
+                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Lesson</button>
+
+                    <div id="lesson-narration" class="step-annotation-box" style="margin-top: 10px; min-height: 54px;" aria-live="polite">
+                        Select a lesson and press Reset Lesson to begin.
+                    </div>
+
+                    <div id="checkpoint-panel" class="checkpoint-panel hidden">
+                        <p id="checkpoint-prompt"></p>
+                        <div id="checkpoint-choices" class="checkpoint-choices"></div>
+                        <button id="btn-checkpoint-reveal" type="button" style="margin-top: 8px;">Reveal</button>
+                        <p id="checkpoint-feedback" class="checkpoint-feedback" role="status" aria-live="polite"></p>
+                    </div>
+
+                    <div id="quiz-prompt-panel" class="quiz-prompt-panel hidden">
+                        <p id="quiz-prompt-text">
+                            Lesson complete. This unit quiz covers shared prefixes, terminal nodes, search outcomes, and autocomplete.
+                        </p>
+                        <button id="btn-lesson-quiz" type="button" disabled>
+                            Take the quiz
+                        </button>
+                        <div id="quiz-mount" class="hidden" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="visualizer-panel">
+                <div id="trie-error-banner" role="alert" aria-live="polite" class="error-banner hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span id="trie-error-text"></span>
+                </div>
+
+                <section class="panel-card" aria-labelledby="trie-heading">
+                    <h2 id="trie-heading" class="panel-heading">Trie (children in alphabetical order)</h2>
+                    <p class="legend-row" aria-label="Tree state legend">
+                        <span><span class="legend-ring created" aria-hidden="true"></span> created this step <span class="legend-badge" aria-hidden="true">+</span></span>
+                        <span><span class="legend-ring reused" aria-hidden="true"></span> reused existing node</span>
+                        <span><span class="legend-badge" aria-hidden="true">✓</span> matched on search</span>
+                        <span><span class="legend-badge" aria-hidden="true">?</span> probed, no edge</span>
+                        <span><span class="legend-ring terminal" aria-hidden="true"></span> end of a stored word (<code>end</code>)</span>
+                    </p>
+                    <div id="trie-tree" class="trie-tree-box"></div>
+
+                    <div class="suggestion-panel" aria-live="polite">
+                        <p id="suggestion-status" class="suggestion-status">Type a prefix to see completions.</p>
+                        <ul id="suggestion-list" class="suggestion-list" aria-label="Autocomplete suggestions"></ul>
+                    </div>
+                </section>
+
+                <div id="step-annotation" class="step-annotation-box" aria-live="polite">
+                    Ready. Insert a word or choose Learn Mode to begin.
+                </div>
+
+                <section class="metrics-grid" aria-label="Trace metrics">
+                    <div class="metric-box">
+                        <span class="metric-label">Nodes</span>
+                        <span id="metric-nodes" class="metric-value">1</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Words</span>
+                        <span id="metric-words" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Created (last)</span>
+                        <span id="metric-created" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Reused (last)</span>
+                        <span id="metric-reused" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Steps</span>
+                        <span id="metric-steps" class="metric-value">0</span>
+                    </div>
+                </section>
+
+                <p id="compression-line" class="panel-note" aria-live="polite">
+                    Letters and nodes will appear here after the first insert.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/shell/progress.js"></script>
+    <script src="js/shell/glossaryData.js"></script>
+    <script type="module" src="js/tries.js"></script>
+</body>
+</html>

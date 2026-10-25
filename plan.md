@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phases A, B, and C are merged to `main` (`1e938da`) and pushed; `main` is now the only branch. Baseline: **156/156 pytest**, **21/21 content checks**, three BST lessons, three heap lessons, three AVL lessons, three 10-question quizzes, live progress and Guided Path. Phase C landed as `phase-c-heaps-avl` (24 commits, merge `1e938da`). Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
+**Last updated:** 26 Oct 2026 — Phases A, B, C, and D are merged to `main`. Baseline: **360/360 pytest**, **39/39 content checks**, twelve lessons, six 10-question quizzes (BST, heaps, AVL, trie, hash, merkle), live progress and Guided Path, and 110 glossary terms. Phase C landed as `phase-c-heaps-avl` (24 commits, merge `1e938da`). Phase D landed as `phase-d-unit3` (14 commits, merge `_MERGE_HASH_`). Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system, and no npm dependencies at all. The `dev/` scripts import Node built-ins only, and every frontend module imports its neighbours by relative path, so the browser loads the ES modules directly. Keep it that way.
 **Verification scope:** Everything is measured against **desktop Chromium talking to a locally run Flask server**, which is the environment this project is demonstrated and graded in. Cross-browser, mobile/touch, forced-colors, and screen-reader passes are explicitly **out of scope**. Where a phase note says something is "not verified" in one of those areas, that is a scope decision, not an open defect.
 
@@ -14,16 +14,17 @@
 | --- | --- |
 | Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html` and opens directly; `index.html` is the hub and owns the landing splash. |
 | Pathfinding Lab (3 algos) | Done, mature. |
-| Glossary | ✅ **B4 shipped.** Separate page plus contextual inline `?` tooltips on BST narration; 94 terms with stable slugs. |
+| Glossary | ✅ **B4 shipped, extended in D.** Separate page plus contextual inline `?` tooltips on narration and checkpoints; 110 terms with stable slugs, including trie, hashing, and Merkle vocabulary. |
 | BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view. Committed on `phase-a-stabilize`; exercised by B2-B5 lessons and quizzes and by the current pytest suite. |
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
-| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js`, `heaps.js`, and `avl.js` share the op-log, busy gate, stale-response guard, error banner, and auto fit-view. AVL adds a `createLatest()` guard on the plain-BST comparison. |
-| Primitives | `TreeCanvas` (production: keyed nodes, optional position tween, animated fit-view, path highlight, `unbalanced`/`rotating` roles), `ArrayStrip` (production, heaps), `treeAdapter` (production), `QuizEngine` (production, B3), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, shared nav, unit registry | ✅ **B1-B3 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, live progress badges, enabled "Test yourself" deep links, and the Guided Path wrapper with its soft nudge. AVL is live at guidedOrder 5; Trie and Design remain "soon". |
-| Lesson engine, quizzes, progress | ✅ **B2-B5 shipped, extended in C3/C5.** `engine/LessonRunner.js` (generic, unit-agnostic), data-only lessons for BST, heaps, and AVL, pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine` plus `bstQuiz.js`, `heapQuiz.js`, and `avlQuiz.js`; `progress.js` keys attempts by unit id. |
-| Heap / AVL / Trie / Hash / DP / Bench | ✅ Heap and AVL are live end to end (C2-C5). Trie, Hash, DP, and Bench are still stubs in `app.py` and the algorithm modules. |
-| Tests | ✅ **156/156 pytest tests green** plus **21/21 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap invariant/step contracts, and AVL rotation cases, per-step invariants, and payload validation. |
-| Repository | ✅ Phases A-C are merged, the `phase-*` branches were pruned after merging, and `main` (Phase C merge `1e938da`) is the only branch, pushed to `origin` with a clean working tree. |
+| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js`, `heaps.js`, `avl.js`, `tries.js`, `hashing.js`, and `merkle.js` share the op-log, busy gate, stale-response guard, error banner, and auto fit-view. AVL adds a `createLatest()` guard on the plain-BST comparison; the trie page adds one on the debounced autocomplete preview. |
+| Primitives | `TreeCanvas` (production: keyed nodes, optional position tween, animated fit-view, path highlight, `unbalanced`/`rotating` roles, opt-in n-ary layout, terminal/duplicate markers), `ArrayStrip` (production, heaps), `treeAdapter` (production), `QuizEngine` (production, B3), `BucketGrid` (production, hashing: chaining, tombstones, per-cell labels), `GrowthChart` (fixture-tested only, `test.html`). |
+| Hub, shared nav, unit registry | ✅ **B1-B3 shipped, extended in C/D.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, live progress badges, enabled "Test yourself" deep links, and the Guided Path wrapper with its soft nudge. Tries, hashing, and Merkle are live at guidedOrder 6/7/8; Design & Analysis is "soon" at 9. |
+| Lesson engine, quizzes, progress | ✅ **B2-B5 shipped, extended in C3/C5/D4.** `engine/LessonRunner.js` (generic, unit-agnostic), data-only lessons for BST, heaps, AVL, trie, hash, and Merkle, pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine` plus six quizzes; `progress.js` keys attempts by unit id. |
+| Trie / Hash / Merkle | ✅ **Live end to end (D1-D5).** `/trie`, `/hash`, and `/merkle` generators, three laboratory pages with Play and Learn, three lessons and three 10-question quizzes each. |
+| DP / Bench | ⏳ Still stubs in `app.py` and the algorithm modules; Phase E. |
+| Tests | ✅ **360/360 pytest tests green** plus **39/39 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap/AVL invariants and rotation cases, trie create/reuse and completions, hash chaining/open-addressing/resize/tombstones, and Merkle build/tamper/odd counts. |
+| Repository | ✅ Phases A-D are merged and the `phase-*` branches pruned after merging; `main` (Phase D merge `_MERGE_HASH_`) is the only branch, pushed to `origin` with a clean working tree. |
 | Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
@@ -366,34 +367,48 @@ rotate_LL step:
 
 ## Phase D: Unit 3, Tries, Hashing, Merkle
 
+**Status:** ✅ **Complete (D1-D5).** Tries, hashing, and Merkle are live end to end: `/trie` + `trie.html`, `/hash` + `hashing.html`, `/merkle` + `merkle.html`, three lessons and a ten-question quiz each, all three units live on the hub and in the Guided Path. Merged to `main` as `_MERGE_HASH_` on a green **360/360 pytest** and **39/39 content-check** run.
+
 ### D1. Trie (`tries.py`)
-- [ ] `trie_insert_steps(words_ops, word)`: per-letter `node_reused` or `node_created` steps; end-of-word marker.
-- [ ] `trie_search_steps` and `trie_prefix_steps` (autocomplete: matched path lights up, returns completions list).
-- [ ] Frontend `tries.html`: `TreeCanvas` with created (green) vs reused (blue) color-coding, live prefix search while typing (debounced, with sequence counter).
-- [ ] Tests: reuse vs create counts, prefix completions, empty string, duplicates, case policy (lowercase-normalize and document it).
+- [x] `trie_op_steps` with `trie_insert`: per-letter `node_created` / `node_reused` steps, then `mark_end` for the terminal marker and `insert_done` with created/reused counts. One route, three modes (`trie_insert`, `trie_search`, `trie_prefix`), matching the existing `algorithm`-dispatch style instead of three endpoints. (`7668624`)
+- [x] `trie_search` emits `visit` steps along the path, then `found`, `not_a_word` (path exists but is not terminal), or `missing_edge`; `trie_prefix` walks the prefix and returns `metadata.completions` (sorted, capped) with `prefix_done`. (`7668624`)
+- [x] Frontend `trie.html`: `TreeCanvas` in opt-in n-ary layout with double-ring terminal nodes, created (green) vs reused (blue) roles, word chips, and a debounced 200 ms autocomplete preview guarded by `createLatest()`. Preview-only: it never mutates the stored words; clicking a suggestion loads it into the Search box. (`f11d5c9`)
+- [x] Tests (`test_tries.py`, 53): reuse vs create counts, prefix completions, empty string, duplicate rejection, lowercase normalization (documented in the UI and the module docstring), step/node caps, validation matrix, and the 405 GET contract. (`7668624`)
 
 ### D2. Hashing (`hashing.py`)
-- [ ] Hash function endpoint: show the computation steps (e.g., sum of char codes mod size) so the bucket index is explainable. Offer 2 hash functions (a bad one and a decent one) to show clustering.
-- [ ] Chaining trace: `hash_compute`, `chain_append`.
-- [ ] Open addressing trace: `hash_compute`, `probe` (linear; quadratic as extension), `place`.
-- [ ] Load factor tracking and `resize` step (rehash all keys, emit per-key moves) at a threshold (e.g., 0.75 for open addressing).
-- [ ] Delete handling: tombstones for open addressing, shown visibly (decide and document).
-- [ ] Frontend `hashing.html`: **first production use of `BucketGrid`**. Two panels run the same key sequence side by side. Load-factor meter. Collision highlighting.
-- [ ] Tests: lookups succeed after resize; probe sequences terminate; full-table behavior defined; tombstones.
+- [x] Two hash functions with per-character computation steps: `sum_mod` (the deliberately weak one) and `poly` (the better one). Every step carries the term-by-term breakdown so the bucket index is explainable. (`8afa29a`)
+- [x] Chaining trace: `hash_compute`, `chain_compare`, `chain_append`, `insert_done`; open addressing: `hash_compute`, `probe`, `place`, `insert_done`. Both panels run the same key sequence, and every `/hash` step carries both snapshots plus suffixed role arrays. (`8afa29a`)
+- [x] Load-factor tracking and `resize_start` / `resize_move` / `resize_done` at 0.75 (open) and 1.0 (chaining), with per-key moves and an in-place rehash fallback at the size cap. (`8afa29a`)
+- [x] Delete leaves visible tombstones in open addressing (cell text `†`, aria label "Slot i: tombstone"); a rehash clears them. Linear probing only — quadratic/double were listed as extensions and are deferred. (`8afa29a`)
+- [x] Frontend `hashing.html`: first production use of `BucketGrid`, two panels side by side, load-factor meters, collision/probe counters, per-cell index labels, and internal horizontal scrolling at size 11. Presets: "Anagram collision demo" (four anagrams in one chain) and "Fill to trigger resize". (`2e53f3c`)
+- [x] Tests (`test_hashing.py`, 53): lookups succeed after resize, probe sequences terminate, full-table behavior is defined, tombstones survive deletes and clear on rehash, anagram collisions, metrics recomputation, caps, validation matrix, and GET 405. (`8afa29a`)
 
 ### D3. Merkle (`merkle.py`)
-- [ ] Use real SHA-256, truncated for display (state this in the UI).
-- [ ] `merkle_build_steps`: leaf hashing, then pair up level by level, then root. Odd-node policy (duplicate last) documented.
-- [ ] `merkle_tamper_steps`: edit one leaf, recompute only the path to root, emit `mismatch` steps coloring changed hashes.
-- [ ] Frontend `merkle.html`: `TreeCanvas` with hash in `sublabel`; editable leaf blocks; tamper propagation animation.
-- [ ] Tests: root changes iff any leaf changes; path-only recompute equals full rebuild; odd leaf counts.
+- [x] Real SHA-256 (`hashlib`), full 64-character digests in the node inspector and truncated to eight hex characters for display; the UI states the truncation. (`0d50757`)
+- [x] `merkle_build` hashes leaves, pairs level by level, and emits `leaf_hash`, `node_hash`, `duplicate`, and `build_done`. Odd levels use duplicate-last: the copy is a real node with its own id and `duplicate_of`. (`0d50757`)
+- [x] `merkle_tamper` edits one leaf, recomputes only the ancestor path, and emits `mismatch` steps on the changed hashes plus a `tamper_done` summary. The recomputed path is asserted equal to a full rebuild. (`0d50757`)
+- [x] Frontend `merkle.html`: `TreeCanvas` with eight-character hashes in `sublabel`, a duplicate badge, an editable leaf block per row, per-row Tamper, a root banner that flips to "Root changed", and a full-hash node inspector. (`b885abd`)
+- [x] Tests (`test_merkle.py`, 86): root changes iff any leaf changes, path-only recompute equals a full rebuild, odd leaf counts (1, 3, 5), duplicate ids and digests, step caps, validation matrix, and GET 405. (`0d50757`)
 
 ### D4. Learn and quizzes
-- [ ] Lessons and quizzes for trie, hashing, merkle. Hashing lesson must show chaining vs open addressing on identical input.
+- [x] Three lessons per unit, all data-only and anchored by step type/occurrence: trie (build/share, search vs autocomplete, word-is-a-prefix), hash (key→index, chaining vs open, load and resize), Merkle (build, odd duplication, tamper detection). Hash lessons support optional `phases` so one lesson can hand over from chaining to open addressing with a page-local phase metric reset. (`f11d5c9`, `2e53f3c`, `b885abd`)
+- [x] `trieQuiz.js`, `hashQuiz.js`, and `merkleQuiz.js`: ten questions, four options, ordered to follow their lessons. Every sequence, index, hash, and node count was produced by the backend, not guessed. (`f11d5c9`, `2e53f3c`, `b885abd`)
+- [x] Shared page chrome extracted to `frontend/css/lab.css` (side panel, mode tabs, metric boxes, preset rows) so the three pages stay visually consistent without touching the existing pages. (`f11d5c9`)
 
 ### D5. Exit criteria
-- [ ] Three pages live, each with Play, Learn, quiz.
-- [ ] `BucketGrid` and `TreeCanvas` handle all new roles (`created`, `reused`, `probing`, `mismatch`) documented in `TRACE_SPEC.md`.
+- [x] Three pages live, each with Play, Learn, and quiz. Hub cards show Open and Test yourself; deep links `trie.html?quiz=trieQuiz`, `hashing.html?quiz=hashQuiz`, `merkle.html?quiz=merkleQuiz` mount the quiz, and an unknown id shows the page banner. Verified in the browser.
+- [x] `BucketGrid` and `TreeCanvas` handle every new role (`created`, `reused`, `matched`, `probing`, `mismatch`) and the trie/Merkle markers (`terminal`, `duplicate_of`), documented in `docs/TRACE_SPEC.md` §§8-10. `test.html` stays green: n-ary 13/13, hash 12/12, rotation 28/28, dual 13/13, quiz 11/11.
+- [x] Full suite **360 passed**; validator **39/39**; `node --check` clean on every new module; console clean on all three pages and `test.html`.
+
+### D notes
+
+- **Deviations.** Registry ids are `trie`, `hash`, and `merkle` (the `tries-hashing-merkle` placeholder was split), and `design-analysis` moved to guidedOrder 9. The backend is split into `tries.py`, `hashing.py`, and `merkle.py` rather than growing the existing modules; the Phase D stubs were removed from `trees.py` and `app.py`. Hashing implements linear probing only (quadratic was an optional extension). The Merkle duplicate policy is duplicate-last, and duplicate nodes render as their own node rather than a visual clone.
+- **Additive primitives.** `TreeCanvas` gains opt-in `layout:"nary"`, `terminal`, `duplicate_of`, and the `mismatch` role; the default `"auto"` path, all existing roles, and every current page keep their behaviour. `BucketGrid` gains chaining rows, tombstones, per-cell index labels, and role styling; the legacy `cells`/`chains` fixture path still renders. `DEFAULT_ROLES['mismatch']` was repointed from `pruned` to `mismatch`, the only change to an existing role mapping.
+- **Hash metrics.** `collisions` counts inserts that hit an occupied live cell; `total_probes` counts chain comparisons and slot probes but excludes rehash work; `max_probe_length` is recomputed from the current slots (so deleting a key can shorten it); `load_factor` is live entries / size. The two panels report separately, which is the point of the comparison.
+- **Terminal / duplicate / role badges are mutually exclusive.** A terminal or duplicate node suppresses the generic step-role badge, so one node never carries contradictory highlights. State is always carried by text or shape as well as colour.
+- **Checkpoint anchoring.** Phase D lessons use `anchorType` + `occurrence` with an optional `anchorOffset` (−1 by default; `0` asks on the event step itself). This kept the checkpoints data-only and avoided new runner code.
+- **Merkle editor contract.** Play and Build commit all editor values; per-row Tamper sends the committed leaves plus that row's new value and commits only after a 200. The editor is disabled while a trace plays, so an in-flight trace can never describe a tree the panel no longer shows.
+- **Verification.** Browser pass on all three pages: trie `car,card,care,cat` → 7 nodes and 4 terminals, `card` → 1 created/3 reused, search `ca` → not-a-word, prefix `ca` → all four completions; hash `ab`/`ba` collide under `sum_mod`, anagram preset puts four keys in bucket 4, resize preset takes both panels 5→11 with one resize; Merkle `a-d` → 7 nodes/3 levels, tamper block 3 → 2 of 3 internal hashes recomputed and a changed root, five-leaf lesson → 13 nodes/4 levels/2 duplicate badges. Deep links, unknown-quiz banner, glossary slugs (110 terms), hub Guided Path, keyboard paths, reduced motion, and internal grid scrolling at 1280 px were checked. Cross-browser, mobile, and screen-reader passes remain out of scope.
 
 ---
 

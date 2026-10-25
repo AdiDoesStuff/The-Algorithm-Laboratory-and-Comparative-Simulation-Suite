@@ -7,6 +7,9 @@ from flask_cors import CORS
 import algs
 import pathfinding
 import trees
+import tries
+import hashing
+import merkle
 import validation
 from validation import ValidationError
 
@@ -237,13 +240,70 @@ def avl_handler():
     ))
 
 
-@app.route('/hash', methods=['POST'])
+@app.route('/trie', methods=['GET', 'POST'])
+def trie_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_trie_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    return jsonify(tries.trie_op_steps(
+        validated['algorithm'],
+        validated.get('ops', []),
+        validated.get('word'),
+        validated.get('prefix'),
+    ))
+
+
+@app.route('/hash', methods=['GET', 'POST'])
 def hash_handler():
-    data = request.get_json(silent=True) or {}
-    method = data.get('method', 'chaining')
-    keys = data.get('keys', [])
-    table_size = data.get('tableSize', 8)
-    return jsonify(trees.hash_insert_steps(keys, method, table_size))
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_hash_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    return jsonify(hashing.hash_op_steps(
+        validated['algorithm'],
+        validated['hash_fn'],
+        validated['table_size'],
+        validated['probing'],
+        validated.get('ops', []),
+        validated.get('action'),
+    ))
+
+
+@app.route('/merkle', methods=['GET', 'POST'])
+def merkle_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+
+    validated, err_tuple = validation.validate_merkle_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+
+    if validated['algorithm'] == 'merkle_tamper':
+        return jsonify(merkle.merkle_tamper_steps(
+            validated['leaves'], validated['index'], validated['new_data']))
+    return jsonify(merkle.merkle_build_steps(validated['leaves']))
 
 
 @app.route('/dp', methods=['POST'])

@@ -1859,8 +1859,4 @@ def heap_insert_steps(values: Any) -> Dict[str, Any]:
 def heap_extract_steps(values: Any) -> Dict[str, Any]:
     return {"steps": [], "metadata": {"algorithm": "heap_extract"}}
 
-def trie_insert_steps(words: List[str]) -> Dict[str, Any]:
-    return {"steps": [], "metadata": {"algorithm": "trie_insert"}}
 
-def hash_insert_steps(keys: List[Any], method: str, table_size: int) -> Dict[str, Any]:
-    return {"steps": [], "metadata": {"algorithm": "hash_insert", "method": method}}
