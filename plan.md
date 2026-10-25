@@ -269,8 +269,8 @@ export const bstInsertLesson = {
 - [x] Guided Path wrapper: linear registry order via `guidedOrder` (Sorting Duel → Pathfinding → BST & Trees → Heaps & AVL → Tries/Hashing/Merkle → Design & Analysis). Live units are links, coming-soon units are non-linked. Soft nudge when the immediately previous unit has an unpassed quiz, with "Take the quiz" / "Continue anyway" / "Dismiss"; never blocks a navigation. Commit `74368a7`.
 
 ### B4. Glossary hooks
-- [ ] `shell/glossaryTooltip.js`: inline `?` markers that open the glossary entry in a popover. Data comes from the existing glossary source.
-- [ ] Wire tooltips into BST narration for terms like height, depth, successor, balanced.
+- [x] `shell/glossaryTooltip.js`: inline `?` markers that open the glossary entry in a popover. Data comes from the existing glossary source, now extracted to `shell/glossaryData.js` (`window.ALGOLAB_GLOSSARY`, 94 terms, stable slugs). Markers use `{{term:Name|label}}`; the popover shows the plain-text definition, an "Open in glossary" link, Escape/outside-click dismissal, and focus return. Commits `0846412` / `2146391`.
+- [x] Wire tooltips into BST narration for terms like height, depth, successor, balanced: insertion narration marks binary search tree / depth / height / balanced tree, deletion narration marks depth / successor / traversal, and the successor checkpoint marks successor. Content validator resolves every marker and every `units.js` `glossaryTerms` entry (`dev/validate_content.mjs`, 7 checks). Commit `2146391`; coverage in `70dd76b`.
 
 ### B5. Exit criteria
 - [ ] Full flow works: hub, BST Learn, quiz, badge on hub, Guided Path nudge.
