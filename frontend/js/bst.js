@@ -9,6 +9,7 @@ import { LessonRunner } from './engine/LessonRunner.js';
 import { BST_LESSONS } from './lessons/bstLessons.js';
 import { render as renderQuiz } from './primitives/QuizEngine.js';
 import { getQuiz } from './quizzes/index.js';
+import { renderGlossaryText } from './shell/glossaryTooltip.js';
 
 let treeCanvas = null;
 let compareCanvasA = null;
@@ -54,7 +55,7 @@ const lessonRunner = new LessonRunner({
     onAnnotation: (text) => {
         updateAnnotation(text);
         const el = document.getElementById('lesson-narration');
-        if (el) el.innerText = text || '';
+        if (el) renderGlossaryText(el, text || '');
     },
     onCheckpoint: (checkpoint) => {
         activeCheckpoint = checkpoint;
@@ -781,7 +782,7 @@ function clearHeightDepthPanel() {
 
 function updateAnnotation(text) {
     const el = document.getElementById('step-annotation');
-    if (el) el.innerText = text || '';
+    if (el) renderGlossaryText(el, text || '');
 }
 
 // --- Learn Mode (Phase B2 lesson runner) ---
@@ -908,7 +909,7 @@ function showCheckpoint(checkpoint) {
     if (!panel) return;
 
     panel.classList.remove('hidden');
-    if (prompt) prompt.innerText = checkpoint.prompt || '';
+    if (prompt) renderGlossaryText(prompt, checkpoint.prompt || '');
     if (feedback) feedback.innerText = '';
 
     if (!choices) return;

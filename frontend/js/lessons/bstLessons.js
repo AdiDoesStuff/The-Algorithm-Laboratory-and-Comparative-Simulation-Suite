@@ -12,10 +12,10 @@ export const bstInsertLesson = {
     description: 'Insert 50, 30, 70, 20, 40, 60, 80 and watch each comparison path.',
     values: [50, 30, 70, 20, 40, 60, 80],
     narration: {
-        '0': 'The tree starts empty. The first value becomes the root.',
+        '0': 'The tree starts empty. The first value becomes the root of the {{term:Binary Search Tree|binary search tree}}.',
         '1': '70 is larger than 50, so it becomes the right child of the root.',
-        compare: 'Compare the new value with the current node. Smaller goes left, larger goes right.',
-        insert: 'The value is attached as a leaf. Node identity comes from the inserting op and survives rebuilds.'
+        compare: 'Compare the new value with the current node. Smaller goes left, larger goes right; each comparison moves one level deeper, so the {{term:Depth|depth}} of the new leaf equals the number of comparisons made.',
+        insert: 'The value is attached as a leaf. Its {{term:Height|height}} is 0, and node identity comes from the inserting op and survives rebuilds. Insertion order decides whether the tree stays {{term:Balanced Tree|balanced}}.'
     },
     checkpoints: [
         {
@@ -62,11 +62,11 @@ export const bstDeleteLesson = {
         { op: 'delete', value: 50 }
     ],
     narration: {
-        compare: 'Follow the search path from the root to the node being deleted.',
+        compare: 'Follow the search path from the root to the node being deleted: each step adds one to its {{term:Depth|depth}}.',
         delete_leaf: 'Case 1: a leaf has no children, so it is removed directly.',
         delete_single_child: 'Case 2: the single child is promoted into the deleted node’s place.',
-        delete_two_children: 'Case 3: find the in-order successor, then relink it into place.',
-        delete_done: 'Deletion complete. Two-child delete preserves the successor’s node ID.'
+        delete_two_children: 'Case 3: find the in-order {{term:Successor|successor}}, then relink it into place.',
+        delete_done: 'Deletion complete. Two-child delete preserves the successor’s node ID, and an {{term:Traversal|in-order traversal}} still reads the values in sorted order.'
     },
     checkpoints: [
         {
@@ -98,8 +98,8 @@ export const bstDeleteLesson = {
             prompt: 'Case 3: root 50 has two children. Which node replaces it?',
             choices: ['In-order successor', 'In-order predecessor', 'Both children'],
             answer: 0,
-            reveal: 'The in-order successor is the smallest node in the right subtree. It is relinked into place and keeps its ID.',
-            onCorrect: 'Correct — the successor is relinked, not copied and deleted.',
+            reveal: 'The in-order {{term:Successor|successor}} is the smallest node in the right subtree. It is relinked into place and keeps its ID.',
+            onCorrect: 'Correct — the {{term:Successor|successor}} is relinked, not copied and deleted.',
             onWrong: 'The implementation relinks the in-order successor (smallest node in the right subtree).'
         }
     ],
