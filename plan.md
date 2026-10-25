@@ -2,8 +2,9 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B (B1-B5) merged to `main` (merge `8ac974c`); Phase C (C1-C5) complete on branch `phase-c-heaps-avl`, **not yet pushed**. Baseline: **156/156 pytest**, **21/21 content checks**, three BST lessons, three heap lessons, three AVL lessons, and three 10-question quizzes, live progress/Guided Path. Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
-**Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
+**Last updated:** 25 Oct 2026 — Phases A, B, and C are merged to `main` (`1e938da`) and pushed; `main` is now the only branch. Baseline: **156/156 pytest**, **21/21 content checks**, three BST lessons, three heap lessons, three AVL lessons, three 10-question quizzes, live progress and Guided Path. Phase C landed as `phase-c-heaps-avl` (24 commits, merge `1e938da`). Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
+**Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system, and no npm dependencies at all. The `dev/` scripts import Node built-ins only, and every frontend module imports its neighbours by relative path, so the browser loads the ES modules directly. Keep it that way.
+**Verification scope:** Everything is measured against **desktop Chromium talking to a locally run Flask server**, which is the environment this project is demonstrated and graded in. Cross-browser, mobile/touch, forced-colors, and screen-reader passes are explicitly **out of scope**. Where a phase note says something is "not verified" in one of those areas, that is a scope decision, not an open defect.
 
 ---
 
@@ -22,6 +23,7 @@
 | Lesson engine, quizzes, progress | ✅ **B2-B5 shipped, extended in C3/C5.** `engine/LessonRunner.js` (generic, unit-agnostic), data-only lessons for BST, heaps, and AVL, pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine` plus `bstQuiz.js`, `heapQuiz.js`, and `avlQuiz.js`; `progress.js` keys attempts by unit id. |
 | Heap / AVL / Trie / Hash / DP / Bench | ✅ Heap and AVL are live end to end (C2-C5). Trie, Hash, DP, and Bench are still stubs in `app.py` and the algorithm modules. |
 | Tests | ✅ **156/156 pytest tests green** plus **21/21 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap invariant/step contracts, and AVL rotation cases, per-step invariants, and payload validation. |
+| Repository | ✅ `main` at `1e938da`, pushed to `origin`; working tree clean. Phases A-C are merged and the `phase-*` branches were pruned after merging, so `main` is the only branch. |
 | Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
@@ -150,7 +152,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 
 *A session is about 3-4 focused hours. Total is roughly 35-43 sessions. D can run in parallel with C if you want, but they share the shell, so finish B first.
 
-**Current status:** Phase A ✅ (merged to `main`), Phase B ✅ (B1-B5, merged to `main`), and Phase C ✅ (C1-C5, on `phase-c-heaps-avl`, unpushed) are complete. Phases D-F remain.
+**Current status:** Phases A, B, and C are complete and merged to `main` (`1e938da`). Phases D-F remain.
 
 ---
 
@@ -302,6 +304,8 @@ export const bstInsertLesson = {
 
 ## Phase C: Unit 2, Heaps and AVL
 
+**Status:** ✅ **Complete (C1-C6).** Heap and AVL are live end to end: `/heap` + `heaps.html`, `/avl` + `avl.html`, three lessons and a ten-question quiz each, both units live on the hub and in the Guided Path. Merged to `main` as `1e938da` on a green 156/156 pytest and 21/21 content-check run.
+
 ### C1. Prerequisites (do before any unit logic)
 - [x] `primitives/ArrayStrip.js`: generic array-of-cells with highlight roles (`comparing`, `swapping`, `sorted`, `heap-boundary`), identity-preserving FLIP swaps, labelled `heap | sorted` divider, and per-cell aria labels. Built as a new primitive; `renderer.js` was deliberately left untouched (F1 owns the sorting refactor), logged as a deviation. (`659730c`, aria polish in `aea8641`.)
 - [x] Node tweening in `TreeCanvas`: SVG elements are keyed by node id and updated in place; opt-in `tweenMs` lerps positions per frame, default `0` keeps every existing page instant. Enter/leave and reduced-motion paths included. (`822b4a9`.)
@@ -452,8 +456,8 @@ rotate_LL step:
 - [ ] Add new terms from Units 2-4 (rotation, balance factor, load factor, collision, probe, memoization, pruning, bound, backtracking, Merkle root).
 
 ### F3. Quality
-- [ ] Mobile layout pass (README roadmap lists it): hub, tree pages, dual panels.
-- [ ] Accessibility pass: keyboard controls for play/pause/next/prev, focus management in modals, ARIA labels, reduced-motion preference respected, color not the only signal for roles.
+- [ ] Mobile layout pass (README roadmap lists it; **not needed for the submitted demo**, which runs on a desktop browser — keep as a stretch item).
+- [ ] Accessibility pass: keyboard controls for play/pause/next/prev, focus management in modals, ARIA labels, reduced-motion preference respected, color not the only signal for roles. Keyboard, reduced motion, and text-plus-shape state cues are already in place on the BST/heap/AVL pages; a screen-reader and forced-colors pass is out of scope for this submission, so this item stays open only as a stretch.
 - [ ] Remove `frontend/test.html` or move it under `dev/`.
 - [ ] Configure Flask `debug` via env var, default off.
 - [ ] Request size limits and max array/steps caps on all endpoints.
@@ -487,7 +491,7 @@ rotate_LL step:
 | Cross-checks | Brute-force oracle vs algorithm on random small inputs (knapsack, N-Queens counts, sorting) |
 | Replay | Final snapshot equals state rebuilt from the op log |
 | API | Validation matrix per endpoint: wrong type, missing field, out-of-range, oversize |
-| Frontend | Manual checklist per phase (rapid clicks, stale responses, empty states, mobile width); optional light DOM tests if you add a runner later |
+| Frontend | Manual checklist per phase (rapid clicks, stale responses, empty states) on desktop Chromium against a local Flask run; optional light DOM tests if you add a runner later |
 | Regression | Run full pytest before each merge to `main` |
 
 ---
