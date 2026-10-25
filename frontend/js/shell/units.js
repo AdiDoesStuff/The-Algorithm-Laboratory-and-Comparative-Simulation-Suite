@@ -89,9 +89,10 @@
         {
             id: "avl",
             title: "AVL Trees",
-            page: null,
-            status: "soon",
+            page: "avl.html",
+            status: "live",
             guidedOrder: 5,
+            quizId: "avlQuiz",
             blurb: "Balance factors, the four rotation cases, rotation replay with stable node ids, and a side-by-side comparison with an unbalanced BST.",
             glossaryTerms: [
                 "Balance Factor",

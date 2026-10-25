@@ -114,6 +114,46 @@ async function fetchHeapSteps(payload) {
     }
 }
 
+/**
+ * POST /avl. Returns {ok, data, error} like fetchTreeSteps so callers can
+ * show the backend's {error, field} pair verbatim.
+ */
+async function fetchAvlSteps(payload) {
+    const baseUrl = (typeof BASE_URL !== 'undefined') ? BASE_URL : ((typeof window !== 'undefined' && window.BASE_URL) ? window.BASE_URL : 'http://127.0.0.1:5000');
+    try {
+        const response = await fetch(`${baseUrl}/avl`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const contentType = response.headers.get('content-type') || '';
+        let json = null;
+        if (contentType.includes('application/json')) {
+            json = await response.json().catch(() => null);
+        }
+        if (!response.ok) {
+            return {
+                ok: false,
+                data: null,
+                error: {
+                    message: json?.error || response.statusText || `HTTP ${response.status}`,
+                    field: json?.field || 'request'
+                }
+            };
+        }
+        return { ok: true, data: json, error: null };
+    } catch (error) {
+        return {
+            ok: false,
+            data: null,
+            error: {
+                message: error?.message || "Failed to connect to Python server",
+                field: "network"
+            }
+        };
+    }
+}
+
 async function fetchHashSteps(method, keys, tableSize) {
     try {
         const response = await fetch(`${BASE_URL}/hash`, {
