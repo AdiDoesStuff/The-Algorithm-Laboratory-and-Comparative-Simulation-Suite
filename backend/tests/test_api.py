@@ -428,3 +428,19 @@ def test_missing_static_file_returns_json_404(client):
     assert data is not None
     assert data.get('error')
     assert data.get('field') == 'request'
+
+
+# --- Static quiz assets (Phase B3) ---
+
+@pytest.mark.parametrize("path,expected_type", [
+    ("/js/shell/progress.js", "javascript"),
+    ("/js/primitives/QuizEngine.js", "javascript"),
+    ("/js/quizzes/index.js", "javascript"),
+    ("/js/quizzes/bstQuiz.js", "javascript"),
+    ("/css/quiz.css", "text/css"),
+])
+def test_static_quiz_assets(client, path, expected_type):
+    res = client.get(path)
+    assert res.status_code == 200
+    assert expected_type in res.content_type
+    assert len(res.data) > 0
