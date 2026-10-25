@@ -12,9 +12,11 @@
  */
 
 import { bstQuiz } from "./bstQuiz.js";
+import { heapQuiz } from "./heapQuiz.js";
 
 const QUIZZES = new Map([
-    [bstQuiz.id, bstQuiz]
+    [bstQuiz.id, bstQuiz],
+    [heapQuiz.id, heapQuiz]
 ]);
 
 /**

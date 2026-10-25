@@ -71,18 +71,34 @@
             ]
         },
         {
-            id: "heaps-avl",
-            title: "Heaps & AVL",
-            page: null,
-            status: "soon",
+            id: "heaps",
+            title: "Heaps & Heapsort",
+            page: "heaps.html",
+            status: "live",
             guidedOrder: 4,
-            blurb: "Dual array-and-tree heap traces, heapsort, balance factors, and all four AVL rotation cases.",
+            quizId: "heapQuiz",
+            blurb: "See one heap twice at once: the array with its index formulas and the complete tree it encodes, through insert, extract, build, and heapsort.",
             glossaryTerms: [
                 "Heap",
                 "Heap Property",
+                "Heapify",
+                "Priority Queue",
+                "Amortized Analysis"
+            ]
+        },
+        {
+            id: "avl",
+            title: "AVL Trees",
+            page: null,
+            status: "soon",
+            guidedOrder: 5,
+            blurb: "Balance factors, the four rotation cases, rotation replay with stable node ids, and a side-by-side comparison with an unbalanced BST.",
+            glossaryTerms: [
                 "Balance Factor",
                 "Rotation",
-                "Amortized Analysis"
+                "Binary Search Tree",
+                "Height",
+                "Balanced Tree"
             ]
         },
         {
@@ -90,7 +106,7 @@
             title: "Tries, Hashing & Merkle",
             page: null,
             status: "soon",
-            guidedOrder: 5,
+            guidedOrder: 6,
             blurb: "Prefix trees, hash tables with chaining and open addressing, and Merkle trees with tamper detection.",
             glossaryTerms: [
                 "Trie",
@@ -106,7 +122,7 @@
             title: "Design & Analysis",
             page: null,
             status: "soon",
-            guidedOrder: 6,
+            guidedOrder: 7,
             blurb: "Growth curves against Big-O, recursion trees, 0/1 Knapsack solved three ways, N-Queens, and branch and bound.",
             glossaryTerms: [
                 "Asymptotic Notation",
