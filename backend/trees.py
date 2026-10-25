@@ -40,29 +40,21 @@ def serialize_tree(root: Optional[Node]) -> Dict[str, Any]:
     return {'nodes': nodes, 'root_id': root.id if root else None}
 
 
-def normalize_ops(ops: Optional[List[Dict[str, Any]]] = None, values: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+def normalize_ops(ops: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Normalizes input to standard op-log shape: [{'op': 'insert'|'delete', 'value': int}].
-    Keeps legacy `values` shape as a deprecated shim.
     """
-    if ops is not None:
-        normalized = []
-        for op in ops:
-            if not isinstance(op, dict) or 'op' not in op or 'value' not in op:
-                raise ValueError("Each op must be a dict with 'op' and 'value'")
-            if op['op'] not in ('insert', 'delete'):
-                raise ValueError(f"Unknown op type: {op['op']}")
-            normalized.append({'op': op['op'], 'value': int(op['value'])})
-        return normalized
+    if ops is None:
+        return []
 
-    if values is not None:
-        normalized = []
-        for v in values:
-            if v is not None:
-                normalized.append({'op': 'insert', 'value': int(v)})
-        return normalized
-
-    return []
+    normalized = []
+    for op in ops:
+        if not isinstance(op, dict) or 'op' not in op or 'value' not in op:
+            raise ValueError("Each op must be a dict with 'op' and 'value'")
+        if op['op'] not in ('insert', 'delete'):
+            raise ValueError(f"Unknown op type: {op['op']}")
+        normalized.append({'op': op['op'], 'value': int(op['value'])})
+    return normalized
 
 
 def _insert_node(root: Optional[Node], value: int, node_id: int) -> Node:
@@ -238,9 +230,7 @@ def _build_tree(ops_or_array: Any, tree_type: str = 'bst') -> Tuple[Optional[Nod
         return None, warnings
 
     # BST mode
-    if isinstance(ops_or_array, list) and (not ops_or_array or not isinstance(ops_or_array[0], dict)):
-        ops = normalize_ops(values=ops_or_array)
-    elif isinstance(ops_or_array, list):
+    if isinstance(ops_or_array, list):
         ops = normalize_ops(ops=ops_or_array)
     else:
         ops = []
@@ -250,15 +240,13 @@ def _build_tree(ops_or_array: Any, tree_type: str = 'bst') -> Tuple[Optional[Nod
 
 # --- BST Operations Step Generators ---
 
-def bst_insert_steps(ops_or_values: Any, new_value: int) -> Dict[str, Any]:
-    """Generates execution steps for inserting new_value into a BST built from ops_or_values.
+def bst_insert_steps(ops_or_array: Any, new_value: int) -> Dict[str, Any]:
+    """Generates execution steps for inserting new_value into a BST built from ops_or_array.
     Each compare step carries payload['path']: list of ancestor node ids visited so far (root first).
     The final insert step carries the full ancestor path so the canvas keeps the route highlighted.
     """
-    if isinstance(ops_or_values, list) and (not ops_or_values or not isinstance(ops_or_values[0], dict)):
-        ops = normalize_ops(values=ops_or_values)
-    elif isinstance(ops_or_values, list):
-        ops = normalize_ops(ops=ops_or_values)
+    if isinstance(ops_or_array, list):
+        ops = normalize_ops(ops=ops_or_array)
     else:
         ops = []
 
@@ -415,17 +403,15 @@ def bst_traversal_steps(ops_or_array: Any, order: str = 'inorder', tree_type: st
     return res
 
 
-def bst_delete_steps(ops_or_values: Any, delete_val: int) -> Dict[str, Any]:
+def bst_delete_steps(ops_or_array: Any, delete_val: int) -> Dict[str, Any]:
     """
     Generates execution steps for deleting a node from BST using in-order successor relinking.
     First compare step puts the compared node in `comparing`.
     Final step type is `delete_done`.
     Raises ValueError if delete_val is absent.
     """
-    if isinstance(ops_or_values, list) and (not ops_or_values or not isinstance(ops_or_values[0], dict)):
-        ops = normalize_ops(values=ops_or_values)
-    elif isinstance(ops_or_values, list):
-        ops = normalize_ops(ops=ops_or_values)
+    if isinstance(ops_or_array, list):
+        ops = normalize_ops(ops=ops_or_array)
     else:
         ops = []
 
@@ -722,12 +708,7 @@ def _build_tree_from_spec(spec: Dict[str, Any]) -> Tuple[Optional[Node], List[st
         cleaned, warnings = _parse_binary_array(arr)
         return _build_binary_tree_from_cleaned(cleaned), warnings
     ops_raw = spec.get('ops', [])
-    if isinstance(ops_raw, list) and ops_raw and not isinstance(ops_raw[0], dict):
-        ops_norm = normalize_ops(values=ops_raw)
-    elif isinstance(ops_raw, list):
-        ops_norm = normalize_ops(ops=ops_raw)
-    else:
-        ops_norm = []
+    ops_norm = normalize_ops(ops=ops_raw) if isinstance(ops_raw, list) else []
     return _replay_ops(ops_norm), []
 
 
