@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Binary Trees & BSTs</title>
+    <meta name="description" content="Interactive visualization of Binary Search Trees, traversals, deletions, and classifications.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <style>
+        .bst-layout {
+            display: grid;
+            grid-template-columns: minmax(320px, 350px) 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            align-items: start;
+        }
+
+        .side-panel {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--cell-border, #334155);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-sizing: border-box;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--cell-border, #334155);
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-tab.active-tab {
+            background: var(--node-default-border, #38bdf8);
+            color: #0f172a;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .input-row input {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: #f8fafc;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .input-row button {
+            padding: 8px 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lab-container">
+        <!-- Header & Nav -->
+        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-direction: column;">
+            <h1>Algorithm Laboratory: Binary Trees & BSTs</h1>
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 8px 20px; font-size: 0.95rem; border-radius: 50px; display: flex; align-items: center; gap: 6px;">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3 6h18"/>
+<path d="M3 12h18"/>
+<path d="M3 18h18"/>
+</svg>
+                    Sorting
+                </button>
+                <button onclick="window.location.href='pathfinding.html'" style="background: linear-gradient(135deg, #06b6d4, #0891b2); padding: 8px 20px; font-size: 0.95rem; border-radius: 50px; display: flex; align-items: center; gap: 6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                    </svg>
+                    Pathfinding
+                </button>
+                <button onclick="window.location.href='bst.html'" style="background: linear-gradient(135deg, #a855f7, #7e22ce); padding: 8px 20px; font-size: 0.95rem; border-radius: 50px; display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="5" r="3" />
+                        <circle cx="6" cy="19" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="10.5" y1="7.5" x2="7.5" y2="16.5" />
+                        <line x1="13.5" y1="7.5" x2="16.5" y2="16.5" />
+                    </svg>
+                    BST & Trees
+                </button>
+                <button onclick="window.location.href='definitions.html'" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 8px 20px; font-size: 0.95rem; border-radius: 50px; display: flex; align-items: center; gap: 6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                    </svg>
+                    Definitions
+                </button>
+            </div>
+        </div>
+
+        <div class="bst-layout">
+            <!-- Left Side Control Panel -->
+            <div class="side-panel">
+                <div class="mode-tabs">
+                    <button id="btn-mode-play" class="mode-tab active-tab">Play Mode</button>
+                    <button id="btn-mode-learn" class="mode-tab">Learn Mode</button>
+                </div>
+
+                <div class="control-group">
+                    <label style="font-size: 0.8rem; color: #94a3b8; font-weight: 700;">ACTIVE TREE MODEL</label>
+                    <div class="mode-tabs">
+                        <button id="btn-model-bst" class="mode-tab active-tab">BST Mode</button>
+                        <button id="btn-model-binary" class="mode-tab">General Binary Tree</button>
+                    </div>
+                </div>
+
+                <!-- Play Mode Panel -->
+                <div id="play-controls-panel" class="control-group">
+                    <div id="bst-insert-group" class="control-group">
+                        <label for="input-insert">BST Insertion</label>
+                        <div class="input-row">
+                            <input type="text" id="input-insert" placeholder="Single or list e.g. 50, 30, 70" />
+                            <button id="btn-insert">Insert</button>
+                        </div>
+                    </div>
+
+                    <div id="binary-array-group" class="control-group hidden" style="margin-top: 10px;">
+                        <label for="input-array-build">Array to Binary Tree (2i+1 Rule)</label>
+                        <div class="input-row">
+                            <input type="text" id="input-array-build" placeholder="e.g. 10, 5, 15, 2, 7, 12, 20" />
+                            <button id="btn-build-array" style="background: #0284c7;">Build</button>
+                        </div>
+                    </div>
+
+                    <div id="bst-delete-group" class="control-group" style="margin-top: 10px;">
+                        <label for="input-delete">BST Deletion</label>
+                        <div class="input-row">
+                            <input type="number" id="input-delete" placeholder="Target node value" />
+                            <button id="btn-delete" style="background: #ef4444;">Delete</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 10px;">
+                        <label for="select-traversal">Tree Traversals</label>
+                        <div class="input-row">
+                            <select id="select-traversal" class="algo-selector" style="flex: 1;">
+                                <option value="inorder">Inorder Traversal</option>
+                                <option value="preorder">Preorder Traversal</option>
+                                <option value="postorder">Postorder Traversal</option>
+                                <option value="level">Level-Order (BFS)</option>
+                            </select>
+                            <button id="btn-traverse">Walk</button>
+                        </div>
+                    </div>
+
+                    <button id="btn-clear" style="margin-top: 12px; background: #475569;">Clear Tree</button>
+
+                    <!-- Speed & Pause -->
+                    <div class="control-group" style="margin-top: 15px;">
+                        <label>Speed Controls</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1" style="flex: 1;">
+                            <button id="btn-pause" style="padding: 6px 12px;">Pause</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learn Mode Panel -->
+                <div id="learn-controls-panel" class="control-group hidden">
+                    <p style="font-size: 0.85rem; color: #94a3b8;">
+                        Walk step-by-step through a guided BST insertion sequence:
+                    </p>
+
+                    <div id="learn-pills-row" class="learn-controls-row" style="flex-wrap: wrap;"></div>
+
+                    <div class="learn-controls-row" style="margin-top: 12px;">
+                        <button id="btn-learn-prev" style="flex: 1;" disabled>← Prev Step</button>
+                        <button id="btn-learn-next" style="flex: 1;">Next Step →</button>
+                    </div>
+                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Sequence</button>
+                </div>
+            </div>
+
+            <!-- Right Visualizer Area -->
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div id="tree-container" style="height: 440px;"></div>
+
+                <!-- Step Annotation Box -->
+                <div id="step-annotation" class="step-annotation-box">
+                    Ready. Insert a value or choose Learn Mode to begin.
+                </div>
+
+                <!-- Traversal Sequence Output Readout Box -->
+                <div id="traversal-output-box" class="traversal-output-box hidden"></div>
+
+                <!-- Classification Panel -->
+                <div class="classification-panel">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Live Tree Classification
+                    </div>
+                    <div id="classification-badges" class="classification-badges"></div>
+                    <div id="violation-note" class="violation-note"></div>
+                </div>
+
+                <!-- Height & Depth Panel (On SVG Node Click) -->
+                <div class="height-depth-panel">
+                    <div class="stat-box">
+                        <span class="stat-label">Selected Node</span>
+                        <span id="stat-selected-val" class="stat-val">-</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Height (Leaf=0)</span>
+                        <span id="stat-height-val" class="stat-val">-</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Depth from Root</span>
+                        <span id="stat-depth-val" class="stat-val">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script type="module" src="js/bst.js"></script>
+</body>
+</html>
