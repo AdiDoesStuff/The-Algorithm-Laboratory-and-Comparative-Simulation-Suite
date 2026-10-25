@@ -318,9 +318,12 @@ export const bstInsertLesson = {
 - [x] Contract documented in `docs/TRACE_SPEC.md` §6: request shapes, response envelope, step-type table, tie rule, caps, heapsort direction. (`6c45fab`.)
 
 ### C3. Heap frontend
-- [ ] `heaps.html` + `pages/heaps.js`: dual panel (array on top, tree below), index labels, parent/child index formulas shown in narration (`2i+1`, `2i+2`, `(i-1)//2`).
-- [ ] Learn lessons: insert with bubble-up, extract with bubble-down, heapsort.
-- [ ] `heapQuiz.js`.
+- [x] `heaps.html` + heap controller with a dual panel (array above, complete tree below) driven by one `PlaybackController`; 0-based index labels on every cell and a selectable "Index formulas" panel showing `2i+1`, `2i+2`, `(i-1)//2` (plus parent/child values and out-of-heap markers). The controller lives at `frontend/js/heaps.js` to match `bst.js` rather than `pages/heaps.js`, logged as a deviation. (`d26ae08`)
+- [x] Learn lessons: insert with bubble-up, build + extract with bubble-down, and heapsort. Checkpoints use `beforeValue` inline and `anchorType`/`occurrence` for `mark_sorted` in the heapsort lesson, resolved by the controller before the runner sees them. (`5811e9f`)
+- [x] `heapQuiz.js`: ten questions whose array states were produced by `backend/trees.py`, ordered to follow the lessons (indexing, insertion, extraction, build, heapsort, tie rule). (`5811e9f`)
+- [x] Play extras required by C2's step contract: min/max toggle clears with a visible notice, multi-value insert, extract joins the op log, build replaces the heap, heapsort both directions with the `heap | sorted` divider at `heap_size`, Clear resets the trace, Prev/Next and Play/Pause. (`d26ae08`, sorted-cell legibility fix `e944ef7`)
+- [x] Unit registration and shared nav: heaps is live at guidedOrder 4 with `quizId: "heapQuiz"`; the old heaps-avl placeholder split into `heaps` + `avl` (soon, 5), tries/design moved to 6/7; the nav gained a heaps icon and emerald accent. (`5811e9f`, `4321de8`)
+- [x] Browser gate: min-heap insert `5,9,2,7` → `[2,7,5,9]`, insert `1` → `[1,2,5,9,7]`, extract twice → `[2,7,5,9]` → `[5,7,9]`; build max `[5,9,2,7,1]` → `[9,7,2,5,1]`; heapsort max → `[1,3,5,7,9]`, min → `[9,7,5,3,1]`; divider appears at `heap | sorted` mid-sort; cells keep stable ids through swaps; formula panel, clear-reset, min/max toggle, all three lessons with "Correct." checkpoints, quiz prompt, `?quiz=heapQuiz` Q1 of 10, unknown-quiz banner with usable Learn panel; no console errors, no failed requests, 375px overflow 0. (`d26ae08`, `e944ef7`)
 
 ### C4. AVL (backend `avl.py`)
 **Design the rotation trace on paper before coding.**
