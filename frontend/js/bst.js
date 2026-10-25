@@ -1,24 +1,53 @@
 /**
  * bst.js — Controller logic for Unit 1: Binary Trees & BSTs
+ * Uses op-log state, PlaybackController, busy gate, stale-response guards, and error banner.
  */
 
 import { TreeCanvas } from './primitives/TreeCanvas.js';
+import { PlaybackController } from './engine/PlaybackController.js';
 
 let treeCanvas = null;
 
-let insertedValues = [];
-let learnSequence = [50, 30, 70, 20, 40, 60, 80];
-let learnStepIndex = 0;
-let learnSteps = [];
-let currentMode = 'play'; // 'play' | 'learn'
+// --- State Model ---
+let ops = [];                // BST mode: list of { op: 'insert'|'delete', value: int }
+let binaryArray = [];        // Binary mode: array of numbers and nulls
+let currentMode = 'play';    // 'play' | 'learn'
 let currentTreeType = 'bst'; // 'bst' | 'binary'
 let selectedNodeVal = null;
+let selectedNodeId = null;
+let isBusy = false;
+
+// Stale-response sequence guards
+const latestClassify = window.createLatest ? window.createLatest() : (fn => (typeof fn === 'function' ? fn() : fn));
+const latestHeightDepth = window.createLatest ? window.createLatest() : (fn => (typeof fn === 'function' ? fn() : fn));
+
+// Learn mode sequence
+const learnSequence = [50, 30, 70, 20, 40, 60, 80];
+
+// Shared PlaybackController
+const playback = new PlaybackController({
+    onStep: (step) => {
+        if (treeCanvas && step?.snapshot) {
+            treeCanvas.render(step.snapshot, step);
+        }
+    },
+    onDone: () => {
+        updatePlayPauseButton();
+    },
+    onAnnotation: (text) => {
+        updateAnnotation(text);
+    },
+    onStateChange: () => {
+        updatePlayPauseButton();
+        updateLearnControls();
+    }
+});
 
 window.addEventListener('DOMContentLoaded', () => {
     initTreeCanvases();
     bindEventListeners();
     updateUIForMode('play');
-    setTreeModel('bst');
+    setTreeModel('bst', false); // Avoid double-refresh
     refreshClassification();
 });
 
@@ -38,6 +67,7 @@ function handleNodeClick(labelStr, nodeId) {
     if (isNaN(val)) return;
 
     selectedNodeVal = val;
+    selectedNodeId = nodeId;
 
     if (treeCanvas && nodeId !== undefined && nodeId !== null) {
         treeCanvas.highlightSelectedNode(nodeId);
@@ -62,20 +92,22 @@ function bindEventListeners() {
     document.getElementById('btn-clear')?.addEventListener('click', onClearClick);
     document.getElementById('btn-build-array')?.addEventListener('click', onBuildFromArrayClick);
 
-    // Learn Mode Step Controls
+    // Play/Pause Control (toggle)
+    const playPauseBtn = document.getElementById('btn-play-pause') || document.getElementById('btn-pause');
+    playPauseBtn?.addEventListener('click', togglePlayPause);
+
+    // Speed Slider
+    document.getElementById('speed-slider')?.addEventListener('input', (e) => {
+        const speedVal = parseFloat(e.target.value) || 1;
+        playback.setSpeed(600 / speedVal);
+    });
+
+    // Learn Mode Controls
     document.getElementById('btn-learn-prev')?.addEventListener('click', onLearnPrev);
     document.getElementById('btn-learn-next')?.addEventListener('click', onLearnNext);
     document.getElementById('btn-learn-reset')?.addEventListener('click', onLearnReset);
 
-    // Playback Controls
-    document.getElementById('btn-pause')?.addEventListener('click', () => {
-        if (!treeCanvas) return;
-        treeCanvas.isPaused = !treeCanvas.isPaused;
-        const btn = document.getElementById('btn-pause');
-        if (btn) btn.innerText = treeCanvas.isPaused ? 'Resume' : 'Pause';
-    });
-
-    // Enter key shortcuts
+    // Enter Key Shortcuts
     document.getElementById('input-insert')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') onInsertClick();
     });
@@ -87,7 +119,94 @@ function bindEventListeners() {
     });
 }
 
+// --- Busy Gate Wrapper ---
+
+async function runAction(fn) {
+    if (isBusy) return;
+    isBusy = true;
+    setControlsDisabled(true);
+    try {
+        await fn();
+    } finally {
+        isBusy = false;
+        setControlsDisabled(false);
+    }
+}
+
+function setControlsDisabled(disabled) {
+    const ids = [
+        'btn-insert', 'input-insert',
+        'btn-delete', 'input-delete',
+        'btn-traverse', 'select-traversal',
+        'btn-build-array', 'input-array-build',
+        'btn-clear',
+        'btn-mode-play', 'btn-mode-learn',
+        'btn-model-bst', 'btn-model-binary'
+    ];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.disabled = disabled;
+            if (disabled) el.classList.add('disabled-control');
+            else el.classList.remove('disabled-control');
+        }
+    });
+}
+
+// --- Error Banner Helpers ---
+
+function showError(errorObj) {
+    const banner = document.getElementById('tree-error-banner');
+    const text = document.getElementById('tree-error-text');
+    if (!banner || !text) return;
+    const msg = typeof errorObj === 'string' ? errorObj : (errorObj?.message || 'Request failed');
+    const field = errorObj?.field ? `[${errorObj.field}] ` : '';
+    text.innerText = `${field}${msg}`;
+    banner.classList.remove('hidden');
+}
+
+function clearError() {
+    const banner = document.getElementById('tree-error-banner');
+    if (banner) banner.classList.add('hidden');
+}
+
+// --- Single Request Builder ---
+
+function buildRequest(algorithm, extra = {}) {
+    const req = {
+        algorithm,
+        tree_type: currentTreeType,
+        ...extra
+    };
+    if (currentTreeType === 'binary') {
+        req.array = [...binaryArray];
+    } else {
+        req.ops = [...ops];
+    }
+    return req;
+}
+
+// --- Play / Pause Control ---
+
+function togglePlayPause() {
+    if (playback.state.playing) {
+        playback.pause();
+    } else {
+        playback.play();
+    }
+}
+
+function updatePlayPauseButton() {
+    const btn = document.getElementById('btn-play-pause') || document.getElementById('btn-pause');
+    if (btn) {
+        btn.innerText = playback.state.playing ? 'Pause' : 'Play';
+    }
+}
+
+// --- Mode & Tree Switchers ---
+
 function setMode(mode) {
+    if (currentMode === mode) return;
     currentMode = mode;
     updateUIForMode(mode);
     if (mode === 'learn') {
@@ -116,12 +235,10 @@ function updateUIForMode(mode) {
     }
 }
 
-function setTreeModel(type) {
+function setTreeModel(type, shouldRefresh = true) {
     if (currentTreeType !== type) {
         currentTreeType = type;
         onClearClick();
-    } else {
-        currentTreeType = type;
     }
 
     const bstBtn = document.getElementById('btn-model-bst');
@@ -144,188 +261,205 @@ function setTreeModel(type) {
         binaryArrayGroup?.classList.remove('hidden');
     }
 
-    refreshClassification();
+    if (shouldRefresh) {
+        refreshClassification();
+    }
 }
 
-// --- Play Mode Actions ---
+// --- Action Handlers ---
 
 async function onInsertClick() {
-    setTreeModel('bst');
-    const input = document.getElementById('input-insert');
-    if (!input || !input.value.trim()) return;
+    await runAction(async () => {
+        setTreeModel('bst', false);
+        const input = document.getElementById('input-insert');
+        if (!input || !input.value.trim()) return;
 
-    const rawStr = input.value.trim();
-    const vals = rawStr.split(/[\s,]+/).map(v => parseInt(v, 10)).filter(v => !isNaN(v));
+        const rawStr = input.value.trim();
+        const vals = rawStr.split(/[\s,]+/).map(v => parseInt(v, 10)).filter(v => !isNaN(v));
 
-    if (vals.length === 0) {
-        showToast('Please enter valid integer(s)', 'error');
-        return;
-    }
-
-    input.value = '';
-    const allSteps = [];
-    let currentHistory = [...insertedValues];
-    let addedCount = 0;
-
-    for (let val of vals) {
-        if (currentHistory.includes(val)) {
-            showToast(`Skipped duplicate value: ${val}`, 'warning');
-            continue;
+        if (vals.length === 0) {
+            showError({ message: 'Please enter valid integer(s)', field: 'new_value' });
+            return;
         }
 
-        const payload = {
-            algorithm: 'bst_insert',
-            values: currentHistory,
-            new_value: val
-        };
+        input.value = '';
+        const allSteps = [];
+        let addedCount = 0;
 
-        const res = await fetchTreeSteps('bst_insert', payload);
-        if (res && res.steps) {
-            allSteps.push(...res.steps);
-            currentHistory.push(val);
+        for (let val of vals) {
+            const req = buildRequest('bst_insert', { new_value: val });
+            const res = await window.fetchTreeSteps('bst_insert', req);
+
+            if (!res.ok) {
+                showError(res.error);
+                break; // Stop and do not commit this or subsequent values
+            }
+
+            clearError();
+            // Commit only after 200 response
+            ops.push({ op: 'insert', value: val });
+            if (res.data?.steps) {
+                allSteps.push(...res.data.steps);
+            }
             addedCount++;
         }
-    }
 
-    if (allSteps.length > 0) {
-        insertedValues = currentHistory;
-        updateAnnotation(allSteps[allSteps.length - 1]?.annotation || `Inserted ${addedCount} value(s)`);
-
-        const speedVal = parseFloat(document.getElementById('speed-slider')?.value || 1);
-        const delayMs = 600 / speedVal;
-
-        await treeCanvas.animateSteps(allSteps, delayMs);
-        refreshClassification();
-    }
-}
-
-async function onBuildFromArrayClick() {
-    setTreeModel('binary');
-    const input = document.getElementById('input-array-build');
-    if (!input || !input.value.trim()) return;
-
-    const rawStr = input.value.trim();
-    const tokens = rawStr.replace(/[\[\]]/g, '').split(/[\s,]+/);
-    const arr = tokens.map(t => {
-        const clean = t.trim().toLowerCase();
-        if (clean === 'null' || clean === 'none' || clean === '') return null;
-        const num = parseInt(t, 10);
-        return isNaN(num) ? null : num;
+        if (allSteps.length > 0) {
+            playback.load(allSteps);
+            playback.play();
+            refreshClassification();
+        }
     });
-
-    const validArr = arr.filter(v => v !== null);
-    if (validArr.length === 0) {
-        showToast('Please enter a valid array (e.g. 10, 5, 15, 2, 7)', 'error');
-        return;
-    }
-
-    const res = await fetchTreeSteps('array_to_tree', {
-        algorithm: 'array_to_tree',
-        array: arr
-    });
-
-    if (res && res.steps) {
-        insertedValues = arr;
-        updateAnnotation(res.steps[res.steps.length - 1]?.annotation || 'Built binary tree from array');
-
-        const speedVal = parseFloat(document.getElementById('speed-slider')?.value || 1);
-        const delayMs = 600 / speedVal;
-
-        await treeCanvas.animateSteps(res.steps, delayMs);
-        refreshClassification();
-    }
 }
 
 async function onDeleteClick() {
-    const input = document.getElementById('input-delete');
-    if (!input || !input.value.trim()) return;
+    await runAction(async () => {
+        const input = document.getElementById('input-delete');
+        if (!input || !input.value.trim()) return;
 
-    const val = parseInt(input.value.trim(), 10);
-    if (isNaN(val)) {
-        showToast('Please enter a valid integer', 'error');
-        return;
-    }
-
-    if (!insertedValues.includes(val)) {
-        showToast(`Value ${val} not found in the BST`, 'error');
-        return;
-    }
-
-    const payload = {
-        algorithm: 'bst_delete',
-        values: insertedValues,
-        delete_value: val
-    };
-
-    const res = await fetchTreeSteps('bst_delete', payload);
-    input.value = '';
-
-    if (res && res.steps) {
-        insertedValues = insertedValues.filter(v => v !== val);
-        updateAnnotation(res.steps[res.steps.length - 1]?.annotation || `Deleted ${val}`);
-        
-        const speedVal = parseFloat(document.getElementById('speed-slider')?.value || 1);
-        const delayMs = 600 / speedVal;
-        
-        await treeCanvas.animateSteps(res.steps, delayMs);
-        refreshClassification();
-        
-        if (selectedNodeVal === val) {
-            selectedNodeVal = null;
-            clearHeightDepthPanel();
+        const val = parseInt(input.value.trim(), 10);
+        if (isNaN(val)) {
+            showError({ message: 'Please enter a valid integer to delete', field: 'delete_value' });
+            return;
         }
-    }
+
+        const req = buildRequest('bst_delete', { delete_value: val });
+        const res = await window.fetchTreeSteps('bst_delete', req);
+        input.value = '';
+
+        if (!res.ok) {
+            showError(res.error);
+            return;
+        }
+
+        clearError();
+        // Commit only after 200 response
+        ops.push({ op: 'delete', value: val });
+
+        if (res.data?.steps) {
+            playback.load(res.data.steps);
+            playback.play();
+            refreshClassification();
+
+            // Requirement 2.7: Two-child delete sync verification with backend final_tree
+            if (res.data.final_tree) {
+                const finalNodes = res.data.final_tree.nodes || [];
+                const hasDeletedVal = finalNodes.some(n => parseInt(n.label, 10) === val);
+                if (hasDeletedVal) {
+                    console.warn(`[TreeSync Warning] Deleted value ${val} still found in backend final_tree!`);
+                } else {
+                    console.debug(`[TreeSync] Verified deletion of ${val}; tree matches final_tree with ${finalNodes.length} nodes.`);
+                }
+            }
+
+            if (selectedNodeVal === val) {
+                selectedNodeVal = null;
+                selectedNodeId = null;
+                clearHeightDepthPanel();
+            }
+        }
+    });
+}
+
+async function onBuildFromArrayClick() {
+    await runAction(async () => {
+        setTreeModel('binary', false);
+        const input = document.getElementById('input-array-build');
+        if (!input || !input.value.trim()) return;
+
+        const rawStr = input.value.trim();
+        const tokens = rawStr.replace(/[\[\]]/g, '').split(/[\s,]+/);
+        const arr = tokens.map(t => {
+            const clean = t.trim().toLowerCase();
+            if (clean === 'null' || clean === 'none' || clean === '') return null;
+            const num = parseInt(t, 10);
+            return isNaN(num) ? null : num;
+        });
+
+        const validArr = arr.filter(v => v !== null);
+        if (validArr.length === 0) {
+            showError({ message: 'Please enter a valid array (e.g. 10, 5, 15, 2, 7)', field: 'array' });
+            return;
+        }
+
+        const res = await window.fetchTreeSteps('array_to_tree', {
+            algorithm: 'array_to_tree',
+            tree_type: 'binary',
+            array: arr
+        });
+
+        if (!res.ok) {
+            showError(res.error);
+            return;
+        }
+
+        clearError();
+        binaryArray = arr;
+
+        if (res.data?.warnings && res.data.warnings.length > 0) {
+            updateAnnotation(`Warnings: ${res.data.warnings.join(' | ')}`);
+        }
+
+        if (res.data?.steps) {
+            playback.load(res.data.steps);
+            playback.play();
+            refreshClassification();
+        }
+    });
 }
 
 async function onTraverseClick() {
-    if (insertedValues.length === 0 || !insertedValues.some(v => v !== null)) {
-        showToast('Tree is empty! Insert some values first.', 'warning');
-        return;
-    }
+    await runAction(async () => {
+        const hasData = (currentTreeType === 'binary') ? binaryArray.length > 0 : ops.length > 0;
+        if (!hasData) {
+            showError({ message: 'Tree is empty! Insert some values first.', field: 'tree' });
+            return;
+        }
 
-    const select = document.getElementById('select-traversal');
-    const order = select ? select.value : 'inorder';
+        const select = document.getElementById('select-traversal');
+        const order = select ? select.value : 'inorder';
 
-    const payload = {
-        algorithm: 'bst_traverse',
-        values: insertedValues,
-        order: order
-    };
+        const req = buildRequest('bst_traverse', { order });
+        const res = await window.fetchTreeSteps('bst_traverse', req);
 
-    const res = await fetchTreeSteps('bst_traverse', payload);
+        if (!res.ok) {
+            showError(res.error);
+            return;
+        }
 
-    if (res && res.steps) {
-        const speedVal = parseFloat(document.getElementById('speed-slider')?.value || 1);
-        const delayMs = 600 / speedVal;
-
-        // Collect traversal order labels
-        const visitedLabels = [];
-        res.steps.forEach(s => {
-            if (s.highlighted && s.highlighted.length > 0) {
-                const nodeObj = s.snapshot?.nodes?.find(n => n.id === s.highlighted[0]);
-                if (nodeObj && nodeObj.label && !visitedLabels.includes(nodeObj.label)) {
-                    visitedLabels.push(nodeObj.label);
+        clearError();
+        if (res.data?.steps) {
+            // Collect traversal order labels
+            const visitedLabels = [];
+            res.data.steps.forEach(s => {
+                if (s.highlighted && s.highlighted.length > 0) {
+                    const nodeObj = s.snapshot?.nodes?.find(n => n.id === s.highlighted[0]);
+                    if (nodeObj && nodeObj.label && !visitedLabels.includes(nodeObj.label)) {
+                        visitedLabels.push(nodeObj.label);
+                    }
                 }
+            });
+
+            const outputEl = document.getElementById('traversal-output-box');
+            if (outputEl) {
+                outputEl.classList.remove('hidden');
+                outputEl.innerText = `${order.toUpperCase()} Traversal: ${visitedLabels.join(' → ')}`;
             }
-        });
 
-        const outputEl = document.getElementById('traversal-output-box');
-        if (outputEl) {
-            outputEl.classList.remove('hidden');
-            outputEl.innerText = `${order.toUpperCase()} Traversal: ${visitedLabels.join(' → ')}`;
+            playback.load(res.data.steps);
+            playback.play();
         }
-
-        // Listen to step updates for narration
-        for (let s of res.steps) {
-            updateAnnotation(s.annotation);
-        }
-        await treeCanvas.animateSteps(res.steps, delayMs);
-    }
+    });
 }
 
 function onClearClick() {
-    insertedValues = [];
+    playback.cancel();
+    ops = [];
+    binaryArray = [];
     selectedNodeVal = null;
+    selectedNodeId = null;
+
+    clearError();
     if (treeCanvas) {
         treeCanvas.render({ nodes: [], root_id: null });
     }
@@ -336,10 +470,11 @@ function onClearClick() {
     clearHeightDepthPanel();
 }
 
-// --- Classification & Height/Depth Updates ---
+// --- Classification & Height/Depth Updates with Stale Guard ---
 
 async function refreshClassification() {
-    if (insertedValues.length === 0 || !insertedValues.some(v => v !== null)) {
+    const hasData = (currentTreeType === 'binary') ? binaryArray.length > 0 : ops.length > 0;
+    if (!hasData) {
         renderBadges({
             is_full: true, is_complete: true, is_perfect: true, is_balanced: true,
             classification_label: 'Empty Tree', violation_note: null
@@ -347,14 +482,11 @@ async function refreshClassification() {
         return;
     }
 
-    const res = await fetchTreeSteps('bst_classify', {
-        algorithm: 'bst_classify',
-        values: insertedValues,
-        tree_type: currentTreeType
-    });
+    const req = buildRequest('bst_classify');
+    const res = await latestClassify(() => window.fetchTreeSteps('bst_classify', req));
 
-    if (res) {
-        renderBadges(res);
+    if (res && res.ok && res.data) {
+        renderBadges(res.data);
     }
 }
 
@@ -382,54 +514,32 @@ function renderBadges(data) {
     }
 }
 
-function getCurrentTreeValues() {
-    if (insertedValues && insertedValues.length > 0) {
-        return insertedValues;
-    }
-    if (currentMode === 'learn') {
-        const snap = treeCanvas?.lastRawSnapshot;
-        if (snap && Array.isArray(snap.nodes)) {
-            const vals = snap.nodes.map(n => parseInt(n.label, 10)).filter(v => !isNaN(v));
-            if (vals.length > 0) return vals;
-        }
-        return learnSequence.slice(0, learnStepIndex + 1);
-    }
-    const snap = treeCanvas?.lastRawSnapshot;
-    if (snap && Array.isArray(snap.nodes)) {
-        const vals = snap.nodes.map(n => parseInt(n.label, 10)).filter(v => !isNaN(v));
-        if (vals.length > 0) return vals;
-    }
-    return [];
-}
-
 async function fetchHeightDepth(targetVal, nodeId) {
-    const treeVals = getCurrentTreeValues();
-    const payload = {
-        algorithm: 'bst_height_depth',
-        values: treeVals,
-        target_value: targetVal,
-        tree_type: currentTreeType
-    };
+    const extra = {};
     if (nodeId !== undefined && nodeId !== null) {
-        payload.target_id = nodeId;
+        extra.target_id = nodeId;
+    } else if (targetVal !== undefined && targetVal !== null) {
+        extra.target_value = targetVal;
     }
 
-    const res = await fetchTreeSteps('bst_height_depth', payload);
+    const req = buildRequest('bst_height_depth', extra);
+    const res = await latestHeightDepth(() => window.fetchTreeSteps('bst_height_depth', req));
 
-    if (res && res.target_id !== null && res.target_id !== undefined) {
+    if (res && res.ok && res.data) {
         const valEl = document.getElementById('stat-selected-val');
         const heightEl = document.getElementById('stat-height-val');
         const depthEl = document.getElementById('stat-depth-val');
 
         if (valEl) valEl.innerText = targetVal;
-        if (heightEl) heightEl.innerText = res.height;
-        if (depthEl) depthEl.innerText = res.depth;
+        if (heightEl) heightEl.innerText = res.data.height;
+        if (depthEl) depthEl.innerText = res.data.depth;
 
         // Render selected highlight on canvas using returned snapshot
-        const currentSnapshot = res.tree;
-        if (treeCanvas && currentSnapshot) {
-            treeCanvas.render(currentSnapshot, { selected: [res.target_id] });
+        if (treeCanvas && res.data.tree) {
+            treeCanvas.render(res.data.tree, { selected: [res.data.target_id] });
         }
+    } else if (res && !res.ok) {
+        clearHeightDepthPanel();
     }
 }
 
@@ -450,63 +560,62 @@ function updateAnnotation(text) {
 
 // --- Learn Mode Execution ---
 
+let learnSteps = [];
+
 async function onLearnReset() {
-    insertedValues = [];
-    learnStepIndex = 0;
-    learnSteps = [];
+    await runAction(async () => {
+        playback.cancel();
+        ops = [];
+        selectedNodeVal = null;
+        selectedNodeId = null;
+        clearError();
+        clearHeightDepthPanel();
 
-    // Pre-generate all insertion steps for learnSequence
-    let accum = [];
-    for (let val of learnSequence) {
-        const payload = {
-            algorithm: 'bst_insert',
-            values: accum,
-            new_value: val
-        };
-        const res = await fetchTreeSteps('bst_insert', payload);
-        if (res && res.steps) {
-            learnSteps.push(...res.steps);
+        renderLearnPills();
+
+        // Build guided insertion sequence step-by-step using op-log
+        learnSteps = [];
+        const simOps = [];
+
+        for (let val of learnSequence) {
+            const req = {
+                algorithm: 'bst_insert',
+                tree_type: 'bst',
+                ops: [...simOps],
+                new_value: val
+            };
+            const res = await window.fetchTreeSteps('bst_insert', req);
+            if (res.ok && res.data?.steps) {
+                learnSteps.push(...res.data.steps);
+                simOps.push({ op: 'insert', value: val });
+            }
         }
-        accum.push(val);
-    }
 
-    renderLearnPills();
-    updateLearnControls();
-
-    if (learnSteps.length > 0) {
-        treeCanvas.currentSteps = learnSteps;
-        treeCanvas.seek(0);
-        updateAnnotation(learnSteps[0].annotation);
-    } else {
-        treeCanvas.render({ nodes: [], root_id: null });
-        updateAnnotation('Learn mode ready. Click Next to begin.');
-    }
+        if (learnSteps.length > 0) {
+            playback.load(learnSteps);
+            updateLearnControls();
+        } else {
+            treeCanvas?.render({ nodes: [], root_id: null });
+            updateAnnotation('Learn mode ready. Click Next Step to begin.');
+        }
+    });
 }
 
 function onLearnNext() {
-    if (learnStepIndex < learnSteps.length - 1) {
-        learnStepIndex++;
-        treeCanvas.seek(learnStepIndex);
-        updateAnnotation(learnSteps[learnStepIndex].annotation);
-        updateLearnControls();
-    }
+    playback.next();
 }
 
 function onLearnPrev() {
-    if (learnStepIndex > 0) {
-        learnStepIndex--;
-        treeCanvas.seek(learnStepIndex);
-        updateAnnotation(learnSteps[learnStepIndex].annotation);
-        updateLearnControls();
-    }
+    playback.prev();
 }
 
 function updateLearnControls() {
     const prevBtn = document.getElementById('btn-learn-prev');
     const nextBtn = document.getElementById('btn-learn-next');
+    const state = playback.state;
 
-    if (prevBtn) prevBtn.disabled = (learnStepIndex <= 0);
-    if (nextBtn) nextBtn.disabled = (learnStepIndex >= learnSteps.length - 1);
+    if (prevBtn) prevBtn.disabled = (state.cursor <= 0);
+    if (nextBtn) nextBtn.disabled = (state.cursor >= state.total - 1);
 }
 
 function renderLearnPills() {

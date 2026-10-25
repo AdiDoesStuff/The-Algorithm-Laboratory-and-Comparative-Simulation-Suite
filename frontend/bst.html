@@ -199,12 +199,12 @@
 
                     <button id="btn-clear" style="margin-top: 12px; background: #475569;">Clear Tree</button>
 
-                    <!-- Speed & Pause -->
+                    <!-- Speed & Play/Pause Toggle -->
                     <div class="control-group" style="margin-top: 15px;">
                         <label>Speed Controls</label>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1" style="flex: 1;">
-                            <button id="btn-pause" style="padding: 6px 12px;">Pause</button>
+                            <button id="btn-play-pause" style="padding: 6px 14px; min-width: 76px;">Pause</button>
                         </div>
                     </div>
                 </div>
@@ -227,6 +227,12 @@
 
             <!-- Right Visualizer Area -->
             <div style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- Visible Error Region (role=alert, aria-live=polite) -->
+                <div id="tree-error-banner" role="alert" aria-live="polite" class="hidden" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 8px; padding: 10px 14px; color: #fca5a5; font-size: 0.88rem; display: flex; align-items: center; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span id="tree-error-text"></span>
+                </div>
+
                 <div id="tree-container" style="height: 440px;"></div>
 
                 <!-- Step Annotation Box -->
