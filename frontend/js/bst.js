@@ -321,6 +321,13 @@ function setTreeModel(type, shouldRefresh = true) {
     }
 }
 
+// Helper to clean array/list inputs and strip brackets [ ], ( ), { }
+function cleanNumberTokens(str) {
+    if (!str) return [];
+    const cleaned = String(str).replace(/[\[\]\(\)\{\}]/g, ' ');
+    return cleaned.split(/[\s,]+/).map(t => t.trim()).filter(t => t.length > 0);
+}
+
 // --- Action Handlers ---
 
 async function onInsertClick() {
@@ -330,7 +337,8 @@ async function onInsertClick() {
         if (!input || !input.value.trim()) return;
 
         const rawStr = input.value.trim();
-        const vals = rawStr.split(/[\s,]+/).map(v => parseInt(v, 10)).filter(v => !isNaN(v));
+        const tokens = cleanNumberTokens(rawStr);
+        const vals = tokens.map(v => parseInt(v, 10)).filter(v => !isNaN(v));
 
         if (vals.length === 0) {
             showError({ message: 'Please enter valid integer(s)', field: 'new_value' });
@@ -374,7 +382,8 @@ async function onDeleteClick() {
         const input = document.getElementById('input-delete');
         if (!input || !input.value.trim()) return;
 
-        const val = parseInt(input.value.trim(), 10);
+        const rawStr = input.value.trim().replace(/[\[\]\(\)\{\}]/g, '').trim();
+        const val = parseInt(rawStr, 10);
         if (isNaN(val)) {
             showError({ message: 'Please enter a valid integer to delete', field: 'delete_value' });
             return;
@@ -427,10 +436,10 @@ async function onBuildFromArrayClick() {
         if (!input || !input.value.trim()) return;
 
         const rawStr = input.value.trim();
-        const tokens = rawStr.replace(/[\[\]]/g, '').split(/[\s,]+/);
+        const tokens = cleanNumberTokens(rawStr);
         const arr = tokens.map(t => {
-            const clean = t.trim().toLowerCase();
-            if (clean === 'null' || clean === 'none' || clean === '') return null;
+            const clean = t.toLowerCase();
+            if (clean === 'null' || clean === 'none' || clean === 'n' || clean === '-' || clean === '') return null;
             const num = parseInt(t, 10);
             return isNaN(num) ? null : num;
         });
@@ -710,7 +719,7 @@ function setCompareTreeType(which, type) {
 }
 
 function parseTreeSpecInput(rawText, treeType) {
-    const rawTokens = rawText.split(/[\s,]+/).filter(t => t.length > 0);
+    const rawTokens = cleanNumberTokens(rawText);
     if (treeType === 'binary') {
         const arr = rawTokens.map(t => {
             const lower = t.toLowerCase();
