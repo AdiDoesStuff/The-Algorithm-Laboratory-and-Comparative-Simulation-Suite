@@ -11,7 +11,7 @@
 
 | Area | State |
 | --- | --- |
-| Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html`; `index.html` is now the hub. |
+| Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html` and opens directly; `index.html` is the hub and owns the landing splash. |
 | Pathfinding Lab (3 algos) | Done, mature. |
 | Glossary | Done. Separate page, not yet contextual. |
 | BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view, 78 pytest tests in the suite. Committed on `phase-a-stabilize`. |
@@ -220,6 +220,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] `shell/nav.js` (classic script, `window.AlgoLabNav.mount`) renders one `<nav>` from a route table built from `shell/units.js`. Replaces the duplicated inline SVG nav in sorting/pathfinding/bst and is also mounted on definitions. ✅ `71e91b3`, `2c48c40`
 - [x] Semantic `<nav aria-label="Primary">`, real `<a href>` links, keyboard focus order, `aria-current="page"`, visible `:focus-visible` ring. ✅ Browser-verified: 5 links, correct current item on all 5 pages, tab order starts Home → units → Definitions.
 - [x] Rename current `index.html` to `sorting.html` via `git mv`. Updated all links, `app.py` (`/` hub, explicit `/sorting.html`), `start_app` scripts (root URL only), `definitions.js` back link, and README. ✅ `2c48c40`, `9495d48`
+- [x] Move the landing splash (`MatrixBackground`, Go button, digit-sort transition) from sorting to the hub in `shell/landing.js` (classic script). `sorting.html` now opens straight into the duel. ✅
 - [x] New `index.html` hub: hero blurb, unit cards with status (live / coming soon), empty `<span data-progress-slot="{id}">`, disabled "Test yourself" (`title="Coming with quizzes"`), disabled Guided Path placeholder, Playground grid. ✅ `2c48c40`
 - [x] Unit registry (`shell/units.js`): id, title, page, status, blurb, glossaryTerms. Single source of truth for nav + hub. `lessonId`/`quizId` land with B2/B3. ✅
 - [x] Backend tests: `GET /` 200 + hub marker, `GET /sorting.html` 200, `GET /nonexistent-file.html` JSON 404. 78/78 pytest green. ✅ `9495d48`

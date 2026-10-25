@@ -153,7 +153,8 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |       |-- shell/
 |       |   |-- units.js      # Unit registry (single source of truth)
 |       |   |-- nav.js        # Shared Primary navigation
-|       |   `-- hub.js        # Hub card renderer
+|       |   |-- hub.js        # Hub card renderer
+|       |   `-- landing.js    # Splash screen + digit-sort transition
 |       |-- primitives/
 |       |   |-- TreeCanvas.js# Generic SVG Tree Renderer
 |       |   |-- BucketGrid.js# DP / Hash visualizer
