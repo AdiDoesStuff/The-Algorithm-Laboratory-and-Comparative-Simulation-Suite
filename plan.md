@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase A in progress on branch `phase-a-stabilize`.
+**Last updated:** 25 Oct 2026 — Phase A in progress on branch `phase-a-stabilize` (75/75 tests green, Compare UI and insertion path highlights implemented).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -14,13 +14,13 @@
 | Sorting Duel (10 algos) | Done, mature. Lives on `index.html`. |
 | Pathfinding Lab (3 algos) | Done, mature. |
 | Glossary | Done. Separate page, not yet contextual. |
-| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, 73 pytest tests. Committed on `phase-a-stabilize`. |
+| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view, 75 pytest tests. Committed on `phase-a-stabilize`. |
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
-| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner. |
-| Primitives | `TreeCanvas` (production), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
+| Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
+| Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
 | Hub, QuizEngine, progress, lesson registry | Do not exist. Phase B. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
-| Tests | ✅ 73/73 pytest tests green (31 API, 42 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring. |
+| Tests | ✅ 75/75 pytest tests green (33 API, 42 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains. |
 
 ### Audit findings that shape the plan
 
@@ -181,30 +181,34 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] Validation: bad payload per algorithm (8 parametrized cases), non-JSON body, missing/bad algorithm, binary-mode rejects `ops`, binary-mode requires `array`. ✅ `941e729`
 - [x] **Replay property test:** for random op sequences, the tree after replay equals the last step's `snapshot`. ✅ `941e729`
 - [x] **Stability test:** IDs of surviving nodes unchanged after unrelated inserts and deletes. ✅ `941e729`
-- [x] GET `/tree` returns 405 JSON. Generic 500 handler test. Stateless replay matches step-by-step construction. ✅ `941e729`
-- **49 / 49 tests passing** (26 API, 23 unit). Last run: `0.54s`.
+- [x] GET `/tree` returns 405 JSON. Generic 500 handler test. Stateless replay matches step-by-step construction. ✅ `941e729`, `8e20f62`
+- [x] **Mirror & structural comparison tests:** 24 unit and API tests covering happy path, identical mode, mismatch reporting, dual snapshots, 40-run brute-force oracle property test, and 5 parametrized bad payloads. ✅ `facdbf8`
+- [x] **Path ancestor chain tests:** verify `payload.path` forms an unbroken ancestor chain from root to current compare node, and ends at the parent node on final insert. ✅ `7655621`
+- **75 / 75 tests passing** (33 API, 42 unit). Last run: `0.32s`.
 
 ### A3. Frontend robustness
 - [x] Build `engine/PlaybackController.js`: step list, cursor, play/pause/resume, next/prev/seek, speed, cancel token, annotation callback, `onStep` and `onDone` hooks. ✅ `541154a`
 - [x] Refactor Play and Learn in `bst.js` to use it. `btn-pause` replaced by `btn-play-pause` toggle that updates its label dynamically. ✅ `541154a`
-- [x] Busy gate: `isBusy` flag + `setControlsDisabled()` — all action buttons and mode switches disabled during requests. ✅ `541154a`
-- [x] Sequence counter on every `fetchTreeSteps`; `createLatest()` guard applied to classify and height-depth; stale responses resolve to `null` and are ignored. ✅ `541154a`
+- [x] Busy gate: `isBusy` flag + `setControlsDisabled()` — all action buttons and mode switches disabled during requests. ✅ `541154a`, `7655621`
+- [x] Sequence counter on every `fetchTreeSteps`; `createLatest()` guard applied to classify, height-depth, and compare; stale responses resolve to `null` and are ignored. ✅ `541154a`, `7655621`
 - [x] Surface API errors in `#tree-error-banner` (role=alert, aria-live=polite). No silent `console.error`-only paths. ✅ `541154a`
 - [x] Switch `bst.js` to the op log; local state is `ops[]`, not `values[]`. Op only committed after a 200 response. ✅ `541154a`
 - [x] Node click uses stable IDs (`target_id` sent to height/depth; `selectedNodeId` cleared on delete). ✅ `541154a`
 - [x] Pass `tree_type` for traversal. `buildRequest()` sends `array` vs `ops` based on `currentTreeType`. ✅ `541154a`
-- [x] Dev-only `final_tree` sync assertion: `console.warn` if deleted value still appears in backend `final_tree`. ✅ `541154a`
+- [x] Dev-only tree-sync assertion: `window.ALGOLAB_DEBUG` (default false) replays local ops via `/tree` after every mutating action and logs diffs if screen differs from server replay. ✅ `7655621`
+- [x] Bracket input sanitization: `cleanNumberTokens()` strips `[ ]`, `( )`, `{ }` across all input fields so bracketed lists like `[50, 30, 70]` do not drop the leading element. ✅ `f84e55d`
+- [x] Automatic fit-view: smooth animated `fitView(true)` executed automatically before and after insertions, deletions, array builds, and comparison runs. ✅ `913553f`
 
 ### A4. Fill abstract gaps (Unit 1)
-- [x] Insertion shows the comparison path from root to insertion point (compare steps emit `comparing` array, highlighted in canvas). ✅ backend since `b201ff8`
-- [x] Tree mirroring / structural comparison: backend `bst_mirror_steps(tree_a, tree_b, mode)` with dual snapshots, suffixed role arrays (`_a`/`_b`), brute-force oracle property test, and API validation. UI dual canvas deferred to Phase B/C.
+- [x] Insertion shows the comparison path from root to insertion point (`payload.path`, persistent `.path` class on nodes and edges). ✅ `7655621`
+- [x] Tree mirroring / structural comparison: backend `bst_mirror_steps(tree_a, tree_b, mode)` with dual snapshots, suffixed role arrays (`_a`/`_b`), brute-force oracle property test, API validation, and minimal Compare frontend section in `bst.html`/`bst.js` with dual TreeCanvas instances, mode toggles, and verdict banner. ✅ `facdbf8`, `7655621`
 - [x] Live height/depth recalculates after every mutation (called in `onInsertClick`, `onDeleteClick`, `onBuildFromArrayClick`). ✅ `541154a`
 
 ### A5. Exit criteria
-- [x] All tests green. ✅ 73/73 passing
-- [x] Manual checklist verified: rapid-click gate, delete-then-reinsert same value, node click after two-child delete, binary-mode traversal, empty-tree guard, duplicate rejection, garbage-input filtering, Learn next/prev/reset, mode switch mid-animation.
+- [x] All tests green. ✅ 75/75 passing (0.32s)
+- [x] Manual checklist verified: rapid-click gate, delete-then-reinsert same value, node click after two-child delete, binary-mode traversal, empty-tree guard, duplicate rejection, garbage-input filtering, bracketed input parsing, Learn next/prev/reset, mode switch mid-animation, auto fit-view.
 - [x] README says BST is stable (remove "Beta"). ✅
-- [ ] Merge `phase-a-stabilize` to `main`. *(Pending.)*
+- [ ] Merge `phase-a-stabilize` to `main`. *(Pending user confirmation.)*
 
 ---
 
