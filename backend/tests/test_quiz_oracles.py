@@ -30,7 +30,6 @@ def _load_quizzes():
         raise RuntimeError(proc.stderr)
     return json.loads(proc.stdout)
 
-# Module-level load for parametrization
 try:
     _QUIZZES = _load_quizzes()
 except Exception:
@@ -46,8 +45,44 @@ except Exception:
 def _match(option_text, expected):
     if hasattr(expected, "pattern"):  # compiled regex
         return re.search(expected, option_text) is not None
-    pattern = r"\b" + re.escape(str(expected)) + r"\b"
+    s = str(expected)
+    left = r"\b" if (s and (s[0].isalnum() or s[0] == "_")) else ""
+    right = r"\b" if (s and (s[-1].isalnum() or s[-1] == "_")) else ""
+    pattern = left + re.escape(s) + right
     return re.search(pattern, option_text) is not None
+
+
+class CheckResult:
+    def __init__(self, passed, reason=""):
+        self.passed = passed
+        self.reason = reason
+    def __bool__(self):
+        return self.passed
+
+
+def check_question(question, oracle, client=None):
+    """Pure checking logic: returns CheckResult.
+
+    For conceptual oracles: passes if reason is a non-empty string.
+    For computed oracles: calls oracle.payload(client) and verifies exactly one
+    option matches and that option is correctOptionId.
+    """
+    if oracle.kind == "conceptual":
+        if not (isinstance(oracle.payload, str) and oracle.payload.strip()):
+            return CheckResult(False, "conceptual oracle missing reason")
+        return CheckResult(True, "conceptual (justified skip)")
+    if oracle.kind != "computed":
+        return CheckResult(False, f"unknown oracle kind {oracle.kind}")
+    try:
+        expected = oracle.payload(client)
+    except Exception as e:
+        return CheckResult(False, f"oracle raised: {e}")
+    matches = [o for o in question["options"] if _match(o["text"], expected)]
+    if len(matches) != 1:
+        return CheckResult(False, f"expected {expected!r} matched {len(matches)} options")
+    if matches[0]["id"] != question["correctOptionId"]:
+        return CheckResult(False, f"matching option {matches[0]['id']} != correctOptionId {question['correctOptionId']}")
+    return CheckResult(True, "ok")
 
 
 def _params():
@@ -76,15 +111,8 @@ def test_quiz_oracle(quiz_id, question_id, app_client):
     assert question_id in _ORACLES[quiz_id], f"question {quiz_id}/{question_id} has no oracle"
     oracle = _ORACLES[quiz_id][question_id]
     assert oracle.kind in ("computed", "conceptual")
-    if oracle.kind == "conceptual":
-        assert isinstance(oracle.payload, str) and oracle.payload.strip()
-        return
-    expected = oracle.payload(app_client)
-    matches = [o for o in q["options"] if _match(o["text"], expected)]
-    assert len(matches) == 1, f"{quiz_id}/{question_id}: expected {expected!r} matched {len(matches)} options"
-    assert matches[0]["id"] == q["correctOptionId"], (
-        f"{quiz_id}/{question_id}: matching option {matches[0]['id']} != correctOptionId {q['correctOptionId']}"
-    )
+    res = check_question(q, oracle, app_client)
+    assert res.passed, f"{quiz_id}/{question_id}: {res.reason}"
 
 
 def test_no_stale_oracles():
@@ -100,3 +128,47 @@ def test_no_stale_oracles():
 def test_node_available_or_skip():
     if _node_bin() is None:
         pytest.skip("node not on PATH")
+
+
+# ---------- meta-tests for the guard itself ----------
+
+class _O:
+    def __init__(self, kind, payload):
+        self.kind = kind
+        self.payload = payload
+
+
+def test_meta_guard_passes_correct_keyed():
+    q = {"id": "q", "options": [{"id": "a", "text": "42"}, {"id": "b", "text": "7"}],
+         "correctOptionId": "a"}
+    oracle = _O("computed", lambda c: "42")
+    assert check_question(q, oracle, None).passed
+
+
+def test_meta_guard_fails_wrong_key():
+    q = {"id": "q", "options": [{"id": "a", "text": "42"}, {"id": "b", "text": "7"}],
+         "correctOptionId": "b"}  # key moved to wrong option
+    oracle = _O("computed", lambda c: "42")
+    assert not check_question(q, oracle, None).passed
+
+
+def test_meta_guard_fails_no_match():
+    q = {"id": "q", "options": [{"id": "a", "text": "7"}, {"id": "b", "text": "9"}],
+         "correctOptionId": "a"}
+    oracle = _O("computed", lambda c: "42")
+    assert not check_question(q, oracle, None).passed
+
+
+def test_meta_guard_fails_two_matches():
+    q = {"id": "q", "options": [{"id": "a", "text": "42"}, {"id": "b", "text": "42"}],
+         "correctOptionId": "a"}
+    oracle = _O("computed", lambda c: "42")
+    assert not check_question(q, oracle, None).passed
+
+
+def test_meta_guard_conceptual_requires_reason():
+    q = {"id": "q", "options": [{"id": "a", "text": "x"}], "correctOptionId": "a"}
+    oracle = _O("conceptual", "")
+    assert not check_question(q, oracle, None).passed
+    oracle2 = _O("conceptual", "pure definition")
+    assert check_question(q, oracle2, None).passed
