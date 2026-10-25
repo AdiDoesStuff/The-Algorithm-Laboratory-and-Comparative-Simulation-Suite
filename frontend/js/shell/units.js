@@ -103,19 +103,58 @@
             ]
         },
         {
-            id: "tries-hashing-merkle",
-            title: "Tries, Hashing & Merkle",
-            page: null,
-            status: "soon",
+            id: "trie",
+            title: "Tries",
+            page: "trie.html",
+            status: "live",
             guidedOrder: 6,
-            blurb: "Prefix trees, hash tables with chaining and open addressing, and Merkle trees with tamper detection.",
+            quizId: "trieQuiz",
+            blurb: "Build a prefix tree one character at a time, see which nodes words share, search stored words, and run prefix autocomplete.",
             glossaryTerms: [
                 "Trie",
+                "Prefix",
+                "Autocomplete",
+                "End-of-Word Marker",
+                "String Key"
+            ]
+        },
+        {
+            id: "hash",
+            title: "Hashing",
+            page: "hashing.html",
+            status: "live",
+            guidedOrder: 7,
+            quizId: "hashQuiz",
+            blurb: "Compare separate chaining with open addressing on the same keys: collisions, tombstones, load factors, and independent resizing.",
+            glossaryTerms: [
                 "Hash Function",
+                "Hash Table",
                 "Collision",
-                "Load Factor",
+                "Separate Chaining",
+                "Open Addressing",
+                "Linear Probing",
                 "Probe",
-                "Merkle Root"
+                "Clustering",
+                "Load Factor",
+                "Tombstone",
+                "Rehash"
+            ]
+        },
+        {
+            id: "merkle",
+            title: "Merkle Trees",
+            page: "merkle.html",
+            status: "live",
+            guidedOrder: 8,
+            quizId: "merkleQuiz",
+            blurb: "Hash blocks with SHA-256, pair them bottom-up, duplicate odd nodes, and watch one tampered block change only its path to the root.",
+            glossaryTerms: [
+                "Merkle Tree",
+                "Merkle Root",
+                "SHA-256",
+                "Digest",
+                "Leaf Hash",
+                "Odd-Node Duplication"
             ]
         },
         {
@@ -123,7 +162,7 @@
             title: "Design & Analysis",
             page: null,
             status: "soon",
-            guidedOrder: 7,
+            guidedOrder: 9,
             blurb: "Growth curves against Big-O, recursion trees, 0/1 Knapsack solved three ways, N-Queens, and branch and bound.",
             glossaryTerms: [
                 "Asymptotic Notation",
