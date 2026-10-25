@@ -301,3 +301,98 @@ The two panels answer different questions: the array makes the index formulas
 bubble path obvious. Keeping one step and one id space means Prev/Next and
 Play/Pause act on both panels together, and a test can assert the tree is
 exactly `cells[0:heap_size]` at every step.
+
+---
+
+## 6. Heap Trace Contract (`POST /heap`)
+
+Heap traces are produced by a stateless op-log replay, exactly like BST mode:
+the client keeps `ops`, sends them with one `action`, and renders the returned
+steps. This keeps the backend free of session state and makes replay
+deterministic.
+
+### 6.1 Request shapes
+
+Insert / extract / build (incremental heap):
+
+```json
+{
+  "algorithm": "heap_op",
+  "heap_type": "min",
+  "ops": [{"op": "insert", "value": 5}, {"op": "insert", "value": 9}],
+  "action": {"op": "insert", "value": 2}
+}
+```
+
+Heapsort (whole array at once):
+
+```json
+{
+  "algorithm": "heapsort",
+  "heap_type": "max",
+  "array": [5, 1, 9, 3, 7]
+}
+```
+
+Rules:
+
+- `heap_type` is `"min"` (default) or `"max"`.
+- Ops are `insert` (`value` integer), `extract` (no fields), or `build`
+  (`values` list). `build` is only valid as `ops[0]` or as the `action` of an
+  empty heap; anything else is HTTP 400 with `field: "ops"` / `"action"`.
+- Duplicate values are allowed everywhere. A swap happens only when the
+  candidate is **strictly** better (`<` for min, `>` for max), so equal values
+  never swap and traces are stable.
+- Caps: at most 31 elements and 1000 steps. Exceeding either is a 400, never a
+  500.
+- `action` may be omitted. The response then contains `steps: []` and
+  `final_state` describing the heap after replaying `ops` — useful for drawing
+  the current heap without performing an operation.
+
+### 6.2 Response shape
+
+```json
+{
+  "steps": [ /* dual-panel steps, see §5 */ ],
+  "final_state": { "array": {...}, "tree": {...} },
+  "metrics": {"comparisons": 7, "swaps": 3, "steps": 18},
+  "metadata": {"algorithm": "heap_op", "heap_type": "min", "heap_size": 4}
+}
+```
+
+`final_state` is always the snapshot of the last step, so a client that only
+wants the end result does not need to special-case it.
+
+### 6.3 Step types
+
+Every heap step has `kind: "dual"` and the snapshot shape from §5. Roles refer
+to element ids and drive both panels.
+
+| `type` | When | Notable `payload` | Roles |
+| --- | --- | --- | --- |
+| `append` | New element written to the next free index | `index`, `value`, `heap_size` | `new_node` |
+| `compare` | Bubble-up parent check or sift-down child comparison | `child_index`/`parent_index` or `parent_index`/`left_index`/`right_index`/`chosen_index`, `focus_index` | `comparing` |
+| `swap` | Two cells exchange positions | `from_index`, `to_index`, `from_value`, `to_value` | `swapping` |
+| `insert_done` | Insert settled | `index`, `value` | `highlighted` |
+| `extract_root` | Root about to be removed | `index`, `value` | `selected` |
+| `remove_last` | Last cell popped after moving it to the root | `index`, `extracted_value`, `extracted_id`, `heap_size` | — |
+| `extract_done` | Extract settled, new root named | `extracted_value`, `extracted_id` | `highlighted` (new root) |
+| `build_start` | Bottom-up heapify begins | `n`, `last_parent` | `highlighted` (root) |
+| `heapify_node_done` | Subtree at an index is a valid heap | `index` | `selected` |
+| `build_done` | Whole array is a valid heap | `heap_size` | — |
+| `mark_sorted` | One element frozen into the sorted tail | `sorted_from`, `heap_size` | `sorted` (tail) |
+| `heapsort_done` | Sorted region covers the array | `sorted: true` | `sorted` (all) |
+
+`compare` steps snapshot the structure **before** the swap they recommend, which
+is why the invariant tests allow the compared edge to be temporarily violated.
+Every `*_done` step must have zero violations.
+
+### 6.4 Heapsort direction
+
+Heapsort sorts the array in place using the selected heap type:
+
+- `max` heap → ascending output (largest extracted to the end each round).
+- `min` heap → descending output (smallest extracted to the end each round).
+
+The sorted region grows from the right; `heap_size` shrinks to match, and the
+`heap | sorted` divider in the array panel is placed at `heap_size`.
