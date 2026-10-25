@@ -246,6 +246,9 @@ export class TreeCanvas {
         const positions = this._computeLayout(treeSnap);
         this.lastPositions = positions;
 
+        // Path IDs visited so far (root first)
+        const pathIds = Array.isArray(stepRoles.payload?.path) ? stepRoles.payload.path : [];
+
         // Render Edges
         this.edgesLayer.innerHTML = '';
         treeSnap.edges.forEach(e => {
@@ -253,7 +256,21 @@ export class TreeCanvas {
             const toPos = positions.get(e.to);
             if (fromPos && toPos) {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('class', 'tree-edge');
+                let edgeClasses = ['tree-edge'];
+
+                const fromIdx = pathIds.indexOf(e.from);
+                const toIdx = pathIds.indexOf(e.to);
+                const isConsecutivePath = fromIdx !== -1 && toIdx !== -1 && toIdx === fromIdx + 1;
+                const isFinalInsertEdge = stepRoles.type === 'insert' &&
+                    pathIds.length > 0 &&
+                    e.from === pathIds[pathIds.length - 1] &&
+                    (stepRoles.new_node?.includes(e.to) || stepRoles.node_ids?.includes(e.to));
+
+                if (isConsecutivePath || isFinalInsertEdge) {
+                    edgeClasses.push('path');
+                }
+
+                line.setAttribute('class', edgeClasses.join(' '));
                 line.setAttribute('x1', fromPos.x);
                 line.setAttribute('y1', fromPos.y);
                 line.setAttribute('x2', toPos.x);
@@ -269,8 +286,11 @@ export class TreeCanvas {
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             
             let classList = ['tree-node'];
+            if (pathIds.includes(n.id)) classList.push('path');
             if (stepRoles.highlighted?.includes(n.id)) classList.push('node-highlight');
-            if (stepRoles.comparing?.includes(n.id)) classList.push('node-compare');
+            if (stepRoles.comparing?.includes(n.id) || stepRoles.comparing_a?.includes(n.id) || stepRoles.comparing_b?.includes(n.id)) classList.push('node-compare');
+            if (stepRoles.matched_a?.includes(n.id) || stepRoles.matched_b?.includes(n.id)) classList.push('node-matched');
+            if (stepRoles.mismatch_a?.includes(n.id) || stepRoles.mismatch_b?.includes(n.id)) classList.push('node-mismatch');
             if (stepRoles.rotating?.includes(n.id)) classList.push('node-rotate');
             if (stepRoles.pruned?.includes(n.id)) classList.push('node-pruned');
             if (stepRoles.new_node?.includes(n.id)) classList.push('node-new');

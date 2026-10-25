@@ -57,6 +57,12 @@
   stroke-dasharray: 4 4;
 }
 
+.tree-edge.path {
+  stroke: #38bdf8;
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.6));
+}
+
 /* Nodes */
 .tree-node {
   transition: transform 0.4s ease;
@@ -125,6 +131,34 @@
   stroke: #c084fc !important;
   stroke-width: 5px !important;
   animation: node-pulse 1.2s infinite;
+}
+
+/* Search / Insertion Path Highlight */
+.tree-node.path circle {
+  stroke: #38bdf8;
+  stroke-width: 3px;
+  fill: rgba(56, 189, 248, 0.15);
+}
+
+.tree-node.path.node-compare circle {
+  stroke: #60a5fa;
+  stroke-width: 4px;
+  fill: rgba(59, 130, 246, 0.3);
+  animation: node-pulse 1.2s infinite;
+}
+
+/* Mirror / Structural Comparison Dual Highlights */
+.tree-node.node-matched circle {
+  stroke: #10b981 !important;
+  fill: rgba(16, 185, 129, 0.25) !important;
+  stroke-width: 3.5px !important;
+}
+
+.tree-node.node-mismatch circle {
+  stroke: #ef4444 !important;
+  fill: rgba(239, 68, 68, 0.25) !important;
+  stroke-width: 3.5px !important;
+  animation: node-pulse 1s infinite;
 }
 
 .traversal-output-box {

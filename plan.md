@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase A complete (branch `phase-a-stabilize`, 49/49 tests green, working tree clean).
+**Last updated:** 25 Oct 2026 — Phase A in progress on branch `phase-a-stabilize`.
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---

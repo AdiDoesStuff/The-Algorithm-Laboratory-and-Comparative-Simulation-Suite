@@ -7,6 +7,8 @@ import { TreeCanvas } from './primitives/TreeCanvas.js';
 import { PlaybackController } from './engine/PlaybackController.js';
 
 let treeCanvas = null;
+let compareCanvasA = null;
+let compareCanvasB = null;
 
 // --- State Model ---
 let ops = [];                // BST mode: list of { op: 'insert'|'delete', value: int }
@@ -17,9 +19,15 @@ let selectedNodeVal = null;
 let selectedNodeId = null;
 let isBusy = false;
 
+// Compare Section State
+let compareMode = 'mirror';      // 'mirror' | 'identical'
+let compareTreeAType = 'bst';    // 'bst' | 'binary'
+let compareTreeBType = 'binary'; // 'bst' | 'binary'
+
 // Stale-response sequence guards
 const latestClassify = window.createLatest ? window.createLatest() : (fn => (typeof fn === 'function' ? fn() : fn));
 const latestHeightDepth = window.createLatest ? window.createLatest() : (fn => (typeof fn === 'function' ? fn() : fn));
+const latestCompare = window.createLatest ? window.createLatest() : (fn => (typeof fn === 'function' ? fn() : fn));
 
 // Learn mode sequence
 const learnSequence = [50, 30, 70, 20, 40, 60, 80];
@@ -43,6 +51,32 @@ const playback = new PlaybackController({
     }
 });
 
+// Compare PlaybackController
+const comparePlayback = new PlaybackController({
+    onStep: (step) => {
+        if (step?.snapshot_a && compareCanvasA) {
+            compareCanvasA.render(step.snapshot_a, {
+                comparing_a: step.comparing_a,
+                matched_a: step.matched_a,
+                mismatch_a: step.mismatch_a,
+                payload: step.payload
+            });
+        }
+        if (step?.snapshot_b && compareCanvasB) {
+            compareCanvasB.render(step.snapshot_b, {
+                comparing_b: step.comparing_b,
+                matched_b: step.matched_b,
+                mismatch_b: step.mismatch_b,
+                payload: step.payload
+            });
+        }
+    },
+    onAnnotation: (text) => {
+        const el = document.getElementById('compare-step-annotation');
+        if (el) el.innerText = text || '';
+    }
+});
+
 window.addEventListener('DOMContentLoaded', () => {
     initTreeCanvases();
     bindEventListeners();
@@ -59,6 +93,14 @@ function initTreeCanvases() {
                 handleNodeClick(label, nodeId);
             }
         });
+    }
+    const containerA = document.getElementById('compare-canvas-a');
+    if (containerA) {
+        compareCanvasA = new TreeCanvas(containerA);
+    }
+    const containerB = document.getElementById('compare-canvas-b');
+    if (containerB) {
+        compareCanvasB = new TreeCanvas(containerB);
     }
 }
 
@@ -107,6 +149,15 @@ function bindEventListeners() {
     document.getElementById('btn-learn-next')?.addEventListener('click', onLearnNext);
     document.getElementById('btn-learn-reset')?.addEventListener('click', onLearnReset);
 
+    // Compare Mode Controls
+    document.getElementById('btn-compare-mode-mirror')?.addEventListener('click', () => setCompareMode('mirror'));
+    document.getElementById('btn-compare-mode-identical')?.addEventListener('click', () => setCompareMode('identical'));
+    document.getElementById('btn-tree-a-type-bst')?.addEventListener('click', () => setCompareTreeType('a', 'bst'));
+    document.getElementById('btn-tree-a-type-binary')?.addEventListener('click', () => setCompareTreeType('a', 'binary'));
+    document.getElementById('btn-tree-b-type-bst')?.addEventListener('click', () => setCompareTreeType('b', 'bst'));
+    document.getElementById('btn-tree-b-type-binary')?.addEventListener('click', () => setCompareTreeType('b', 'binary'));
+    document.getElementById('btn-compare-run')?.addEventListener('click', onCompareRunClick);
+
     // Enter Key Shortcuts
     document.getElementById('input-insert')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') onInsertClick();
@@ -141,7 +192,11 @@ function setControlsDisabled(disabled) {
         'btn-build-array', 'input-array-build',
         'btn-clear',
         'btn-mode-play', 'btn-mode-learn',
-        'btn-model-bst', 'btn-model-binary'
+        'btn-model-bst', 'btn-model-binary',
+        'btn-compare-run', 'btn-compare-mode-mirror', 'btn-compare-mode-identical',
+        'btn-tree-a-type-bst', 'btn-tree-a-type-binary',
+        'btn-tree-b-type-bst', 'btn-tree-b-type-binary',
+        'input-tree-a', 'input-tree-b'
     ];
     ids.forEach(id => {
         const el = document.getElementById(id);
@@ -309,6 +364,8 @@ async function onInsertClick() {
             playback.play();
             refreshClassification();
         }
+
+        await verifyTreeSync();
     });
 }
 
@@ -358,6 +415,8 @@ async function onDeleteClick() {
                 clearHeightDepthPanel();
             }
         }
+
+        await verifyTreeSync();
     });
 }
 
@@ -468,6 +527,7 @@ function onClearClick() {
     updateAnnotation('Tree cleared.');
     refreshClassification();
     clearHeightDepthPanel();
+    verifyTreeSync();
 }
 
 // --- Classification & Height/Depth Updates with Stale Guard ---
@@ -625,4 +685,159 @@ function renderLearnPills() {
     container.innerHTML = learnSequence.map((val, idx) => `
         <span class="learn-pill ${idx === 0 ? 'pill-active' : ''}">${val}</span>
     `).join('');
+}
+
+
+// --- Compare Section Controller & Tree-Sync Verification ---
+
+function setCompareMode(mode) {
+    if (compareMode === mode) return;
+    compareMode = mode;
+    document.getElementById('btn-compare-mode-mirror')?.classList.toggle('active-tab', mode === 'mirror');
+    document.getElementById('btn-compare-mode-identical')?.classList.toggle('active-tab', mode === 'identical');
+}
+
+function setCompareTreeType(which, type) {
+    if (which === 'a') {
+        compareTreeAType = type;
+        document.getElementById('btn-tree-a-type-bst')?.classList.toggle('active-tab', type === 'bst');
+        document.getElementById('btn-tree-a-type-binary')?.classList.toggle('active-tab', type === 'binary');
+    } else {
+        compareTreeBType = type;
+        document.getElementById('btn-tree-b-type-bst')?.classList.toggle('active-tab', type === 'bst');
+        document.getElementById('btn-tree-b-type-binary')?.classList.toggle('active-tab', type === 'binary');
+    }
+}
+
+function parseTreeSpecInput(rawText, treeType) {
+    const rawTokens = rawText.split(/[\s,]+/).filter(t => t.length > 0);
+    if (treeType === 'binary') {
+        const arr = rawTokens.map(t => {
+            const lower = t.toLowerCase();
+            if (lower === 'null' || lower === 'none' || lower === 'n' || lower === '-') {
+                return null;
+            }
+            const n = parseInt(t, 10);
+            return isNaN(n) ? null : n;
+        });
+        return { tree_type: 'binary', array: arr };
+    } else {
+        const vals = rawTokens.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+        const treeOps = vals.map(v => ({ op: 'insert', value: v }));
+        return { tree_type: 'bst', ops: treeOps };
+    }
+}
+
+async function onCompareRunClick() {
+    await runAction(async () => {
+        const inputA = document.getElementById('input-tree-a');
+        const inputB = document.getElementById('input-tree-b');
+        const banner = document.getElementById('compare-verdict-banner');
+
+        const specA = parseTreeSpecInput(inputA?.value || '', compareTreeAType);
+        const specB = parseTreeSpecInput(inputB?.value || '', compareTreeBType);
+
+        const payload = {
+            algorithm: 'bst_mirror',
+            mode: compareMode,
+            tree_a: specA,
+            tree_b: specB
+        };
+
+        const res = await latestCompare(() => window.fetchTreeSteps('bst_mirror', payload));
+        if (!res) return;
+
+        if (!res.ok) {
+            showError(res.error);
+            if (banner) banner.classList.add('hidden');
+            return;
+        }
+
+        clearError();
+
+        // Render final trees initially
+        if (res.data?.final_tree_a && compareCanvasA) {
+            compareCanvasA.render(res.data.final_tree_a);
+        }
+        if (res.data?.final_tree_b && compareCanvasB) {
+            compareCanvasB.render(res.data.final_tree_b);
+        }
+
+        // Show verdict banner
+        if (banner && res.data?.verdict) {
+            banner.classList.remove('hidden');
+            const verdict = res.data.verdict;
+            if (verdict.is_match) {
+                banner.style.background = 'rgba(16, 185, 129, 0.2)';
+                banner.style.border = '1px solid #10b981';
+                banner.style.color = '#6ee7b7';
+                banner.innerText = `✓ Verdict: Trees are a valid ${compareMode} match!`;
+            } else {
+                banner.style.background = 'rgba(239, 68, 68, 0.2)';
+                banner.style.border = '1px solid #ef4444';
+                banner.style.color = '#fca5a5';
+                const reason = verdict.first_mismatch?.reason ? `: ${verdict.first_mismatch.reason}` : '';
+                banner.innerText = `✗ Verdict: Structural mismatch found${reason}`;
+            }
+        }
+
+        // Step-by-step playback
+        if (res.data?.steps && res.data.steps.length > 0) {
+            comparePlayback.load(res.data.steps);
+            comparePlayback.play();
+        }
+    });
+}
+
+
+// --- Dev-Only Tree-Sync Assertion (window.ALGOLAB_DEBUG, default false) ---
+if (typeof window.ALGOLAB_DEBUG === 'undefined') {
+    window.ALGOLAB_DEBUG = false;
+}
+
+async function verifyTreeSync() {
+    if (!window.ALGOLAB_DEBUG) return;
+    if (currentTreeType !== 'bst') return;
+
+    try {
+        const res = await window.fetchTreeSteps('bst_classify', {
+            algorithm: 'bst_classify',
+            tree_type: 'bst',
+            ops: [...ops]
+        });
+        if (!res || !res.ok || !res.data?.tree) return;
+
+        const replayedNodes = res.data.tree.nodes || [];
+        const screenNodes = treeCanvas?.lastRawSnapshot?.nodes || [];
+
+        const replayedMap = new Map(replayedNodes.map(n => [n.id, String(n.label)]));
+        const screenMap = new Map(screenNodes.map(n => [n.id, String(n.label)]));
+
+        const diffs = [];
+        for (const [id, label] of replayedMap) {
+            if (!screenMap.has(id)) {
+                diffs.push(`Node id=${id} (label=${label}) is in replayed tree but missing from screen`);
+            } else if (screenMap.get(id) !== label) {
+                diffs.push(`Node id=${id} label mismatch: server=${label}, screen=${screenMap.get(id)}`);
+            }
+        }
+        for (const [id, label] of screenMap) {
+            if (!replayedMap.has(id)) {
+                diffs.push(`Node id=${id} (label=${label}) on screen but missing from server replay`);
+            }
+        }
+
+        if (diffs.length > 0) {
+            console.warn('[TreeSync Mismatch Detected]', {
+                diffs,
+                serverNodes: replayedNodes,
+                screenNodes: screenNodes,
+                localOps: [...ops]
+            });
+        } else {
+            console.debug(`[TreeSync OK] Screen matches replayed ops (${replayedNodes.length} nodes).`);
+        }
+    } catch (err) {
+        console.warn('[TreeSync Check Error]', err);
+    }
 }

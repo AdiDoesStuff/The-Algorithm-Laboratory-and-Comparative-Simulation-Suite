@@ -269,6 +269,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- Compare Section: Two TreeCanvas instances side by side -->
+        <div id="compare-section" class="compare-section" style="margin-top: 35px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 1.3rem; font-weight: 700; color: #f8fafc; margin: 0;">Tree Comparison & Mirroring</h2>
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 0 0;">Compare Tree A and Tree B structurally or verify mirror reflection.</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="mode-tabs" style="margin: 0;">
+                        <button id="btn-compare-mode-mirror" class="mode-tab active-tab" style="padding: 6px 14px;">Mirror Check</button>
+                        <button id="btn-compare-mode-identical" class="mode-tab" style="padding: 6px 14px;">Identical Check</button>
+                    </div>
+                    <button id="btn-compare-run" style="background: linear-gradient(135deg, #10b981, #059669); padding: 8px 18px; font-weight: 700;">Run Compare</button>
+                </div>
+            </div>
+
+            <!-- Verdict Banner -->
+            <div id="compare-verdict-banner" class="hidden" style="margin-bottom: 15px; padding: 12px 16px; border-radius: 8px; font-size: 0.95rem; font-weight: 600;"></div>
+
+            <!-- Side by Side Canvases -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Tree A -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: 700; color: #38bdf8; font-size: 0.85rem; text-transform: uppercase;">Tree A</label>
+                        <div class="mode-tabs" style="margin: 0;">
+                            <button id="btn-tree-a-type-bst" class="mode-tab active-tab" style="padding: 3px 10px; font-size: 0.8rem;">BST Ops</button>
+                            <button id="btn-tree-a-type-binary" class="mode-tab" style="padding: 3px 10px; font-size: 0.8rem;">Binary Array</button>
+                        </div>
+                    </div>
+                    <input type="text" id="input-tree-a" placeholder="e.g. 10, 5, 20" value="10, 5, 20" style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #f8fafc; font-size: 0.9rem;" />
+                    <div id="compare-canvas-a" style="height: 360px;"></div>
+                </div>
+
+                <!-- Tree B -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: 700; color: #a855f7; font-size: 0.85rem; text-transform: uppercase;">Tree B</label>
+                        <div class="mode-tabs" style="margin: 0;">
+                            <button id="btn-tree-b-type-bst" class="mode-tab" style="padding: 3px 10px; font-size: 0.8rem;">BST Ops</button>
+                            <button id="btn-tree-b-type-binary" class="mode-tab active-tab" style="padding: 3px 10px; font-size: 0.8rem;">Binary Array</button>
+                        </div>
+                    </div>
+                    <input type="text" id="input-tree-b" placeholder="e.g. 10, 20, 5" value="10, 20, 5" style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #f8fafc; font-size: 0.9rem;" />
+                    <div id="compare-canvas-b" style="height: 360px;"></div>
+                </div>
+            </div>
+
+            <!-- Annotation -->
+            <div id="compare-step-annotation" class="step-annotation-box" style="margin-top: 15px;">
+                Ready to compare. Click 'Run Compare' to step through the recursive structural comparison.
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification Container -->

@@ -683,3 +683,79 @@ def test_mirror_steps_have_dual_snapshots():
         assert 'snapshot_a' in step, f"step type={step['type']} missing snapshot_a"
         assert 'snapshot_b' in step, f"step type={step['type']} missing snapshot_b"
         assert 'snapshot' not in step, f"step type={step['type']} should not have 'snapshot'"
+
+
+# --- 11. Search and Insertion Path Tests ---
+
+def test_insert_path_ancestor_chain():
+    """
+    Test: payload.path in every compare step and final insert step forms
+    an ancestor chain (root first, each id's parent is the previous id),
+    ending at the newly inserted node's parent on the final insert step.
+    """
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 25},
+        {"op": "insert", "value": 75},
+        {"op": "insert", "value": 10},
+        {"op": "insert", "value": 30},
+    ]
+    # Insert 15: search visits 50 (id 0) -> 25 (id 1) -> 10 (id 3) -> attaches right of 10
+    res = bst_insert_steps(ops, 15)
+    steps = res['steps']
+    assert len(steps) > 0
+
+    node_map = {n['id']: n for n in res['final_tree']['nodes']}
+
+    for step in steps:
+        assert 'payload' in step
+        assert 'path' in step['payload']
+        path = step['payload']['path']
+        assert isinstance(path, list)
+        if len(path) == 0:
+            continue
+        # Root first: path[0] has no parent
+        assert node_map[path[0]]['parent_id'] is None
+        # Ancestor chain: each id's parent is the previous id
+        for i in range(1, len(path)):
+            curr_id = path[i]
+            prev_id = path[i - 1]
+            assert node_map[curr_id]['parent_id'] == prev_id
+
+    # On final insert step: ending at the node's parent
+    final_step = steps[-1]
+    assert final_step['type'] == 'insert'
+    new_node_id = final_step['new_node'][0]
+    expected_parent_id = node_map[new_node_id]['parent_id']
+    assert final_step['payload']['path'][-1] == expected_parent_id
+
+
+def test_delete_search_phase_path():
+    """
+    Test: payload.path in search phase of delete forms an ancestor chain
+    ending at the target node.
+    """
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 25},
+        {"op": "insert", "value": 75},
+        {"op": "insert", "value": 10},
+        {"op": "insert", "value": 30},
+    ]
+    # Delete 30: search visits 50 (id 0) -> 25 (id 1) -> 30 (id 4)
+    res = bst_delete_steps(ops, 30)
+    compare_steps = [s for s in res['steps'] if s['type'] == 'compare']
+    assert len(compare_steps) >= 3
+
+    init_map = {n['id']: n for n in compare_steps[0]['snapshot']['nodes']}
+
+    for step in compare_steps:
+        path = step['payload']['path']
+        assert len(path) > 0
+        assert init_map[path[0]]['parent_id'] is None
+        for i in range(1, len(path)):
+            assert init_map[path[i]]['parent_id'] == path[i - 1]
+
+    # Last compare step found target node 30 (id 4)
+    assert compare_steps[-1]['payload']['path'] == [0, 1, 4]
+
