@@ -154,19 +154,68 @@ async function fetchAvlSteps(payload) {
     }
 }
 
-async function fetchHashSteps(method, keys, tableSize) {
+/**
+ * POST /trie. Returns {ok, data, error} like fetchTreeSteps so callers can
+ * show the backend's {error, field} pair verbatim.
+ */
+async function fetchTrieSteps(payload) {
+    return postTrace('/trie', payload);
+}
+
+/**
+ * POST /hash. The body is the validated hash payload:
+ * {algorithm, hash_fn, table_size, probing, ops, action:{key}}.
+ */
+async function fetchHashSteps(payload) {
+    return postTrace('/hash', payload);
+}
+
+/**
+ * POST /merkle. The body is {algorithm, leaves, index?, new_data?}.
+ */
+async function fetchMerkleSteps(payload) {
+    return postTrace('/merkle', payload);
+}
+
+/**
+ * Shared POST helper for the trace endpoints. Never throws: transport and
+ * non-2xx responses both come back as {ok:false, error:{message, field}}.
+ */
+async function postTrace(path, payload) {
+    const baseUrl = (typeof BASE_URL !== 'undefined')
+        ? BASE_URL
+        : ((typeof window !== 'undefined' && window.BASE_URL) ? window.BASE_URL : 'http://127.0.0.1:5000');
     try {
-        const response = await fetch(`${BASE_URL}/hash`, {
+        const response = await fetch(`${baseUrl}${path}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method, keys, tableSize })
+            body: JSON.stringify(payload)
         });
-        if (!response.ok) {
-            throw new Error(`Server error ${response.status}: ${response.statusText}`);
+        const contentType = response.headers.get('content-type') || '';
+        let json = null;
+        if (contentType.includes('application/json')) {
+            json = await response.json().catch(() => null);
         }
-        return await response.json();
+        if (!response.ok) {
+            return {
+                ok: false,
+                data: null,
+                error: {
+                    message: json?.error || response.statusText || `HTTP ${response.status}`,
+                    field: json?.field || 'request'
+                }
+            };
+        }
+        return { ok: true, data: json, error: null };
     } catch (error) {
-        console.error("Hash backend error:", error);
+        return {
+            ok: false,
+            data: null,
+            error: {
+                message: error?.message || "Failed to connect to Python server",
+                field: "network"
+            }
+        };
     }
 }
 
