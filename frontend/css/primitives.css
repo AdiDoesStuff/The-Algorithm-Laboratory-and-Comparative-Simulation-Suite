@@ -134,6 +134,61 @@
   animation: node-pulse 1.2s infinite;
 }
 
+/* Balance violation marker (AVL). The sublabel text carries "bf:+2 !" so the
+   state is never conveyed by colour alone. */
+.tree-node.node-unbalanced circle {
+  stroke: #f43f5e;
+  stroke-width: 4px;
+  stroke-dasharray: 6 3;
+  animation: node-pulse 1s infinite;
+}
+
+.tree-node.node-unbalanced .node-sublabel {
+  fill: #fda4af;
+  font-weight: 700;
+}
+
+/* Opt-in tweening: enter / leave affordances. Position tweening is done in JS
+   frame-by-frame (~250-500ms), so these are only opacity/scale hints. */
+.tree-node.node-entering {
+  animation: tree-node-fade-in 0.3s ease;
+}
+
+.tree-node.node-entering circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tree-node-scale-in 0.3s ease;
+}
+
+.tree-node.node-leaving {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+@keyframes tree-node-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tree-node-scale-in {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+
+.tree-node:focus {
+  outline: none;
+}
+
+.tree-node:focus-visible {
+  outline: 2px dashed #fbbf24;
+  outline-offset: 4px;
+}
+
+.tree-node:focus-visible circle {
+  stroke: #fbbf24;
+  stroke-width: 5px;
+}
+
 /* Search / Insertion Path Highlight */
 .tree-node.path circle {
   stroke: #38bdf8;
@@ -603,6 +658,20 @@
 
   .array-cell.array-cell-enter {
     animation: none;
+  }
+
+  .tree-node.node-entering,
+  .tree-node.node-entering circle,
+  .tree-node.node-unbalanced circle,
+  .tree-node.node-highlight circle,
+  .tree-node.node-selected circle,
+  .tree-node.node-rotate circle {
+    animation: none;
+  }
+
+  .tree-node.node-leaving {
+    transition: none;
+    opacity: 0;
   }
 }
 
