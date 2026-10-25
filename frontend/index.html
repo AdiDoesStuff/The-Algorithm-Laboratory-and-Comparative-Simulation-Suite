@@ -58,19 +58,17 @@
                 </div>
             </header>
 
-            <section class="guided-path" aria-labelledby="guided-path-title" aria-disabled="true">
-                <div>
+            <section class="guided-path" aria-labelledby="guided-path-title">
+                <div class="guided-path-head">
                     <p class="hub-kicker">Structured route</p>
                     <h2 id="guided-path-title">Guided Path</h2>
                     <p>
-                        A linear route from sorting basics through trees, heaps, hashing, and algorithm design,
-                        with optional checkpoints and a soft nudge when a quiz is still open.
+                        A linear route from sorting basics through trees, pathfinding, heaps, hashing,
+                        and algorithm design. Moving past a unit whose quiz you have not passed shows a
+                        soft nudge &mdash; you can always continue anyway.
                     </p>
                 </div>
-                <div class="guided-path-actions">
-                    <span class="unit-badge unit-badge--soon">Coming soon</span>
-                    <button type="button" class="unit-test" disabled title="Coming soon">Start Guided Path</button>
-                </div>
+                <ol id="guided-path-list" class="guided-path-list"></ol>
             </section>
 
             <section class="hub-units" aria-labelledby="units-title">
