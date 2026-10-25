@@ -36,19 +36,18 @@ def test_api_bst_insert_op_log(client):
     assert nodes['70']['id'] == 2
 
 
-def test_api_bst_insert_values_shim(client):
+def test_api_bst_values_shim_rejected_with_400(client):
     payload = {
         "algorithm": "bst_insert",
         "values": [50, 30],
         "new_value": 70
     }
     res = client.post('/tree', json=payload)
-    assert res.status_code == 200
+    assert res.status_code == 400
     data = res.get_json()
-    assert "steps" in data
-    assert "final_tree" in data
-    nodes = {n['label']: n for n in data['final_tree']['nodes']}
-    assert nodes['70']['id'] == 2
+    assert "error" in data and "field" in data
+    assert data["field"] == "values"
+    assert "no longer supported" in data['error']
 
 
 # --- 2. Duplicate handling (HTTP 400 + field) ---
@@ -83,7 +82,7 @@ def test_api_duplicate_in_ops_rejected_with_400(client):
     assert "Duplicate insert value" in data['error']
 
 
-def test_api_duplicate_in_values_shim_rejected_with_400(client):
+def test_api_values_with_duplicates_rejected_as_shim(client):
     payload = {
         "algorithm": "bst_classify",
         "values": [10, 20, 10]
@@ -93,7 +92,7 @@ def test_api_duplicate_in_values_shim_rejected_with_400(client):
     data = res.get_json()
     assert "error" in data and "field" in data
     assert data["field"] == "values"
-    assert "Duplicate insert value" in data['error']
+    assert "no longer supported" in data['error']
 
 
 # --- 3. Absent Delete Rejection (HTTP 400 + field="delete_value") ---
@@ -398,6 +397,9 @@ def test_api_mirror_steps_have_snapshot_a_b(client):
     ({"algorithm": "bst_mirror",
       "tree_a": {"tree_type": "binary"},
       "tree_b": {"tree_type": "bst", "ops": []}}, "tree_a"),
+    ({"algorithm": "bst_mirror",
+      "tree_a": {"tree_type": "bst", "values": [10]},
+      "tree_b": {"tree_type": "bst", "ops": []}}, "tree_a.values"),
 ])
 def test_api_mirror_bad_payload(client, payload, expected_field):
     res = client.post('/tree', json=payload)
@@ -406,3 +408,44 @@ def test_api_mirror_bad_payload(client, payload, expected_field):
     assert "error" in data
     assert "field" in data
     assert data["field"] == expected_field
+
+# --- Static shell routes (Phase B1) ---
+
+def test_index_route_serves_hub(client):
+    res = client.get('/')
+    assert res.status_code == 200
+    assert b'id="algo-hub"' in res.data
+
+
+def test_sorting_route_serves_sorting_page(client):
+    res = client.get('/sorting.html')
+    assert res.status_code == 200
+    assert b'Sorting Duel' in res.data
+
+
+def test_missing_static_file_returns_json_404(client):
+    res = client.get('/nonexistent-file.html')
+    assert res.status_code == 404
+    data = res.get_json()
+    assert data is not None
+    assert data.get('error')
+    assert data.get('field') == 'request'
+
+
+# --- Static quiz assets (Phase B3) ---
+
+@pytest.mark.parametrize("path,expected_type", [
+    ("/js/shell/progress.js", "javascript"),
+    ("/js/shell/glossaryData.js", "javascript"),
+    ("/js/shell/glossaryTooltip.js", "javascript"),
+    ("/js/primitives/QuizEngine.js", "javascript"),
+    ("/js/quizzes/index.js", "javascript"),
+    ("/js/quizzes/bstQuiz.js", "javascript"),
+    ("/css/quiz.css", "text/css"),
+    ("/css/glossary.css", "text/css"),
+])
+def test_static_quiz_assets(client, path, expected_type):
+    res = client.get(path)
+    assert res.status_code == 200
+    assert expected_type in res.content_type
+    assert len(res.data) > 0

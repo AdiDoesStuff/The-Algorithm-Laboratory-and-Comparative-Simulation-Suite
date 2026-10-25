@@ -7,6 +7,7 @@
     <meta name="description" content="A searchable glossary of technical terms for sorting and pathfinding algorithms.">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/definitions.css">
+    <link rel="stylesheet" href="css/glossary.css">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
 </head>
@@ -14,6 +15,8 @@
 
     <!-- Page Transition Overlay -->
     <div id="page-transition" class="page-transition"></div>
+
+    <div id="algo-nav" class="shell-nav-wrap" data-algo-nav data-current-id="definitions"></div>
 
     <header class="def-header">
         <div class="header-left">
@@ -52,6 +55,9 @@
         </div>
     </div>
 
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/glossaryData.js"></script>
+    <script src="js/shell/nav.js"></script>
     <script src="js/definitions.js"></script>
 </body>
 </html>

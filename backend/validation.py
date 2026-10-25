@@ -71,7 +71,9 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
                 if 'array' not in spec or not isinstance(spec['array'], list):
                     return None, (f"{key} with tree_type='binary' requires an 'array' list", key)
             else:
-                ops_field = spec.get('ops', spec.get('values', []))
+                if 'values' in spec and spec['values'] is not None:
+                    return None, (f"{key}.values is no longer supported; pass ops instead", f"{key}.values")
+                ops_field = spec.get('ops', [])
                 if not isinstance(ops_field, list):
                     return None, (f"{key}.ops must be a list", key)
             validated[key] = spec
@@ -96,9 +98,11 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
             return None, ("Missing or invalid 'array' field", "array")
         validated['array'] = data['array']
 
-    # BST / Heap / AVL mode: normalize ops or legacy values shim
+    # BST / Heap / AVL mode: normalize ops
     current_tree_vals = set()
     if tree_type == 'bst' and algo != 'array_to_tree':
+        if 'values' in data and data['values'] is not None:
+            return None, ("'values' is no longer supported; pass 'ops' with insert entries instead", "values")
         if 'ops' in data and data['ops'] is not None:
             if not isinstance(data['ops'], list):
                 return None, ("'ops' field must be a list", "ops")
@@ -128,22 +132,6 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
                 elif op['op'] == 'delete':
                     current_tree_vals.discard(op['value'])
 
-        elif 'values' in data and data['values'] is not None:
-            if not isinstance(data['values'], list):
-                return None, ("'values' field must be a list", "values")
-            ops = []
-            for i, v in enumerate(data['values']):
-                if v is None or isinstance(v, bool):
-                    return None, (f"Invalid value in values[{i}]: expected integer", "values")
-                try:
-                    int_v = int(v)
-                except (ValueError, TypeError):
-                    return None, (f"Invalid non-integer in values[{i}]: {v}", "values")
-                if int_v in current_tree_vals:
-                    return None, (f"Duplicate insert value {int_v} in values at index {i}", "values")
-                current_tree_vals.add(int_v)
-                ops.append({'op': 'insert', 'value': int_v})
-            validated['ops'] = ops
         else:
             validated['ops'] = []
 

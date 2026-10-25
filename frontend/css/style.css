@@ -29,6 +29,13 @@ body {
     overflow-x: hidden;
 }
 
+/* Small side gutter for the lab pages (sorting, pathfinding, BST). Their
+   content previously met the viewport edges on both sides. */
+.lab-container {
+    box-sizing: border-box;
+    padding: 0 8px;
+}
+
 h1 {
     font-weight: 700;
     font-size: 2.5rem;
@@ -1112,5 +1119,117 @@ button:disabled {
     100% {
         opacity: 0;
         transform: translateY(10px) scale(0.95);
+    }
+}
+
+/* --- Shared shell navigation (js/shell/nav.js) --- */
+.algo-nav {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 4px 0 8px;
+    box-sizing: border-box;
+}
+
+.algo-nav-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+}
+
+.algo-nav-item {
+    margin: 0;
+}
+
+.algo-nav-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 50px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    background-image: var(--nav-gradient, linear-gradient(135deg, var(--accent-primary), var(--accent-hover)));
+    box-shadow: 0 4px 15px var(--nav-shadow, rgba(59, 130, 246, 0.35));
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.algo-nav-link:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.07);
+}
+
+.algo-nav-link:focus-visible {
+    outline: 3px solid #f8fafc;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 7px rgba(56, 189, 248, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.algo-nav-link[aria-current="page"] {
+    font-weight: 800;
+    box-shadow: inset 0 0 0 2px rgba(248, 250, 252, 0.7), 0 4px 15px var(--nav-shadow, rgba(59, 130, 246, 0.35));
+}
+
+.algo-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.algo-nav-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+@media (max-width: 520px) {
+    .algo-nav-list {
+        gap: 8px;
+    }
+
+    .algo-nav-link {
+        padding: 8px 15px;
+        font-size: 0.82rem;
+    }
+
+    .algo-nav-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .landing-content {
+        width: calc(100vw - 28px);
+        max-width: calc(100vw - 28px);
+        padding: 36px 18px;
+        box-sizing: border-box;
+    }
+
+    .landing-title {
+        font-size: 2.2rem;
+    }
+
+    .landing-description {
+        font-size: 1rem;
+        margin-bottom: 28px;
+    }
+
+    .btn-go {
+        font-size: 1rem;
+        padding: 12px 28px;
+        letter-spacing: 1.5px;
     }
 }
