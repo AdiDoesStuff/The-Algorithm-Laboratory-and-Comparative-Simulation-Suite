@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B2 implemented on branch `phase-b-shell` (78/78 tests green, lesson engine + two BST lessons wired into Learn mode; browser smoke checks passed; not merged to `main`).
+**Last updated:** 25 Oct 2026 — Phase B3-B5 in progress on branch `phase-b-shell` (baseline 78/78 tests green before B3; B2 lesson engine shipped).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -210,7 +210,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] All tests green. ✅ 78/78 passing (Phase A closed at 75; B1 added 3 static-route tests).
 - [x] Manual checklist verified: rapid-click gate, delete-then-reinsert same value, node click after two-child delete, binary-mode traversal, empty-tree guard, duplicate rejection, garbage-input filtering, bracketed input parsing, Learn next/prev/reset, mode switch mid-animation, auto fit-view.
 - [x] README says BST is stable (remove "Beta"). ✅
-- [ ] Merge `phase-a-stabilize` to `main`. *(Pending user confirmation.)*
+- [x] Merge `phase-a-stabilize` to `main`. ✅ Verified merged: `git branch --merged main` lists both `main` and `phase-a-stabilize`.
 
 ---
 
@@ -253,9 +253,11 @@ export const bstInsertLesson = {
 
 - `frontend/js/bst.js` still owns `buildLessonSteps` because it is unit-specific (it knows `bst_insert` / `bst_delete`). Lesson *content* is data; the *builder* is per-unit plumbing and lives next to the page controller.
 - The quiz sentinel currently opens a placeholder panel with a disabled button. B3 replaces it with `QuizEngine` + `bstQuiz.js`, and wires `quizId` through `shell/units.js`.
+- `LessonRunner.play()` is unwired and untested; decide in F1 whether Learn gets autoplay. No UI button was added and no debug globals exist.
 - Not browser-verified in B2: touch/pointer interactions on phones, and screen-reader announcement order for checkpoint feedback (the panel is `aria-live="polite"`, but no AT was used).
 
 ### B3. Quiz and progress
+- [ ] Thread `quizId` through `shell/units.js` and the lesson registry (single `"bstQuiz"` string shared by `bstLessons.js` and the quiz registry).
 - [ ] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render({questions, onComplete})`. Re-shuffle options on retake.
 - [ ] `quizzes/bstQuiz.js`: static data, deliberately logic-free. Target 8-10 questions (traversal prediction, deletion cases, classification, height vs depth).
 - [ ] `shell/progress.js`: wraps localStorage (`algolab_progress`), try/catch on every read/write, schema versioned.
