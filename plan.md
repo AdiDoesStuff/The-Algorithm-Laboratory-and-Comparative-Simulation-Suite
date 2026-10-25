@@ -337,16 +337,14 @@ rotate_LL step:
   annotation: "Node 30 balance factor +2 (left-left case): rotate right at 30"
 ```
 
-- [ ] Node fields: `height`, `balance_factor` serialized into `sublabel` (e.g., `bf:+1`).
-- [ ] Order of build:
-  1. Standard insert plus height/balance update, emitting `update_balance` steps up the path.
-  2. Detect first unbalanced ancestor.
-  3. `rotate_LL` and `rotate_RR`.
-  4. `rotate_LR` and `rotate_RL`, composed as two single rotations with a combined annotation.
-  5. Cascading demo: canned sequences (e.g., ascending inserts 1..n, and a LR/RL-heavy sequence).
-  6. **Delete with rebalancing last.** Cut this first if time is short.
-- [ ] Rotation preserves node IDs. Only parent/child links change.
-- [ ] Tests (relaxed, D9): BST in-order strictly increasing after every step; |bf| <= 1 everywhere except in-progress update-path ancestors, zero violations at each operation's last step; each of four rotation cases triggered by a specific minimal input; random insert sequences stay balanced; IDs stable.
+- [x] Node fields: `height`, `balance_factor` are **not stored**; every snapshot recomputes both from the current links and serializes the result into `sublabel` as `bf:+N`. This makes a stale badge impossible after a rotation. Generator lives in `backend/trees.py` (`AVLNode`, `serialize_avl_tree`, `_AVLTree`, `_replay_avl_ops`, `avl_op_steps`) rather than a new `avl.py`, matching the heap deviation; `tests/test_avl.py` checks the declared sublabel against an independent recomputation on every step. (`550749f`, `78a2ab8`)
+- [x] Order of build: search `compare` steps with a `path` payload, `insert`, then `balance_update` steps up the retrace path, then the first `unbalanced` ancestor, then the rotation steps, then `rotation_done` and `insert_done`. The step is named `balance_update` (not `update_balance`) to match the role-mapping vocabulary used by the rest of `tracing.py`. (`550749f`)
+- [x] `rotate_LL` / `rotate_RR` rotate once; `rotate_LR` / `rotate_RL` emit two `rotate_*` steps with `phase: 1|2`, each with its own annotation and post-step snapshot. Deviation from the sketch: the trace uses one step per single rotation and puts the pre-rotation snapshot on the preceding `unbalanced` step, instead of packing `snapshot_before`/`during`/`after` into one step. This matches the one-step-one-snapshot `PlaybackController` contract and lets each phase be stepped through. (`550749f`, `92ffcf3`)
+- [x] Cascading demo supported by the normal trace: ascending inserts (e.g. `10,20,30,40,50,25`) produce successive rotations and stay balanced; a LR/RL-heavy sequence is used by the frontend lessons. The backend test `test_avl_ascending_inserts_stay_balanced` checks every insert's final step. (`78a2ab8`)
+- [x] **Delete with rebalancing is implemented, not cut**: `delete_leaf`, `delete_single_child`, and `delete_two_children` (successor relinked, ids preserved), followed by a retrace that keeps walking ancestors after each rotation because a delete can shorten a subtree and expose a higher imbalance. (`550749f`)
+- [x] Rotation preserves node IDs. Only parent/child links change; ids remain the inserting op's index. A deleted-then-reinserted value gets the new insert's id. Tests assert the id→value map across rotations and deletes. (`550749f`, `78a2ab8`)
+- [x] Tests (relaxed, D9): independent plain-BST oracle; BST in-order strictly increasing after every step; parent/side links and a single root; declared bf sublabels match recomputation; during an operation, |bf| > 1 is allowed only on the focus-to-root path; zero violations at each operation's last step; each of the four rotation cases triggered by a specific minimal input; random insert sequences and random insert/delete logs compared to the oracle; ids stable; 400 payload matrix and 405 GET contract; step cap proven by monkeypatching `MAX_AVL_STEPS`. **156 tests pass** (120 existing + 36 AVL). (`78a2ab8`)
+- [x] `POST /avl` returns 200 for valid insert/delete/replay, 400 with `{"error","field"}` for every invalid payload tested, and 405 JSON for GET; the legacy `/tree` `avl_insert` branch and its stub were removed. HTTP smoke: LL insert 200, duplicate value 400 `field:"value"`, bad op 400 `field:"ops"`, GET 405 `field:"request"`. (`550749f`, `78a2ab8`)
 
 ### C5. AVL frontend
 - [ ] `avl.html` + `pages/avl.js`. Balance factor badge on every node (color-coded at +/-2).
