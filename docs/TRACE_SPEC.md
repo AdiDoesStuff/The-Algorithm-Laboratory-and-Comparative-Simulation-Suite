@@ -229,3 +229,75 @@ BST node deletion strictly maintains node identity and pointer integrity:
    - The successor preserves its original `id` (e.g. `succ_id = 3`), while the deleted node (`current.id`) is unlinked and removed.
    - The target node's value is never overwritten with the successor's value.
 4. **Completion Step**: Deletion ends with a `delete_done` step highlighting the resulting position.
+
+---
+
+## 5. Dual-Panel Snapshot Contract (heaps and heapsort)
+
+Heap algorithms show one logical structure twice: as a contiguous array (with its
+sorted tail during heapsort) and as the complete binary tree encoded by that
+array. Both panels are driven by a single `PlaybackController` step, so they can
+never disagree about the current step.
+
+### 5.1 Step shape
+
+```json
+{
+  "type": "swap",
+  "kind": "dual",
+  "snapshot": {
+    "array": {
+      "cells": [
+        {"id": 0, "value": 5},
+        {"id": 1, "value": 9},
+        {"id": 2, "value": 2}
+      ],
+      "heap_size": 3,
+      "heap_type": "min"
+    },
+    "tree": {
+      "nodes": [
+        {"id": 0, "label": "5", "sublabel": "i=0", "parent_id": null, "side": null},
+        {"id": 2, "label": "2", "sublabel": "i=2", "parent_id": 0, "side": "left"},
+        {"id": 1, "label": "9", "sublabel": "i=1", "parent_id": 0, "side": "right"}
+      ],
+      "root_id": 0
+    }
+  },
+  "swapping": [2, 0],
+  "payload": {"from_index": 0, "to_index": 2},
+  "annotation": "Swap 2 with 5 so the smaller value becomes the root"
+}
+```
+
+### 5.2 Rules
+
+- **`kind: "dual"`** marks a step whose `snapshot` has both `array` and `tree`.
+  Single-panel tree steps keep `kind: "tree"` (AVL) and keep their existing
+  top-level `snapshot` shape.
+- **`snapshot.array.cells`** is ordered by array index. Each cell carries the
+  element `id` and its integer `value`. Duplicate values are allowed; `id` is
+  what identifies a cell.
+- **`snapshot.array.heap_size`** is the number of cells inside the heap region.
+  Cells at index `>= heap_size` are the sorted tail and are rendered outside the
+  heap boundary. `heap_size` is the only positional state: it is never inferred
+  from roles.
+- **`snapshot.array.heap_type`** is `"min"` or `"max"`.
+- **`snapshot.tree`** is the standard tree snapshot built from
+  `cells[0:heap_size]` using the 0-based array encoding: left child `2i + 1`,
+  right child `2i + 2`, parent `(i - 1) // 2`. `sublabel` is `"i=<index>"`.
+- **Role arrays carry element ids, not indices**, and are valid for both panels.
+  A consumer highlights an array cell and a tree node by the same id.
+- **`payload`** carries the indices involved in the step (e.g. `from_index`,
+  `to_index`, `focus_index`) for narration and tests, never for rendering.
+- Element ids are assigned deterministically during stateless replay: each
+  inserted value receives the next creation id; a `build` op assigns ids in
+  array order. Swaps move ids, never rename them.
+
+### 5.3 Why this shape
+
+The two panels answer different questions: the array makes the index formulas
+(and the sorted tail) obvious, while the tree makes the heap property and the
+bubble path obvious. Keeping one step and one id space means Prev/Next and
+Play/Pause act on both panels together, and a test can assert the tree is
+exactly `cells[0:heap_size]` at every step.
