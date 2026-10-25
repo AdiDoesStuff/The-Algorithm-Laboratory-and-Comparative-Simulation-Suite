@@ -153,7 +153,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 
 *A session is about 3-4 focused hours. Total is roughly 35-43 sessions. D can run in parallel with C if you want, but they share the shell, so finish B first.
 
-**Current status:** Phases A, B, and C are complete and merged to `main` (`1e938da`). Phases D-F remain.
+**Current status:** Phases A, B, C, and D are complete and merged to `main` (C merge `1e938da`, D merge `63f2aa9`). Phases E-F remain.
 
 ---
 
