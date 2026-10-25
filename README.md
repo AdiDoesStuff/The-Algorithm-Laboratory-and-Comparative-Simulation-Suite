@@ -115,7 +115,7 @@ The glossary page is a searchable companion to the labs. It explains the terms s
 - heuristic
 - priority queue
 
-## Binary Trees & BSTs (Beta/Testing)
+## Binary Trees & BSTs
 
 This module provides interactive visualization for hierarchical data structures. Users can toggle between two separate visualizer environments:
 
@@ -134,11 +134,14 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |   |-- algs.py              # Sorting step generators
 |   |-- app.py               # Flask API routes, height/depth queries, validation
 |   |-- pathfinding.py       # Dijkstra, A*, and Bellman-Ford/SPFA logic
-|   `-- trees.py             # Binary Tree & BST step engines and calculators
+|   |-- tracing.py           # make_step and DEFAULT_ROLES tracing support
+|   |-- trees.py             # Binary Tree & BST step engines and calculators
+|   |-- validation.py        # Centralized payload validators
+|   `-- tests/               # Pytest suite (73 tests)
 |-- frontend/
 |   |-- index.html           # Sorting Duel page
 |   |-- pathfinding.html     # Pathfinding visualizer page
-|   |-- bst.html             # Binary Trees & BSTs page (Beta)
+|   |-- bst.html             # Binary Trees & BSTs page
 |   |-- definitions.html     # Glossary page
 |   |-- css/
 |   |   |-- style.css
