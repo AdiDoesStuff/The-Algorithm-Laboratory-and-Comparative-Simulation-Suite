@@ -76,14 +76,15 @@ export class ArrayStrip {
     }
 
     _cellLabel(index, value, showParentChild) {
-        let label = `index ${index}, value ${value}`;
+        const parts = [`index ${index}`, `value ${value}`];
         if (showParentChild) {
             const parent = index === 0 ? null : Math.floor((index - 1) / 2);
-            label += `, parent ${parent === null ? 'none' : parent}`;
-            label += `, left child ${2 * index + 1}, right child ${2 * index + 2}`;
+            parts.push(`parent ${parent === null ? 'none' : parent}`);
+            parts.push(`left child ${2 * index + 1}`);
+            parts.push(`right child ${2 * index + 2}`);
         }
-        if (this.onSelect) label += '. Press Enter to select.';
-        return label;
+        if (this.onSelect) parts.push('press Enter to select');
+        return parts.join(', ');
     }
 
     _createCell(id) {
@@ -191,7 +192,6 @@ export class ArrayStrip {
             let label = this._cellLabel(index, valueText, showParentChild);
             if (statuses.length) label += `. ${statuses.join(', ')}`;
             el.setAttribute('aria-label', label);
-
             const classes = ['array-cell'];
             if (this.onSelect) classes.push('array-cell-interactive');
             if (comparing.has(id)) classes.push('role-comparing');
