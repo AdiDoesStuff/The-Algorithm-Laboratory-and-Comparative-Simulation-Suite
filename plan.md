@@ -309,12 +309,13 @@ export const bstInsertLesson = {
 - [x] Gate evidence: `test.html` rotation fixtures **28/28 PASS** (LL, RR, LR, RL, LL-with-T2, stable DOM identity, no duplicate ids, target positions, reduced-motion jump) and dual-panel fixtures **13/13 PASS**, run in the real browser. BST/sorting regression checked in the browser; pytest 87/87 and validator 8/8 after the changes. (`aea8641`.)
 
 ### C2. Heap (backend `heaps.py`)
-- [ ] Min-heap and max-heap toggle.
-- [ ] `heap_insert_steps`: append, then `bubble_up` compare/swap steps, with array and tree snapshots.
-- [ ] `heap_extract_steps`: swap root with last, remove, then `bubble_down`/`heapify` steps.
-- [ ] `heap_build_steps` (bottom-up heapify) as a Play option.
-- [ ] `heapsort_steps`: build-heap, then repeated extract; `heap-boundary` marks the sorted region.
-- [ ] Tests (relaxed, D9): heap order holds on every step snapshot except the single edge touching `payload.focus_index`; zero violations at each operation's last step; heapsort output sorted (max→ascending, min→descending); empty and single element.
+- [x] Min-heap and max-heap toggle: `heap_type` `"min"` / `"max"`, validated, carried in `metadata` and every `snapshot.array`. Generators live in `backend/trees.py` next to `serialize_tree` rather than a new `heaps.py`, logged as a deviation. (`a0af120`.)
+- [x] `heap_op_steps` insert: `append` then `bubble_up` `compare`/`swap` steps, dual array+tree snapshot on every step. (`a0af120`.)
+- [x] `heap_op_steps` extract: `extract_root`, root↔last `swap`, `remove_last`, `bubble_down` `compare`/`swap`, `extract_done`. (`a0af120`.)
+- [x] `heap_op_steps` build: bottom-up heapify from `n//2-1` with `build_start`, per-subtree `heapify_node_done`, `build_done`; also the first step of heapsort. (`a0af120`.)
+- [x] `heapsort_steps`: build-heap, then repeated extract with `mark_sorted` shrinking `heap_size` (the `heap | sorted` boundary in ArrayStrip) and `heapsort_done`. Max→ascending, min→descending. (`a0af120`.)
+- [x] Tests (relaxed, D9): `backend/tests/test_heaps.py` checks every snapshot for tree/array consistency and heap order, allowing only edges named by the step payload; every `*_done` step has zero violations; heapq oracle agreement; heapsort sorted output; empty/single-element; id stability; metrics; and a 17-case 400 validation matrix. Full suite **120 passed**. (`30a47c5`.)
+- [x] Contract documented in `docs/TRACE_SPEC.md` §6: request shapes, response envelope, step-type table, tie rule, caps, heapsort direction. (`6c45fab`.)
 
 ### C3. Heap frontend
 - [ ] `heaps.html` + `pages/heaps.js`: dual panel (array on top, tree below), index labels, parent/child index formulas shown in narration (`2i+1`, `2i+2`, `(i-1)//2`).
