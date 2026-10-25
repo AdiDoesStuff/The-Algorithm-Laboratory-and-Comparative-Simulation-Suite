@@ -254,6 +254,7 @@ export const bstInsertLesson = {
 - `frontend/js/bst.js` still owns `buildLessonSteps` because it is unit-specific (it knows `bst_insert` / `bst_delete`). Lesson *content* is data; the *builder* is per-unit plumbing and lives next to the page controller.
 - The quiz sentinel currently opens a placeholder panel with a disabled button. B3 replaces it with `QuizEngine` + `bstQuiz.js`, and wires `quizId` through `shell/units.js`.
 - `LessonRunner.play()` is unwired and untested; decide in F1 whether Learn gets autoplay. No UI button was added and no debug globals exist.
+- Lesson-switching race re-verified in B3 Stage 0.1: 5 rapid switches (including during a closing busy gate) end on the last selection with the correct pill count (9), description, and narration. No code change needed.
 - Not browser-verified in B2: touch/pointer interactions on phones, and screen-reader announcement order for checkpoint feedback (the panel is `aria-live="polite"`, but no AT was used).
 
 ### B3. Quiz and progress
