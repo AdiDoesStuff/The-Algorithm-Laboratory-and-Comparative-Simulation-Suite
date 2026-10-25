@@ -434,10 +434,13 @@ def test_missing_static_file_returns_json_404(client):
 
 @pytest.mark.parametrize("path,expected_type", [
     ("/js/shell/progress.js", "javascript"),
+    ("/js/shell/glossaryData.js", "javascript"),
+    ("/js/shell/glossaryTooltip.js", "javascript"),
     ("/js/primitives/QuizEngine.js", "javascript"),
     ("/js/quizzes/index.js", "javascript"),
     ("/js/quizzes/bstQuiz.js", "javascript"),
     ("/css/quiz.css", "text/css"),
+    ("/css/glossary.css", "text/css"),
 ])
 def test_static_quiz_assets(client, path, expected_type):
     res = client.get(path)
