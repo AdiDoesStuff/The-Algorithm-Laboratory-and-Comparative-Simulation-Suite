@@ -6,6 +6,7 @@
 
 ## Recent Updates
 
+- **Learn Mode, Quizzes, and Progress**: BST Learn Mode now has checkpoints, glossary term tooltips, and an end-of-lesson quiz. Best scores persist locally behind an 80% pass mark and surface as hub badges and Guided Path state.
 - **Font Improvements**: Switched the body font to **Inter** for a clean, professional look and set numeric displays to **Roboto Mono** for better readability. The title font remains unchanged.
 - **Navigation Icon Fixes**: Restored missing SVG logos on the BST & Trees page. Added correct icons for Sorting, Pathfinding, BST & Trees, and Definitions. The Pathfinding button now uses the proper compass/locator icon, matching the home page.
 
@@ -68,6 +69,11 @@ flowchart LR
 - Dijkstra, A*, and Bellman-Ford/SPFA-style pathfinding modes
 - Dynamic algorithm information cards with complexity notes
 - Searchable glossary for algorithm vocabulary
+- Inline glossary tooltips in lesson narration, with deep links into the glossary page
+- Lesson-driven BST walkthroughs with checkpoints
+- Ten-question BST quiz with a topic breakdown, missed-answer review, and retakes
+- Optional local progress (best score per unit, 80% pass mark) and hub badges
+- Guided Path order with a dismissible, non-blocking quiz nudge
 - Flask JSON API with validation
 
 ## Sorting Duel
@@ -115,13 +121,16 @@ The glossary page is a searchable companion to the labs. It explains the terms s
 - heuristic
 - priority queue
 
+The glossary is the single source for 94 terms (`frontend/js/shell/glossaryData.js`). Lessons reuse it: narration and checkpoint text can mark a term with `{{term:Height|height}}`, which renders an inline `?` button and a keyboard-operable popover with the plain-text definition and an “Open in glossary” link. Glossary cards are focusable, and `definitions.html#term-<slug>` opens and highlights a specific term.
+
 ## Binary Trees & BSTs
 
 This module provides interactive visualization for hierarchical data structures. Users can toggle between two separate visualizer environments:
 
 - **BST Mode**: Inserts unique values sequentially into a Binary Search Tree (with trace animations for node inserts, tree traversals, BST deletions, and step-by-step Learn Mode playback).
 - **Play Mode**: Interactive controls for inserting, deleting, and traversing nodes with speed adjustment, pause, and clear functionality, allowing users to experiment with BST operations in real time.
-- **Learn Mode**: Step-by-step guided insertion tutorials with navigation controls (Prev, Next, Reset) for detailed algorithm walkthroughs.
+- **Learn Mode**: Step-by-step guided insertion and deletion tutorials with checkpoints, narration, and Prev/Next/Reset controls. Finishing a lesson offers its quiz without leaving the panel.
+- **Quiz and progress**: A ten-question BST quiz runs from the end of a lesson or from “Test yourself” on the hub (`bst.html?quiz=bstQuiz`). Results show a topic breakdown and every missed answer. Best scores are stored locally (80% passes); the hub shows a text-and-icon badge and the Guided Path marks the unit passed. Nothing is sent to the backend, and the app still works when storage is blocked.
 - **General Binary Tree Mode**: Maps arrays directly into binary trees using the $2i+1$ indexing rule, supporting gaps and `null` values dynamically.
 - **Interactive Node Inspector**: Click on any tree node inside the SVG canvas to view its live statistics (calculated Height and Depth) generated directly by the Flask API.
 - **Live Classification badges**: Evaluates whether the current tree structure is Full, Complete, Perfect, or Balanced, showing violation warnings if any properties are broken.
@@ -137,26 +146,41 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |   |-- tracing.py           # make_step and DEFAULT_ROLES tracing support
 |   |-- trees.py             # Binary Tree & BST step engines and calculators
 |   |-- validation.py        # Centralized payload validators
-|   `-- tests/               # Pytest suite (78 tests)
+|   `-- tests/               # Pytest suite (87 tests)
 |-- frontend/
 |   |-- index.html           # Hub: unit cards and shared navigation
 |   |-- sorting.html         # Sorting Duel page
 |   |-- pathfinding.html     # Pathfinding visualizer page
 |   |-- bst.html             # Binary Trees & BSTs page
 |   |-- definitions.html     # Glossary page
+|   |-- test.html            # Dev-only QuizEngine fixture
 |   |-- css/
 |   |   |-- style.css
-|   |   |-- hub.css           # Hub card grid and Guided Path placeholder
+|   |   |-- hub.css           # Hub card grid, Guided Path, progress badges
 |   |   |-- primitives.css
+|   |   |-- quiz.css          # Quiz engine and results
+|   |   |-- glossary.css      # Inline term markers/popover, glossary page focus
 |   |   `-- definitions.css
 |   `-- js/
 |       |-- shell/
 |       |   |-- units.js      # Unit registry (single source of truth)
 |       |   |-- nav.js        # Shared Primary navigation
-|       |   |-- hub.js        # Hub card renderer
+|       |   |-- hub.js        # Hub cards, badges, Guided Path nudge
+|       |   |-- progress.js   # localStorage progress with safe fallback
+|       |   |-- glossaryData.js    # Glossary source of truth (94 terms)
+|       |   |-- glossaryTooltip.js # Inline {{term:...}} markers + popover
 |       |   `-- landing.js    # Splash screen + digit-sort transition
+|       |-- engine/
+|       |   |-- LessonRunner.js    # Generic lesson state machine
+|       |   `-- PlaybackController.js
+|       |-- lessons/
+|       |   `-- bstLessons.js # BST lesson data (insert + deletion)
+|       |-- quizzes/
+|       |   |-- index.js      # Quiz registry
+|       |   `-- bstQuiz.js    # BST quiz data
 |       |-- primitives/
 |       |   |-- TreeCanvas.js# Generic SVG Tree Renderer
+|       |   |-- QuizEngine.js# Generic quiz renderer
 |       |   |-- BucketGrid.js# DP / Hash visualizer
 |       |   |-- GrowthChart.js# Growth visualizer
 |       |   `-- treeAdapter.js# Tree canvas adapter
@@ -169,6 +193,11 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |       |-- pathfindingData.js
 |       |-- renderer.js
 |       `-- utils.js
+|-- dev/
+|   `-- validate_content.mjs # Dev-only lesson/quiz/glossary validator
+|-- docs/
+|   |-- LESSON_SPEC.md
+|   `-- QUIZ_SPEC.md
 |-- install_dependencies.bat
 |-- README.md
 `-- .gitignore
@@ -327,6 +356,48 @@ Supported pathfinding IDs:
 dijkstra, astar, bellmanford
 ```
 
+### `POST /tree`
+
+Generates tree steps for BST and binary-tree algorithms (`bst_insert`, `bst_delete`, `bst_traverse`, `bst_classify`, `bst_height_depth`, `array_to_tree`, `bst_mirror`, `heap_insert`, `avl_insert`).
+
+Request:
+
+```json
+{
+  "algorithm": "bst_traverse",
+  "tree_type": "bst",
+  "order": "inorder",
+  "ops": [
+    { "op": "insert", "value": 50 },
+    { "op": "insert", "value": 30 }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "steps": [
+    {
+      "type": "visit",
+      "annotation": "Visiting node 30 (Visit #1)",
+      "highlighted": [1],
+      "snapshot": {
+        "nodes": [
+          { "id": 0, "label": "50", "parent_id": null, "side": null },
+          { "id": 1, "label": "30", "parent_id": 0, "side": "left" }
+        ],
+        "root_id": 0
+      }
+    }
+  ],
+  "final_tree": { "nodes": [], "root_id": 0 }
+}
+```
+
+`ops` is the only accepted input shape for BST mode. The deprecated `values` alias was removed: sending `values` (or `values` inside a `bst_mirror` tree spec) returns `400` with `{"error": "...", "field": "values"}`. Use `{"op": "insert", "value": n}` entries instead.
+
 ## Educational Design
 
 This project is built as a learning tool, not just a visual effect. The important design idea is that every animation should connect to a concept:
@@ -346,6 +417,8 @@ This project is built as a learning tool, not just a visual effect. The importan
 - Bogo-style algorithms are intentionally capped to prevent browser lockups.
 - Counting Sort and Radix Sort only support non-negative integers in the backend.
 - The pathfinding grid currently uses uniform-cost movement.
+- Quiz attempts and progress stay in `localStorage`; they are never sent to the backend, and a blocked or full storage falls back to session memory.
+- The legacy `values` input for `POST /tree` has been removed in favour of `ops`.
 - The frontend is optimized for local use and project demos rather than production deployment.
 
 ## Roadmap Ideas
