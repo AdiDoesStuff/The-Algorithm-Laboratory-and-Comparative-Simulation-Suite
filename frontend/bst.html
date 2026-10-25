@@ -99,6 +99,26 @@
         .hidden {
             display: none !important;
         }
+
+        /* Keep the Learn panel usable on narrow screens (B2). */
+        @media (max-width: 760px) {
+            .bst-layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .side-panel {
+                min-width: 0;
+            }
+
+            .bst-compare-grid {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .bst-compare-controls {
+                flex-wrap: wrap;
+                min-width: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -180,16 +200,45 @@
                 <!-- Learn Mode Panel -->
                 <div id="learn-controls-panel" class="control-group hidden">
                     <p style="font-size: 0.85rem; color: #94a3b8;">
-                        Walk step-by-step through a guided BST insertion sequence:
+                        Pick a lesson, then step through it with next/prev or reset.
                     </p>
 
-                    <div id="learn-pills-row" class="learn-controls-row" style="flex-wrap: wrap;"></div>
+                    <div class="learn-controls-row" style="margin-top: 8px; align-items: center;">
+                        <label for="lesson-select" style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap;">Lesson:</label>
+                        <select id="lesson-select" style="flex: 1; min-width: 0;"></select>
+                    </div>
+                    <p id="lesson-description" style="font-size: 0.78rem; color: #64748b; margin: 6px 0 0 0;"></p>
+
+                    <div id="learn-pills-row" class="learn-controls-row" style="flex-wrap: wrap; margin-top: 10px;"></div>
 
                     <div class="learn-controls-row" style="margin-top: 12px;">
                         <button id="btn-learn-prev" style="flex: 1;" disabled>← Prev Step</button>
                         <button id="btn-learn-next" style="flex: 1;">Next Step →</button>
                     </div>
-                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Sequence</button>
+                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Lesson</button>
+
+                    <!-- Pinned lesson narration -->
+                    <div id="lesson-narration" class="step-annotation-box" style="margin-top: 10px; min-height: 54px;">
+                        Select a lesson and press Reset Lesson to begin.
+                    </div>
+
+                    <!-- Predict-then-reveal checkpoint -->
+                    <div id="checkpoint-panel" class="hidden" style="margin-top: 10px; padding: 10px 12px; border: 1px solid rgba(59, 130, 246, 0.45); border-radius: 8px; background: rgba(59, 130, 246, 0.08);">
+                        <p id="checkpoint-prompt" style="margin: 0 0 8px 0; font-size: 0.85rem; color: #e2e8f0;"></p>
+                        <div id="checkpoint-choices" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                        <button id="btn-checkpoint-reveal" type="button" style="margin-top: 8px;">Reveal</button>
+                        <p id="checkpoint-feedback" role="status" aria-live="polite" style="margin: 8px 0 0 0; font-size: 0.8rem; color: #94a3b8;"></p>
+                    </div>
+
+                    <!-- Quiz sentinel placeholder (B3 wires the real quiz) -->
+                    <div id="quiz-prompt-panel" class="hidden" style="margin-top: 10px; padding: 10px 12px; border: 1px dashed rgba(52, 211, 153, 0.5); border-radius: 8px; background: rgba(52, 211, 153, 0.06);">
+                        <p style="margin: 0 0 8px 0; font-size: 0.85rem; color: #a7f3d0;">
+                            Lesson complete.
+                        </p>
+                        <button id="btn-lesson-quiz" type="button" disabled title="Coming with quizzes">
+                            Test yourself (coming soon)
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -245,7 +294,7 @@
                     <h2 style="font-size: 1.3rem; font-weight: 700; color: #f8fafc; margin: 0;">Tree Comparison & Mirroring</h2>
                     <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 0 0;">Compare Tree A and Tree B structurally or verify mirror reflection.</p>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="bst-compare-controls" style="display: flex; gap: 10px; align-items: center;">
                     <div class="mode-tabs" style="margin: 0;">
                         <button id="btn-compare-mode-mirror" class="mode-tab active-tab" style="padding: 6px 14px;">Mirror Check</button>
                         <button id="btn-compare-mode-identical" class="mode-tab" style="padding: 6px 14px;">Identical Check</button>
@@ -258,7 +307,7 @@
             <div id="compare-verdict-banner" class="hidden" style="margin-bottom: 15px; padding: 12px 16px; border-radius: 8px; font-size: 0.95rem; font-weight: 600;"></div>
 
             <!-- Side by Side Canvases -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="bst-compare-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <!-- Tree A -->
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
