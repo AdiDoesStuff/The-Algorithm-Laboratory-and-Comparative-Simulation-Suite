@@ -303,9 +303,10 @@ export const bstInsertLesson = {
 ## Phase C: Unit 2, Heaps and AVL
 
 ### C1. Prerequisites (do before any unit logic)
-- [ ] Extract `primitives/ArrayStrip.js` from the sorting `renderer.js`: generic array-of-cells with highlight roles (`comparing`, `swapping`, `sorted`, `heap-boundary`).
-- [ ] Add node tweening to `TreeCanvas`: keep SVG elements keyed by node ID, animate position changes (CSS transitions or requestAnimationFrame lerp) instead of full redraw. Needed for rotations.
-- [ ] Define the dual-panel contract: a step carries both `snapshot.array` and `snapshot.tree`. Two renderers subscribe to one `PlaybackController`.
+- [x] `primitives/ArrayStrip.js`: generic array-of-cells with highlight roles (`comparing`, `swapping`, `sorted`, `heap-boundary`), identity-preserving FLIP swaps, labelled `heap | sorted` divider, and per-cell aria labels. Built as a new primitive; `renderer.js` was deliberately left untouched (F1 owns the sorting refactor), logged as a deviation. (`659730c`, aria polish in `aea8641`.)
+- [x] Node tweening in `TreeCanvas`: SVG elements are keyed by node id and updated in place; opt-in `tweenMs` lerps positions per frame, default `0` keeps every existing page instant. Enter/leave and reduced-motion paths included. (`822b4a9`.)
+- [x] Dual-panel contract in `docs/TRACE_SPEC.md` §5: one step carries `snapshot.array` + `snapshot.tree`; one `PlaybackController` drives both renderers. (`7302c4a`.)
+- [x] Gate evidence: `test.html` rotation fixtures **28/28 PASS** (LL, RR, LR, RL, LL-with-T2, stable DOM identity, no duplicate ids, target positions, reduced-motion jump) and dual-panel fixtures **13/13 PASS**, run in the real browser. BST/sorting regression checked in the browser; pytest 87/87 and validator 8/8 after the changes. (`aea8641`.)
 
 ### C2. Heap (backend `heaps.py`)
 - [ ] Min-heap and max-heap toggle.
