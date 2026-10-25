@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B (B1-B5) complete on branch `phase-b-shell`: 87/87 pytest, 8/8 content checks, three BST lessons, a 10-question quiz aligned to those lessons, live progress/Guided Path, and post-B5 UI fixes.
+**Last updated:** 25 Oct 2026 — Phase B (B1-B5) merged to `main` (merge `8ac974c`); Phase C in progress on branch `phase-c-heaps-avl`. Baseline: 87/87 pytest, 8/8 content checks, three BST lessons, a 10-question quiz, live progress/Guided Path. Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -22,7 +22,7 @@
 | Lesson engine, quizzes, progress | ✅ **B2-B5 shipped.** `engine/LessonRunner.js` (generic, unit-agnostic), `lessons/bstLessons.js` (three data-only lessons: insertion, deletion, traversal), pinned narration, predict-then-reveal checkpoints, `quiz_prompt` sentinel. `QuizEngine`, `bstQuiz.js`, and `progress.js` shipped in B3. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
 | Tests | ✅ **87/87 pytest tests green** plus **8/8 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, B1 static routes, and B3-B5 lesson/quiz wiring. |
-| Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. |
+| Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
 
@@ -296,7 +296,7 @@ export const bstInsertLesson = {
 - Not verified: real screen-reader announcement order, touch/pointer behaviour on phones, and load-time focus into the glossary modal in a focused window (the harness tab reports `document.hasFocus() === false`; click-open, Escape, and focus return were verified).
 - 375px re-check: hub, BST Learn, quiz, and glossary pages have no horizontal overflow; the tooltip popover clamps inside a 375px viewport.
 - Post-B5 UI polish: `.glossary-ref` keeps a term and its `?` toggle on one line with a 6px gap, `.lab-container` adds an 8px side gutter to the lab pages, and `.step-annotation-box` uses normal block/inline flow so glossary markers do not turn a narration sentence into flex columns. Browser-verified at 1000px and 375px.
-- B3-B5 verification: 87/87 pytest, 8/8 content checks (`dev/validate_content.mjs`), a clean 10/10 quiz attempt with the expected topic breakdown, and no horizontal overflow at 375px on the hub, BST Learn, quiz, and glossary pages. Commits `020e504`…`ad4df81` on `phase-b-shell`.
+- B3-B5 verification: 87/87 pytest, 8/8 content checks (`dev/validate_content.mjs`), a clean 10/10 quiz attempt with the expected topic breakdown, and no horizontal overflow at 375px on the hub, BST Learn, quiz, and glossary pages. Commits `020e504`…`ad4df81` on `phase-b-shell`, plus post-B5 fixes `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 
 ---
 
@@ -313,7 +313,7 @@ export const bstInsertLesson = {
 - [ ] `heap_extract_steps`: swap root with last, remove, then `bubble_down`/`heapify` steps.
 - [ ] `heap_build_steps` (bottom-up heapify) as a Play option.
 - [ ] `heapsort_steps`: build-heap, then repeated extract; `heap-boundary` marks the sorted region.
-- [ ] Tests: heap invariant holds after every step snapshot; heapsort output sorted; empty and single element.
+- [ ] Tests (relaxed, D9): heap order holds on every step snapshot except the single edge touching `payload.focus_index`; zero violations at each operation's last step; heapsort output sorted (max→ascending, min→descending); empty and single element.
 
 ### C3. Heap frontend
 - [ ] `heaps.html` + `pages/heaps.js`: dual panel (array on top, tree below), index labels, parent/child index formulas shown in narration (`2i+1`, `2i+2`, `(i-1)//2`).
@@ -341,7 +341,7 @@ rotate_LL step:
   5. Cascading demo: canned sequences (e.g., ascending inserts 1..n, and a LR/RL-heavy sequence).
   6. **Delete with rebalancing last.** Cut this first if time is short.
 - [ ] Rotation preserves node IDs. Only parent/child links change.
-- [ ] Tests: BST property and AVL property hold after every insert; |bf| <= 1 everywhere in final tree; each of four rotation cases triggered by a specific minimal input; random insert sequences stay balanced; IDs stable.
+- [ ] Tests (relaxed, D9): BST in-order strictly increasing after every step; |bf| <= 1 everywhere except in-progress update-path ancestors, zero violations at each operation's last step; each of four rotation cases triggered by a specific minimal input; random insert sequences stay balanced; IDs stable.
 
 ### C5. AVL frontend
 - [ ] `avl.html` + `pages/avl.js`. Balance factor badge on every node (color-coded at +/-2).
