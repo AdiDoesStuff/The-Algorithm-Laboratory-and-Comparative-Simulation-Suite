@@ -31,7 +31,10 @@ export function toTreeCanvasSnapshot(snapshot) {
     const nodes = snapshot.nodes.map(n => ({
         id: n.id,
         label: String(n.label ?? ''),
-        sublabel: n.sublabel ? String(n.sublabel) : null
+        sublabel: (n.terminal && !n.sublabel) ? 'end' : (n.sublabel ? String(n.sublabel) : null),
+        terminal: !!n.terminal,
+        duplicate_of: (n.duplicate_of === undefined ? null : n.duplicate_of),
+        full_hash: n.full_hash || null
     }));
 
     return {
