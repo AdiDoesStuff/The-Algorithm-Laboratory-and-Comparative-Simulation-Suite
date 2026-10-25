@@ -6,12 +6,13 @@
 
 ## Recent Updates
 
-- **Learn Mode, Quizzes, and Progress**: BST Learn Mode now has checkpoints, glossary term tooltips, and an end-of-lesson quiz. Best scores persist locally behind an 80% pass mark and surface as hub badges and Guided Path state.
+- **Phase D — Tries, Hashing, and Merkle Trees**: three new laboratory units. The trie page shows prefix sharing with created-vs-reused nodes and live autocomplete previews; the hashing page runs separate chaining and open addressing side by side on the same keys, with load-factor meters, tombstones, and resize replays; the Merkle page builds a real SHA-256 tree and animates tamper propagation. Each unit ships three lessons, a ten-question quiz, glossary entries, and hub/Guided Path registration.
+- **Learn Mode, Quizzes, and Progress**: every live unit now has Learn Mode with checkpoints, glossary term tooltips, and an end-of-lesson quiz. Best scores persist locally behind an 80% pass mark and surface as hub badges and Guided Path state.
 - **Font Improvements**: Switched the body font to **Inter** for a clean, professional look and set numeric displays to **Roboto Mono** for better readability. The title font remains unchanged.
 - **Navigation Icon Fixes**: Restored missing SVG logos on the BST & Trees page. Added correct icons for Sorting, Pathfinding, BST & Trees, and Definitions. The Pathfinding button now uses the proper compass/locator icon, matching the home page.
 
 
-Compare sorting algorithms side by side, explore shortest-path search on an editable grid, and learn the vocabulary behind the visuals through a searchable glossary.
+Compare sorting algorithms side by side, explore shortest-path search on an editable grid, watch BST, heap, AVL, trie, hash, and Merkle structures evolve, and learn the vocabulary behind the visuals through a searchable glossary.
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-API-000000?style=for-the-badge&logo=flask&logoColor=white)
@@ -68,10 +69,12 @@ flowchart LR
 - Wall drawing, path clearing, full grid reset, and maze presets
 - Dijkstra, A*, and Bellman-Ford/SPFA-style pathfinding modes
 - Dynamic algorithm information cards with complexity notes
+- BST, heap, AVL, trie, hash-table, and Merkle-tree visualizers
+- Side-by-side chaining vs open-addressing hash tables on identical key sequences
 - Searchable glossary for algorithm vocabulary
 - Inline glossary tooltips in lesson narration, with deep links into the glossary page
-- Lesson-driven BST walkthroughs with checkpoints
-- Ten-question BST quiz with a topic breakdown, missed-answer review, and retakes
+- Lesson-driven walkthroughs with checkpoints for every live unit
+- Ten-question quizzes with a topic breakdown, missed-answer review, and retakes
 - Optional local progress (best score per unit, 80% pass mark) and hub badges
 - Guided Path order with a dismissible, non-blocking quiz nudge
 - Flask JSON API with validation
@@ -121,7 +124,7 @@ The glossary page is a searchable companion to the labs. It explains the terms s
 - heuristic
 - priority queue
 
-The glossary is the single source for 94 terms (`frontend/js/shell/glossaryData.js`). Lessons reuse it: narration and checkpoint text can mark a term with `{{term:Height|height}}`, which renders an inline `?` button and a keyboard-operable popover with the plain-text definition and an “Open in glossary” link. Glossary cards are focusable, and `definitions.html#term-<slug>` opens and highlights a specific term.
+The glossary is the single source for 110 terms (`frontend/js/shell/glossaryData.js`), including trie, hashing, and Merkle vocabulary. Lessons reuse it: narration and checkpoint text can mark a term with `{{term:Height|height}}`, which renders an inline `?` button and a keyboard-operable popover with the plain-text definition and an “Open in glossary” link. Glossary cards are focusable, and `definitions.html#term-<slug>` opens and highlights a specific term.
 
 ## Binary Trees & BSTs
 
@@ -135,29 +138,83 @@ This module provides interactive visualization for hierarchical data structures.
 - **Interactive Node Inspector**: Click on any tree node inside the SVG canvas to view its live statistics (calculated Height and Depth) generated directly by the Flask API.
 - **Live Classification badges**: Evaluates whether the current tree structure is Full, Complete, Perfect, or Balanced, showing violation warnings if any properties are broken.
 
+## Heaps And Heapsort
+
+The heap lab shows the array and the complete tree at the same time, driven by one playback timeline. Insert bubbles up, extract bubbles down, build heapifies bottom-up, and heapsort marks the shrinking heap boundary with a `heap | sorted` divider. Every cell carries a 0-based index, and the "Index formulas" panel spells out `2i+1`, `2i+2`, and `(i-1)//2`.
+
+- Min-heap and max-heap toggle, multi-value insert, extract, build, and heapsort in both directions
+- Learn Mode lessons for insertion, build + extract, and heapsort
+- Ten-question `heapQuiz`
+
+## AVL Trees
+
+The AVL lab animates all four rotation cases with node identity preserved across the rotation. Balance factors are never stored: every snapshot recomputes them from the links, and the badge gains a trailing `!` plus a dashed ring when a node leaves −1…+1. The "Compare with plain BST" toggle replays the same inserts into both trees so the height difference is visible.
+
+- LL, RR, single-phase LR/RL, cascade demos, and delete-with-rebalancing
+- Learn Mode lessons for LL/RR, LR/RL, and cascading rotations
+- Ten-question `avlQuiz`
+- Learn-mode comparison advances one action at a time with the lesson
+
+## Tries
+
+The trie lab stores characters on edges, so shared prefixes share nodes. Inserting `card` after `car` creates only the `d` node and reuses the rest. Terminal nodes get a double ring, created nodes render green and reused nodes blue, and a live prefix preview lists completions without changing the stored words.
+
+- Insert, search, and prefix modes on a single `/trie` endpoint
+- Debounced 200 ms autocomplete preview, guarded against stale responses; clicking a suggestion fills the Search box
+- Lowercase normalization, duplicate rejection, and explicit node/step caps
+- Three lessons (`trieLessons.js`) and a ten-question `trieQuiz`
+
+## Hashing
+
+The hashing lab runs separate chaining and open addressing side by side on the identical key sequence. Each step shows the per-character hash computation, so the index is explainable rather than magic. `sum_mod` is deliberately weak and clusters anagrams; `poly` spreads keys better. The load-factor meters and counters make the trade-off visible.
+
+- Chaining (`chain_append`) and linear probing (`probe`, `place`) traces in one response
+- Visible tombstones (`†`) on delete, cleared by a rehash
+- Automatic resize at 0.75 (open) and 1.0 (chaining), with per-key moves replayed
+- Presets: anagram collision demo and fill-to-trigger-resize
+- Three lessons (`hashLessons.js`) and a ten-question `hashQuiz`
+
+## Merkle Trees
+
+The Merkle lab builds a real SHA-256 tree from editable blocks. Leaves hash the block text and each parent hashes its two children, so the root commits to every block. Tampering with one block recomputes only the path to the root, and the banner reports whether the root changed and how many internal hashes were recomputed.
+
+- Real `hashlib` SHA-256; eight hex characters on the canvas, full 64-character digest in the node inspector
+- Duplicate-last policy for odd levels, with duplicate nodes shown as their own labelled node
+- Per-row Tamper, a Build that commits every editor value, and an editor that locks while a trace plays
+- Three lessons (`merkleLessons.js`) and a ten-question `merkleQuiz`
+
 ## Project Structure
 
 ```text
 The Algorithm Laboratory and Comparative Simulation Suite/
 |-- backend/
 |   |-- algs.py              # Sorting step generators
-|   |-- app.py               # Flask API routes, height/depth queries, validation
+|   |-- app.py               # Flask API routes and error handling
+|   |-- hashing.py           # Chaining + open-addressing hash table traces
+|   |-- merkle.py            # SHA-256 Merkle build/tamper traces
 |   |-- pathfinding.py       # Dijkstra, A*, and Bellman-Ford/SPFA logic
 |   |-- tracing.py           # make_step and DEFAULT_ROLES tracing support
-|   |-- trees.py             # Binary Tree & BST step engines and calculators
+|   |-- trees.py             # BST, heap, and AVL step engines and calculators
+|   |-- tries.py             # Trie insert/search/prefix traces
 |   |-- validation.py        # Centralized payload validators
-|   `-- tests/               # Pytest suite (87 tests)
+|   `-- tests/               # Pytest suite (360 tests)
 |-- frontend/
 |   |-- index.html           # Hub: unit cards and shared navigation
 |   |-- sorting.html         # Sorting Duel page
 |   |-- pathfinding.html     # Pathfinding visualizer page
 |   |-- bst.html             # Binary Trees & BSTs page
+|   |-- heaps.html           # Heaps & Heapsort page
+|   |-- avl.html             # AVL Trees page
+|   |-- trie.html            # Tries page
+|   |-- hashing.html         # Hashing page (chaining vs open addressing)
+|   |-- merkle.html          # Merkle Trees page
 |   |-- definitions.html     # Glossary page
-|   |-- test.html            # Dev-only QuizEngine fixture
+|   |-- test.html            # Primitives verification harness
 |   |-- css/
 |   |   |-- style.css
 |   |   |-- hub.css           # Hub card grid, Guided Path, progress badges
 |   |   |-- primitives.css
+|   |   |-- lab.css           # Shared side panel, mode tabs, metric boxes
 |   |   |-- quiz.css          # Quiz engine and results
 |   |   |-- glossary.css      # Inline term markers/popover, glossary page focus
 |   |   `-- definitions.css
@@ -167,37 +224,54 @@ The Algorithm Laboratory and Comparative Simulation Suite/
 |       |   |-- nav.js        # Shared Primary navigation
 |       |   |-- hub.js        # Hub cards, badges, Guided Path nudge
 |       |   |-- progress.js   # localStorage progress with safe fallback
-|       |   |-- glossaryData.js    # Glossary source of truth (94 terms)
+|       |   |-- glossaryData.js    # Glossary source of truth (110 terms)
 |       |   |-- glossaryTooltip.js # Inline {{term:...}} markers + popover
 |       |   `-- landing.js    # Splash screen + digit-sort transition
 |       |-- engine/
 |       |   |-- LessonRunner.js    # Generic lesson state machine
 |       |   `-- PlaybackController.js
 |       |-- lessons/
-|       |   `-- bstLessons.js # BST lesson data (insert + deletion)
+|       |   |-- bstLessons.js      # BST lesson data (insert + deletion)
+|       |   |-- heapLessons.js     # Heap insert/build/heapsort lessons
+|       |   |-- avlLessons.js      # LL/RR, LR/RL, cascade lessons
+|       |   |-- trieLessons.js     # Trie lessons
+|       |   |-- hashLessons.js     # Hashing lessons (with phase handover)
+|       |   `-- merkleLessons.js   # Merkle lessons
 |       |-- quizzes/
-|       |   |-- index.js      # Quiz registry
-|       |   `-- bstQuiz.js    # BST quiz data
+|       |   |-- index.js           # Quiz registry
+|       |   |-- bstQuiz.js
+|       |   |-- heapQuiz.js
+|       |   |-- avlQuiz.js
+|       |   |-- trieQuiz.js
+|       |   |-- hashQuiz.js
+|       |   `-- merkleQuiz.js
 |       |-- primitives/
-|       |   |-- TreeCanvas.js# Generic SVG Tree Renderer
-|       |   |-- QuizEngine.js# Generic quiz renderer
-|       |   |-- BucketGrid.js# DP / Hash visualizer
-|       |   |-- GrowthChart.js# Growth visualizer
-|       |   `-- treeAdapter.js# Tree canvas adapter
+|       |   |-- ArrayStrip.js  # Array-of-cells renderer (heaps)
+|       |   |-- TreeCanvas.js  # Generic SVG tree renderer (n-ary opt-in)
+|       |   |-- QuizEngine.js  # Generic quiz renderer
+|       |   |-- BucketGrid.js  # Hash table / DP grid visualizer
+|       |   |-- GrowthChart.js # Growth visualizer
+|       |   `-- treeAdapter.js # Tree canvas adapter
 |       |-- algorithmData.js
 |       |-- api.js
-|       |-- bst.js           # BST and Binary Tree page controller
+|       |-- avl.js             # AVL page controller
+|       |-- bst.js             # BST and Binary Tree page controller
 |       |-- controls.js
 |       |-- definitions.js
+|       |-- hashing.js         # Hashing page controller
+|       |-- heaps.js           # Heap page controller
+|       |-- merkle.js          # Merkle page controller
 |       |-- pathfinding.js
 |       |-- pathfindingData.js
 |       |-- renderer.js
+|       |-- tries.js           # Trie page controller
 |       `-- utils.js
 |-- dev/
-|   `-- validate_content.mjs # Dev-only lesson/quiz/glossary validator
+|   `-- validate_content.mjs # Dev-only lesson/quiz/glossary validator (39 checks)
 |-- docs/
 |   |-- LESSON_SPEC.md
-|   `-- QUIZ_SPEC.md
+|   |-- QUIZ_SPEC.md
+|   `-- TRACE_SPEC.md         # One trace contract for every unit
 |-- install_dependencies.bat
 |-- README.md
 `-- .gitignore
@@ -276,6 +350,12 @@ From there, use the in-app navigation to move between:
 
 - Sorting Duel
 - Pathfinding
+- BST & Trees
+- Heaps & Heapsort
+- AVL Trees
+- Tries
+- Hashing
+- Merkle Trees
 - Definitions
 
 ## API Reference
@@ -358,7 +438,7 @@ dijkstra, astar, bellmanford
 
 ### `POST /tree`
 
-Generates tree steps for BST and binary-tree algorithms (`bst_insert`, `bst_delete`, `bst_traverse`, `bst_classify`, `bst_height_depth`, `array_to_tree`, `bst_mirror`, `heap_insert`, `avl_insert`).
+Generates tree steps for BST and binary-tree algorithms (`bst_insert`, `bst_delete`, `bst_traverse`, `bst_classify`, `bst_height_depth`, `array_to_tree`, `bst_mirror`). Heap and AVL traces moved to their own `/heap` and `/avl` routes in Phase C.
 
 Request:
 
@@ -398,6 +478,74 @@ Response:
 
 `ops` is the only accepted input shape for BST mode. The deprecated `values` alias was removed: sending `values` (or `values` inside a `bst_mirror` tree spec) returns `400` with `{"error": "...", "field": "values"}`. Use `{"op": "insert", "value": n}` entries instead.
 
+### `POST /heap`, `POST /avl`
+
+Both follow the same op-log contract as `/tree`: replay `ops[]` statelessly, append the requested action, and return `steps` + `final_*` + `metrics`.
+
+```json
+{
+  "algorithm": "heap_insert",
+  "heap_type": "min",
+  "ops": [{ "op": "insert", "value": 5 }],
+  "action": { "op": "insert", "value": 2 }
+}
+```
+
+```json
+{
+  "algorithm": "avl_insert",
+  "ops": [{ "op": "insert", "value": 10 }],
+  "value": 20
+}
+```
+
+`heapsort` takes `{"algorithm": "heapsort", "heap_type": "max", "array": [...]}` instead of an op log. Every step carries both an array and a tree snapshot.
+
+### `POST /trie`
+
+```json
+{
+  "algorithm": "trie_prefix",
+  "ops": [
+    { "op": "insert", "word": "car" },
+    { "op": "insert", "word": "card" }
+  ],
+  "prefix": "ca"
+}
+```
+
+`algorithm` is `trie_insert`, `trie_search`, or `trie_prefix`. `trie_insert` takes `word`; `trie_search` and `trie_prefix` take `word` / `prefix`. Returns `steps`, `final_tree`, `metrics` (node/word counts, created vs reused), and `metadata` (including `completions` for a prefix query). Words are lowercased; duplicates return `400`.
+
+### `POST /hash`
+
+```json
+{
+  "algorithm": "hash_insert",
+  "hash_fn": "sum_mod",
+  "table_size": 7,
+  "probing": "linear",
+  "ops": [{ "op": "insert", "key": "ab" }],
+  "action": { "key": "ba" }
+}
+```
+
+Runs separate chaining and open addressing over the same keys in one response. `hash_fn` is `sum_mod` or `poly`; `probing` is `linear`; `table_size` is 1-31. Returns `steps` (chaining steps first, each carrying both snapshots), `final_state` (`chaining` and `open`), `metrics`, and `metadata`. Deletes leave tombstones in the open table; resizes emit `resize_start` / `resize_move` / `resize_done`.
+
+### `POST /merkle`
+
+```json
+{
+  "algorithm": "merkle_tamper",
+  "leaves": ["a", "b", "c", "d"],
+  "index": 3,
+  "new_data": "Z"
+}
+```
+
+`merkle_build` takes only `leaves`; `merkle_tamper` adds `index` and `new_data`. Leaves are non-empty strings (capped count and length). Returns `steps`, `final_tree` (nodes carry `digest` and `duplicate_of`), `metrics` (nodes, leaves, levels, recomputed), and `metadata`. SHA-256 is computed with `hashlib`; the canvas shows eight hex characters and the inspector shows all 64.
+
+All POST routes reject GET with a JSON `405 {"error", "field": "request"}` and invalid payloads with `400 {"error", "field"}`. No user-reachable path returns a 500.
+
 ## Educational Design
 
 This project is built as a learning tool, not just a visual effect. The important design idea is that every animation should connect to a concept:
@@ -409,6 +557,9 @@ This project is built as a learning tool, not just a visual effect. The importan
 | Runtime behavior | Side-by-side comparison and logic-time metrics |
 | Search frontier | Visited grid nodes expanding over time |
 | Shortest path | Reconstructed final route from start to target |
+| Shared prefixes | Created vs reused trie nodes and terminal rings |
+| Collisions | Chaining rows vs probe sequences on identical keys |
+| Tamper detection | Merkle path recompute and a changed-root banner |
 | Complexity language | Info cards and glossary definitions |
 
 ## Known Characteristics
@@ -418,6 +569,9 @@ This project is built as a learning tool, not just a visual effect. The importan
 - Counting Sort and Radix Sort only support non-negative integers in the backend.
 - The pathfinding grid currently uses uniform-cost movement.
 - Quiz attempts and progress stay in `localStorage`; they are never sent to the backend, and a blocked or full storage falls back to session memory.
+- Tries lowercase every word, reject duplicates, and cap node/step counts; the autocomplete preview never mutates the stored words.
+- Hashing supports linear probing only and resizes at 0.75 (open) and 1.0 (chaining), with an in-place rehash fallback at the table-size cap.
+- Merkle trees use the duplicate-last policy for odd levels. Digests are real SHA-256, but the canvas truncates them to eight hex characters.
 - The legacy `values` input for `POST /tree` has been removed in favour of `ops`.
 - The frontend is optimized for local use and project demos rather than production deployment.
 
