@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase A in progress on branch `phase-a-stabilize` (75/75 tests green, Compare UI and insertion path highlights implemented).
+**Last updated:** 25 Oct 2026 — Phase B1 implemented on branch `phase-b-shell` (78/78 tests green, shared nav + hub live, browser smoke checks passed; not merged to `main`).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -11,16 +11,16 @@
 
 | Area | State |
 | --- | --- |
-| Sorting Duel (10 algos) | Done, mature. Lives on `index.html`. |
+| Sorting Duel (10 algos) | Done, mature. Lives on `sorting.html`; `index.html` is now the hub. |
 | Pathfinding Lab (3 algos) | Done, mature. |
 | Glossary | Done. Separate page, not yet contextual. |
-| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view, 75 pytest tests. Committed on `phase-a-stabilize`. |
+| BST / binary tree module | ✅ **Stable.** Op-log backend, stateless replay, stable node IDs, successor relinking, tree mirroring / structural comparison, insertion path highlight, dual-canvas Compare section, automatic fit-view, 78 pytest tests in the suite. Committed on `phase-a-stabilize`. |
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
 | Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
 | Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, QuizEngine, progress, lesson registry | Do not exist. Phase B. |
+| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. QuizEngine, progress, lessons still Phase B2-B4. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
-| Tests | ✅ 75/75 pytest tests green (33 API, 42 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains. |
+| Tests | ✅ 78/78 pytest tests green (36 API, 42 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, and B1 static routes. |
 
 ### Audit findings that shape the plan
 
@@ -33,7 +33,7 @@
 7. ~~No busy gate or sequence counter: overlapping requests and stale responses repaint wrongly.~~ ✅ `isBusy` gate in `runAction()`; `createLatest()` sequence guard on classify/height-depth (`541154a`).
 8. `TreeCanvas` redraws the DOM and has no tweening, so rotation animation needs new work. *(Open — Phase C1.)*
 9. The bar renderer is tied to sorting. The heap dual panel needs it extracted. *(Open — Phase C1.)*
-10. Navigation markup is duplicated across pages. `index.html` is the sorting page, not a hub. *(Open — Phase B1.)*
+10. ~~Navigation markup is duplicated across pages. `index.html` is the sorting page, not a hub.~~ ✅ `shell/nav.js` renders one `<nav aria-label="Primary">` from `shell/units.js`; sorting moved to `sorting.html`; `index.html` is the hub. *(B1, `71e91b3`, `2c48c40`.)*
 
 ---
 
@@ -217,11 +217,13 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 **Goal:** the pedagogy shell exists once, and BST is its first tenant. After this, adding a unit is mostly writing a backend generator plus lesson/quiz data.
 
 ### B1. Shared shell
-- [ ] `shell/nav.js` renders one header/nav from a single route table (replaces duplicated inline SVG nav in index/pathfinding/bst).
-- [ ] Semantic `<nav>` landmark, keyboard focus order, `aria-current`.
-- [ ] Rename current `index.html` to `sorting.html`. Update all links and the README.
-- [ ] New `index.html` hub: unit cards with status (live / coming soon), progress badge slot, "Test yourself" slot, Playground and Guided Path entry points.
-- [ ] Unit registry (`shell/units.js`): id, title, page, status, lessonId, quizId, glossary terms.
+- [x] `shell/nav.js` (classic script, `window.AlgoLabNav.mount`) renders one `<nav>` from a route table built from `shell/units.js`. Replaces the duplicated inline SVG nav in sorting/pathfinding/bst and is also mounted on definitions. ✅ `71e91b3`, `2c48c40`
+- [x] Semantic `<nav aria-label="Primary">`, real `<a href>` links, keyboard focus order, `aria-current="page"`, visible `:focus-visible` ring. ✅ Browser-verified: 5 links, correct current item on all 5 pages, tab order starts Home → units → Definitions.
+- [x] Rename current `index.html` to `sorting.html` via `git mv`. Updated all links, `app.py` (`/` hub, explicit `/sorting.html`), `start_app` scripts (root URL only), `definitions.js` back link, and README. ✅ `2c48c40`, `9495d48`
+- [x] New `index.html` hub: hero blurb, unit cards with status (live / coming soon), empty `<span data-progress-slot="{id}">`, disabled "Test yourself" (`title="Coming with quizzes"`), disabled Guided Path placeholder, Playground grid. ✅ `2c48c40`
+- [x] Unit registry (`shell/units.js`): id, title, page, status, blurb, glossaryTerms. Single source of truth for nav + hub. `lessonId`/`quizId` land with B2/B3. ✅
+- [x] Backend tests: `GET /` 200 + hub marker, `GET /sorting.html` 200, `GET /nonexistent-file.html` JSON 404. 78/78 pytest green. ✅ `9495d48`
+- [x] Hub responsive at 375 px: 1-column grid (332 px cards), nav wraps to 3 rows, no horizontal overflow. ✅ Browser-verified via a 375 px same-origin iframe (`scrollWidth == clientWidth == 360`).
 
 ### B2. Lesson engine
 - [ ] `docs/LESSON_SPEC.md` and `engine/LessonRunner.js`.
