@@ -1,7 +1,7 @@
 # Lesson Spec
 
-**Status:** Phase B2.
-**Scope:** lesson data format, `LessonRunner` contract, narration, checkpoints, and the `quiz_prompt` sentinel. Quiz rendering and progress are Phase B3.
+**Status:** Phase B4.
+**Scope:** lesson data format, `LessonRunner` contract, narration (including glossary term markers), checkpoints, and the `quiz_prompt` sentinel. Quiz rendering and progress are Phase B3.
 
 A lesson is **data**. The runner is generic. Adding a lesson means appending an object to a unit's lesson registry; no engine or page-controller edits.
 
@@ -127,6 +127,22 @@ A narration value may be a string or a function `(step, index) => string`. Funct
 
 The runner calls `onAnnotation(text)` on every step. The page pins the text in `#lesson-narration`; `#step-annotation` remains the Play-mode box so the two modes never clobber each other.
 
+### Glossary term markers
+
+Any narration or checkpoint text may reference the glossary with an inline marker:
+
+```js
+compare: "Each comparison moves one level deeper, so the {{term:Depth|depth}} of the new leaf equals the comparisons made.",
+reveal: "The in-order {{term:Successor|successor}} is the smallest node in the right subtree."
+```
+
+- `{{term:Name}}` renders the glossary term's own label.
+- `{{term:Name|label}}` renders a custom label (used to keep prose lower case).
+- The page renders text with `renderGlossaryText()` from `frontend/js/shell/glossaryTooltip.js`, which creates text nodes and term buttons — narration is never parsed as HTML.
+- Markers are allowed in `narration.*` and in checkpoint `prompt`, `reveal`, `onCorrect`, and `onWrong`.
+- Markers are **not** rendered in `description`, lesson titles, or checkpoint `choices` (those render as plain text); the content validator fails if a marker appears there.
+- Terms come from `frontend/js/shell/glossaryData.js` (`window.ALGOLAB_GLOSSARY`). An unknown term renders as plain label text, and `node dev/validate_content.mjs` reports it as an error.
+
 ---
 
 ## 5. Checkpoints
@@ -212,8 +228,11 @@ idle ──loadLesson──▶ loading ──ok──▶ ready ⇄ playing
 | File | Role |
 | --- | --- |
 | `frontend/js/engine/LessonRunner.js` | Generic runner. No unit knowledge. |
-| `frontend/js/lessons/bstLessons.js` | BST lesson data + `BST_LESSONS` registry. |
-| `frontend/bst.html` | Picker, pinned narration, checkpoint panel, quiz placeholder. |
+| `frontend/js/lessons/bstLessons.js` | BST lesson data + `BST_LESSONS` registry, including glossary markers. |
+| `frontend/js/shell/glossaryData.js` | Single glossary source (`window.ALGOLAB_GLOSSARY`). |
+| `frontend/js/shell/glossaryTooltip.js` | Renders markers as inline term buttons + popover. |
+| `frontend/css/glossary.css` | Marker/popover styles and glossary-page focus/highlight. |
+| `frontend/bst.html` | Picker, pinned narration with glossary markers, checkpoint panel, quiz mount. |
 | `frontend/js/bst.js` | Builder + wiring. No lesson content. |
 
 ---
@@ -222,8 +241,9 @@ idle ──loadLesson──▶ loading ──ok──▶ ready ⇄ playing
 
 1. Append an object to `BST_LESSONS` (or the unit's registry).
 2. Give it a unique `id`, a `title`, and `ops`/`values`.
-3. Add narration keys (optional; backend annotations already read well).
+3. Add narration keys (optional; backend annotations already read well). Reference glossary terms with `{{term:Name|label}}` where helpful.
 4. Add checkpoints with `beforeValue`/`afterValue` anchors (optional).
 5. Set `quizId` + `emitQuizPrompt` when a quiz exists.
+6. Run `node dev/validate_content.mjs` — it resolves quiz ids, unit ids, and every glossary marker.
 
 No runner or page-controller edits.
