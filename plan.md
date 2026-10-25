@@ -148,7 +148,7 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 | C | Unit 2: Heaps and AVL | 7-9 | B |
 | D | Unit 3: Tries, Hashing, Merkle | 5-7 | B |
 | E | Unit 4: Design and Analysis | 8-10 | B (C helpful) |
-| F | Migration and polish | 5-6 | B-E |
+| F | Migration and polish | 3-4 | B-E |
 
 *A session is about 3-4 focused hours. Total is roughly 35-43 sessions. D can run in parallel with C if you want, but they share the shell, so finish B first.
 
@@ -455,14 +455,6 @@ rotate_LL step:
 - [ ] Contextual `?` tooltips on all unit pages. Glossary entries link back to the unit that visualizes each term.
 - [ ] Add new terms from Units 2-4 (rotation, balance factor, load factor, collision, probe, memoization, pruning, bound, backtracking, Merkle root).
 
-### F3. Quality
-- [ ] Mobile layout pass (README roadmap lists it; **not needed for the submitted demo**, which runs on a desktop browser — keep as a stretch item).
-- [ ] Accessibility pass: keyboard controls for play/pause/next/prev, focus management in modals, ARIA labels, reduced-motion preference respected, color not the only signal for roles. Keyboard, reduced motion, and text-plus-shape state cues are already in place on the BST/heap/AVL pages; a screen-reader and forced-colors pass is out of scope for this submission, so this item stays open only as a stretch.
-- [ ] Remove `frontend/test.html` or move it under `dev/`.
-- [ ] Configure Flask `debug` via env var, default off.
-- [ ] Request size limits and max array/steps caps on all endpoints.
-- [ ] Backend tests for sorting and pathfinding (at least correctness plus validation).
-
 ### F4. Docs and release
 - [ ] Rewrite README: unit status table, architecture diagram, op-log request examples, trace contract summary, how to add a unit (checklist), how to run tests.
 - [ ] Confirm LICENSE is present and referenced.
@@ -535,4 +527,4 @@ Cut from the top first:
 - Backend tests green; per-step invariants verified for each data structure.
 - No user-reachable 500s; all errors are 400 JSON with a field name.
 - Keyboard-operable controls and reduced-motion support.
-- README accurate, LICENSE present, `debug` off by default.
+- README accurate, LICENSE present.
