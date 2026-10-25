@@ -200,7 +200,9 @@ export class ArrayStrip {
             if (selected.has(id)) classes.push('role-selected');
             if (newNode.has(id)) classes.push('role-new-node');
             if (removed.has(id)) classes.push('role-removed');
-            if (index >= heapSize) classes.push('role-inactive');
+            // The sorted tail is frozen rather than disabled: dimming it would
+            // make the final heapsort result look unavailable.
+            if (index >= heapSize && !sorted.has(id)) classes.push('role-inactive');
             if (isNew) classes.push('array-cell-enter');
             el.className = classes.join(' ');
             if (isNew) {
