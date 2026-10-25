@@ -341,7 +341,7 @@ export class TreeCanvas {
     /**
      * Auto-fits the viewport transform to center and contain the full tree layout.
      */
-    fitView() {
+    fitView(animate = false) {
         if (!this.lastPositions || this.lastPositions.size === 0) return;
 
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -369,7 +369,16 @@ export class TreeCanvas {
         this.panX = (rect.width / 2) - (centerX * this.zoom);
         this.panY = (rect.height / 2) - (centerY * this.zoom) + 20;
 
-        this._updateTransform();
+        if (animate && this.viewportG) {
+            this.viewportG.style.transition = 'transform 0.4s ease';
+            this._updateTransform();
+            setTimeout(() => {
+                if (this.viewportG) this.viewportG.style.transition = '';
+            }, 450);
+        } else {
+            if (this.viewportG) this.viewportG.style.transition = '';
+            this._updateTransform();
+        }
     }
 
     /**

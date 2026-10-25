@@ -41,6 +41,7 @@ const playback = new PlaybackController({
     },
     onDone: () => {
         updatePlayPauseButton();
+        treeCanvas?.fitView(true);
     },
     onAnnotation: (text) => {
         updateAnnotation(text);
@@ -74,6 +75,10 @@ const comparePlayback = new PlaybackController({
     onAnnotation: (text) => {
         const el = document.getElementById('compare-step-annotation');
         if (el) el.innerText = text || '';
+    },
+    onDone: () => {
+        compareCanvasA?.fitView(true);
+        compareCanvasB?.fitView(true);
     }
 });
 
@@ -368,7 +373,9 @@ async function onInsertClick() {
         }
 
         if (allSteps.length > 0) {
+            treeCanvas?.fitView(true);
             playback.load(allSteps);
+            treeCanvas?.fitView(true);
             playback.play();
             refreshClassification();
         }
@@ -403,7 +410,9 @@ async function onDeleteClick() {
         ops.push({ op: 'delete', value: val });
 
         if (res.data?.steps) {
+            treeCanvas?.fitView(true);
             playback.load(res.data.steps);
+            treeCanvas?.fitView(true);
             playback.play();
             refreshClassification();
 
@@ -469,7 +478,9 @@ async function onBuildFromArrayClick() {
         }
 
         if (res.data?.steps) {
+            treeCanvas?.fitView(true);
             playback.load(res.data.steps);
+            treeCanvas?.fitView(true);
             playback.play();
             refreshClassification();
         }
@@ -767,9 +778,11 @@ async function onCompareRunClick() {
         // Render final trees initially
         if (res.data?.final_tree_a && compareCanvasA) {
             compareCanvasA.render(res.data.final_tree_a);
+            compareCanvasA.fitView(true);
         }
         if (res.data?.final_tree_b && compareCanvasB) {
             compareCanvasB.render(res.data.final_tree_b);
+            compareCanvasB.fitView(true);
         }
 
         // Show verdict banner
