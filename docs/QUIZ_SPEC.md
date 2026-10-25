@@ -139,3 +139,5 @@ Checks: unique question ids, 3-4 options with unique ids, `correctOptionId` pres
 ## 9. Answer verification
 
 Every correct answer in `bstQuiz.js` was checked against `backend/trees.py` with a throwaway script (not committed) that rebuilt each tree from its insertion order and compared traversals, deletion shapes, classification flags, and height/depth. This app counts height and depth in **edges**: a leaf has height 0, an empty tree has height -1, and the root sits at depth 0. Questions state that convention where it matters, because some textbooks count nodes instead.
+
+Questions are grouped in the order the three Learn Mode lessons teach them (height/depth and insertion, then deletion, then classification and traversal) and reuse the tree each lesson builds. That keeps the quiz scoped to material the lesson actually showed.
