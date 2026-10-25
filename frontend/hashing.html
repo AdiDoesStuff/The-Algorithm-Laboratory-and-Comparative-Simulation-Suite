@@ -20,6 +20,14 @@
             <div id="algo-nav" data-algo-nav data-current-id="hash"></div>
         </div>
 
+        <div id="intro-banner" style="display:none; max-width:900px; margin:16px auto; padding:16px 20px; background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #334155; border-radius:12px; color:#e2e8f0; position:relative;">
+            <button id="intro-dismiss" aria-label="Dismiss" style="position:absolute; top:8px; right:12px; background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+            <h2 style="margin:0 0 8px; font-size:18px;">How hashing works here</h2>
+            <p style="margin:0; line-height:1.6;">
+                A hash function maps a key to an array index. This lab uses two hash functions: <strong>sum_mod</strong> (sum of character codes modulo table size) and <strong>poly_mod</strong> (a polynomial rolling hash with base 31, modulo table size). Collisions are handled by separate chaining (linked lists per bucket) or open addressing (linear probing with tombstones on delete). Tables resize (rehash) when the load factor exceeds the threshold. Different functions distribute keys differently; sum_mod collides on anagrams.
+            </p>
+        </div>
+
         <div class="lab-layout">
             <!-- Controls -->
             <div class="side-panel">
@@ -248,5 +256,19 @@
     <script src="js/shell/progress.js"></script>
     <script src="js/shell/glossaryData.js"></script>
     <script type="module" src="js/hashing.js"></script>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("hashIntroSeen")) return;
+                var b = document.getElementById("intro-banner");
+                if (b) b.style.display = "block";
+                var btn = document.getElementById("intro-dismiss");
+                if (btn) btn.addEventListener("click", function () {
+                    if (b) b.style.display = "none";
+                    try { localStorage.setItem("hashIntroSeen", "1"); } catch (e) {}
+                });
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>

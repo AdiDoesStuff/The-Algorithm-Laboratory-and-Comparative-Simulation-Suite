@@ -379,7 +379,7 @@ export class TreeCanvas {
 
         const circle = g.querySelector('circle.node-shape');
         const textLabel = g.querySelector('.node-label');
-        const len = labelStr.length;
+        const len = Math.max(labelStr.length, Math.ceil(subStr.length * 0.75));
         // Scale circle radius by label length (~5.2px per character + 6px padding).
         const dynamicRadius = Math.max(this.options.nodeRadius, Math.floor(len * 5.2) + 6);
         circle.setAttribute('r', dynamicRadius);

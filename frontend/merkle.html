@@ -20,6 +20,14 @@
             <div id="algo-nav" data-algo-nav data-current-id="merkle"></div>
         </div>
 
+        <div id="intro-banner" style="display:none; max-width:900px; margin:16px auto; padding:16px 20px; background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #334155; border-radius:12px; color:#e2e8f0; position:relative;">
+            <button id="intro-dismiss" aria-label="Dismiss" style="position:absolute; top:8px; right:12px; background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+            <h2 style="margin:0 0 8px; font-size:18px;">What is a Merkle tree?</h2>
+            <p style="margin:0; line-height:1.6;">
+                A Merkle tree is a binary tree of hashes. Each leaf is the hash of a data block (here, SHA-256 of the block text). Each internal node is the hash of its two children's hashes concatenated. The single hash at the top is the <strong>Merkle root</strong>, which commits to the entire set of blocks: change one block and only the hashes on the path from that leaf to the root change. This lets a verifier check a single block against the trusted root using only O(log n) sibling hashes. Odd levels duplicate the last node so every level pairs up.
+            </p>
+        </div>
+
         <div class="lab-layout">
             <!-- Controls -->
             <div class="side-panel">
@@ -191,5 +199,19 @@
     <script src="js/shell/progress.js"></script>
     <script src="js/shell/glossaryData.js"></script>
     <script type="module" src="js/merkle.js"></script>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("merkleIntroSeen")) return;
+                var b = document.getElementById("intro-banner");
+                if (b) b.style.display = "block";
+                var btn = document.getElementById("intro-dismiss");
+                if (btn) btn.addEventListener("click", function () {
+                    if (b) b.style.display = "none";
+                    try { localStorage.setItem("merkleIntroSeen", "1"); } catch (e) {}
+                });
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>
