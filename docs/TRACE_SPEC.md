@@ -396,3 +396,126 @@ Heapsort sorts the array in place using the selected heap type:
 
 The sorted region grows from the right; `heap_size` shrinks to match, and the
 `heap | sorted` divider in the array panel is placed at `heap_size`.
+
+---
+
+## 7. AVL Trace Contract (`POST /avl`)
+
+AVL uses the same stateless op-log model as BST mode: the client keeps `ops`,
+sends them with exactly one action, and renders the returned steps. The replay
+of `ops` is silent, so a trace always describes one operation.
+
+### 7.1 Request shapes
+
+```json
+{
+  "algorithm": "avl_insert",
+  "ops": [{"op": "insert", "value": 30}, {"op": "insert", "value": 20}],
+  "value": 10
+}
+```
+
+```json
+{
+  "algorithm": "avl_delete",
+  "ops": [{"op": "insert", "value": 10}, {"op": "insert", "value": 20}],
+  "value": 20
+}
+```
+
+```json
+{
+  "algorithm": "avl_replay",
+  "ops": [{"op": "insert", "value": 50}, {"op": "delete", "value": 10}]
+}
+```
+
+Rules:
+
+- `ops` entries are `insert` or `delete` with an integer `value`, applied in
+  order. An insert of a live value and a delete of an absent value are rejected
+  with HTTP 400 and `field: "ops"`, because the log must be consistent.
+- `avl_insert` rejects a `value` already present (`field: "value"`);
+  `avl_delete` rejects a `value` that is absent (`field: "value"`).
+- `avl_replay` ignores `value` and returns `steps: []` plus `final_tree`, which
+  is how a client draws the current tree without performing an operation.
+- Node ids follow the same rule as BST mode: the id is the index of the
+  inserting op. A value that is deleted and later reinserted receives the id of
+  the new inserting op. Rotations relink nodes and never change an id.
+- Caps: `MAX_AVL_OPS = 64` ops per request and `MAX_AVL_STEPS = 1000` emitted
+  steps. Exceeding either is a 400, never a 500.
+
+### 7.2 Height and balance factor
+
+- Height is counted **in edges**: a leaf has height `0`, an empty child has
+  height `-1`.
+- Balance factor is `height(left) - height(right)`, so `+1` means left-heavy
+  and `-2` is the start of the right-left/right-right territory.
+- Every snapshot sets `sublabel` to `"bf:+N"` / `"bf:-N"` / `"bf:+0"`, computed
+  from the links in that same snapshot. A rendered badge can therefore never be
+  stale: it is not copied from a stored field that might lag a rotation.
+
+### 7.3 Response shape
+
+```json
+{
+  "steps": [ /* tree steps, kind: "tree" */ ],
+  "final_tree": { "nodes": [ ... ], "root_id": 1 },
+  "metrics": {"comparisons": 2, "rotations": 1, "steps": 8, "height": 2},
+  "metadata": {"algorithm": "avl_insert"}
+}
+```
+
+`final_tree` is always the snapshot of the last step, so the end result needs
+no special case. `metrics.rotations` counts **single** rotations: an LR or RL
+case contributes two.
+
+### 7.4 Step types
+
+Every AVL step has `kind: "tree"` and the single-tree `snapshot` shape
+(`nodes`, `root_id`) from §3.1. Roles refer to node ids.
+
+| `type` | When | Notable `payload` | Roles |
+| --- | --- | --- | --- |
+| `compare` | Search descends one level | `path` (ancestor ids, root first) | `comparing` |
+| `insert` | New leaf linked to its parent | `path`, `value`, `node_id` | `new_node` |
+| `balance_update` | Height/bf recomputed on the way back up | `node_id`, `value`, `height`, `balance_factor` | `highlighted` |
+| `unbalanced` | First ancestor with `abs(bf) > 1` | `node_id`, `value`, `balance_factor`, `case` | `unbalanced` |
+| `rotate_LL` | Left-left case: rotate right at the node | `case`, `phase`, `phases`, `unbalanced`, `pivot`, `new_root`, `subtree` | `rotating` |
+| `rotate_RR` | Right-right case: rotate left at the node | same | `rotating` |
+| `rotate_LR` | Left-right case, emitted twice | same, `phase` `1` then `2` | `rotating` |
+| `rotate_RL` | Right-left case, emitted twice | same, `phase` `1` then `2` | `rotating` |
+| `insert_done` | Insert settled | `value`, `node_id`, `rotations`, `height` | — |
+| `delete_leaf` | Leaf unlinked | `value`, `node_id`, `path` | `highlighted` |
+| `delete_single_child` | One child promoted | `value`, `node_id`, `replacement`, `path` | `highlighted` |
+| `delete_two_children` | Successor relinked into place | `value`, `node_id`, `successor`, `path` | `highlighted` |
+| `delete_done` | Delete settled | `value`, `rotations`, `height` | `highlighted` (root) |
+
+### 7.5 Rotation replay
+
+A rotation is shown as a sequence, not a single jump:
+
+1. `unbalanced` with the **pre-rotation** snapshot, naming the case and the
+   node whose `bf` left `[-1, 1]`.
+2. One `rotate_*` step per single rotation. LL and RR rotate once; LR and RL
+   rotate twice and carry `phase: 1|2` so a player can narrate "first make it
+   left-left, then rotate right".
+3. `rotation_done` on the balanced subtree, naming its new root, height, and bf.
+
+Insert stops the retrace after its first rotation: in insertion the subtree
+height returns to its pre-insert value, so no ancestor above can be unbalanced.
+Delete keeps walking ancestors after a rotation, because removing a node can
+shorten a subtree and expose a new imbalance higher up.
+
+### 7.6 Invariants
+
+The tests check every snapshot, not just the final one:
+
+- The in-order walk is strictly increasing (no duplicates).
+- `parent_id`/`side` links are consistent, with exactly one root.
+- Every `sublabel` equals the balance factor recomputed from that snapshot.
+- Node ids never change value within a call.
+- Per plan D9, while an operation is in flight an unbalanced node is allowed
+  only on the path from the operation focus to the root. Every
+  `insert_done`/`delete_done` step must have **zero** nodes with `abs(bf) > 1`.
+
