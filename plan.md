@@ -273,11 +273,22 @@ export const bstInsertLesson = {
 - [x] Wire tooltips into BST narration for terms like height, depth, successor, balanced: insertion narration marks binary search tree / depth / height / balanced tree, deletion narration marks depth / successor / traversal, and the successor checkpoint marks successor. Content validator resolves every marker and every `units.js` `glossaryTerms` entry (`dev/validate_content.mjs`, 7 checks). Commit `2146391`; coverage in `70dd76b`.
 
 ### B5. Exit criteria
-- [ ] Full flow works: hub, BST Learn, quiz, badge on hub, Guided Path nudge.
-- [ ] Adding a new lesson needs no engine edits.
-- [ ] Nav is defined in exactly one place.
-- [ ] Remove the deprecated `values` shim from `/tree`.
-- [ ] localStorage unavailable (private window): app still works, progress just doesn't persist.
+- [x] Full flow works: hub, BST Learn, quiz, badge on hub, Guided Path nudge. Verified in the browser: a deliberate 3-miss attempt scores 7/10 ("Not passed yet") and stores `quizPassed: false`; a clean retake scores 10/10, stores the pass, and the hub badge/Guided Path tag flip to "Quiz passed"; the nudge renders with "Take the quiz", "Continue anyway" (`href="bst.html"`), and "Dismiss".
+- [x] Adding a new lesson needs no engine edits. Proof: a temporary third BST lesson (`bst-temp-proof`) was appended to `BST_LESSONS`, appeared as a third picker option, ran its checkpoint, and reached the quiz prompt with no engine/page-controller edits; it was then removed and the tree is clean. The validator picked it up automatically (8 checks while present).
+- [x] Nav is defined in exactly one place: `frontend/js/shell/nav.js` builds every link from `units.js` plus its two fixed entries; pages only carry empty `data-algo-nav` mounts.
+- [x] Remove the deprecated `values` shim from `/tree`. `values` (top level, or inside a `bst_mirror` tree spec) now returns 400 with `field: "values"`; `normalize_ops` and the tree builders accept `ops` only. Tests assert the 400. Commit `de1b1fc`.
+- [x] localStorage unavailable (private window): app still works, progress just doesn't persist. Browser-tested with a throwing `localStorage` getter, a `QuotaExceededError` on write, corrupt JSON, and an unknown schema version: no caller throws, entries stay in session memory, corrupt/unknown raw data is backed up, and the quiz results show "Progress won't be saved in this browser mode."
+
+### B3–B5 notes
+- Quizzes and progress never touch the backend. `bstQuiz.js` is static data; `progress.js` owns the only `localStorage` access, and `QuizEngine` never imports a unit.
+- Pass state is derived from `bestScore / total >= 0.8` (edges-based height/depth, matching `backend/trees.py`). The quiz is 10 questions: 3 traversal, 3 deletion, 2 classification, 2 height vs depth.
+- Deep links: `bst.html?quiz=bstQuiz` mounts the quiz and Back returns to the hub; a quiz opened from Learn returns to the last lesson step; an unknown quiz id shows the page error banner.
+- Guided Path uses `units.js` registry order via `guidedOrder`. The soft nudge only fires when the immediately previous unit has a `quizId` and is unpassed. With today's shipped data BST is the last live unit and every earlier live unit has no quiz, so the nudge cannot be reached from the real UI yet; the rule itself was exercised by injecting a `quizId` on `pathfinding` at runtime. This is a data limitation, not dead code.
+- Glossary: 94 terms in `shell/glossaryData.js` (the original 76 verbatim + 18 terms `units.js` already advertised). Markers use `{{term:Name|label}}` and render in narration and checkpoint prompt/reveal/feedback; `description` and `choices` stay plain text and the validator enforces both rules.
+- Tooltip definitions render as plain text (tags stripped); the glossary page keeps its curated HTML. Cards are keyboard-operable and `definitions.html#term-<slug>` highlights and opens the target. The glossary modal keeps an inline `visibility: visible` while opening so the close button can take focus before the fade finishes.
+- `LessonRunner.play()` still has no UI caller; no autoplay button or debug global was added. F1 owns that decision.
+- Not verified: real screen-reader announcement order, touch/pointer behaviour on phones, and load-time focus into the glossary modal in a focused window (the harness tab reports `document.hasFocus() === false`; click-open, Escape, and focus return were verified).
+- 375px re-check: hub, BST Learn, quiz, and glossary pages have no horizontal overflow; the tooltip popover clamps inside a 375px viewport.
 
 ---
 
