@@ -358,3 +358,12 @@ for qid in ["n-q6","n-q7","n-q8","n-q9","n-q10"]:
     ORACLES["nqueensQuiz"][qid] = conceptual("N-Queens reasoning; backend produces traces but answer is a statement.")
 
 CHECKPOINT_ORACLES.setdefault('nqueens-lesson-1', {})['nqueens-lesson-1-cp1'] = conceptual('checkpoint prediction; verified against trace')
+
+# ---------------------------------------------------------------------------
+# knapsackQuiz (Stage 3)
+# ---------------------------------------------------------------------------
+ORACLES["knapsackQuiz"] = {}
+for qid in ["k-q1","k-q2","k-q3","k-q4","k-q5","k-q6","k-q7","k-q8","k-q9","k-q10"]:
+    ORACLES["knapsackQuiz"][qid] = conceptual("Knapsack fact; backend produces values but answer is a stated fact.")
+
+CHECKPOINT_ORACLES.setdefault('knapsack-lesson-1', {})['knapsack-lesson-1-cp1'] = conceptual('checkpoint prediction; verified against trace')

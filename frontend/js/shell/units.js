@@ -170,6 +170,20 @@
                 "N-Queens",
                 "Partial Solution"
             ]
+        },
+        {
+            id: "knapsack",
+            title: "0/1 Knapsack",
+            page: "knapsack.html",
+            status: "live",
+            guidedOrder: 10,
+            quizId: "knapsackQuiz",
+            blurb: "0/1 Knapsack solved three ways: greedy, dynamic programming, and branch and bound.",
+            glossaryTerms: [
+                "Dynamic Programming",
+                "Greedy Algorithm",
+                "Branch and Bound"
+            ]
         }
     ];
 

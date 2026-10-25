@@ -18,6 +18,7 @@ import { trieQuiz } from "./trieQuiz.js";
 import { hashQuiz } from "./hashQuiz.js";
 import { merkleQuiz } from "./merkleQuiz.js";
 import { nqueensQuiz } from "./nqueensQuiz.js";
+import { knapsackQuiz } from "./knapsackQuiz.js";
 
 const QUIZZES = new Map([
     [bstQuiz.id, bstQuiz],
@@ -26,7 +27,8 @@ const QUIZZES = new Map([
     [trieQuiz.id, trieQuiz],
     [hashQuiz.id, hashQuiz],
     [merkleQuiz.id, merkleQuiz],
-    [nqueensQuiz.id, nqueensQuiz]
+    [nqueensQuiz.id, nqueensQuiz],
+    [knapsackQuiz.id, knapsackQuiz]
 ]);
 
 /**
