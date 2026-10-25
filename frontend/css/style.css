@@ -1203,4 +1203,26 @@ button:disabled {
         width: 16px;
         height: 16px;
     }
+
+    .landing-content {
+        width: calc(100vw - 28px);
+        max-width: calc(100vw - 28px);
+        padding: 36px 18px;
+        box-sizing: border-box;
+    }
+
+    .landing-title {
+        font-size: 2.2rem;
+    }
+
+    .landing-description {
+        font-size: 1rem;
+        margin-bottom: 28px;
+    }
+
+    .btn-go {
+        font-size: 1rem;
+        padding: 12px 28px;
+        letter-spacing: 1.5px;
+    }
 }
