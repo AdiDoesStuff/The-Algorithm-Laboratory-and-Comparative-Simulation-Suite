@@ -104,6 +104,48 @@
                 <div id="dual-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
                 <pre id="dual-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
             </div>
+            <!-- Phase D: n-ary trie + terminal/duplicate/role cues -->
+            <div class="test-card full-width">
+                <h2>7. TreeCanvas n-ary layout (trie terminal, dup, role cues)</h2>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.85rem;">
+                    Renders a trie with <code>layout: "nary"</code>, then walks created / matched /
+                    probing steps. Checks: children sit below parents, terminal nodes get the double
+                    ring, duplicates get the <code>dup</code> badge, and roles expose glyph cues.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button type="button" id="nary-prev">← Prev</button>
+                    <button type="button" id="nary-next">Next →</button>
+                </div>
+                <div id="nary-tree" style="height: 340px;"></div>
+                <div id="nary-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+                <pre id="nary-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
+            </div>
+
+            <!-- Phase D: dual hash panels driven by one PlaybackController -->
+            <div class="test-card full-width">
+                <h2>8. BucketGrid hash panels (chaining + open addressing)</h2>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.85rem;">
+                    Two grids under one controller. Checks: slot/bucket counts match
+                    <code>size</code>, tombstones are labelled, probing shows the <code>?</code>
+                    badge, and DOM cells keep identity between steps.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button type="button" id="hash-prev">← Prev</button>
+                    <button type="button" id="hash-next">Next →</button>
+                </div>
+                <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px;">
+                    <div>
+                        <h3 style="margin: 0 0 6px 0; font-size: 0.95rem; color: #cbd5e1;">Separate chaining</h3>
+                        <div id="hash-chaining"></div>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 6px 0; font-size: 0.95rem; color: #cbd5e1;">Open addressing (linear probing)</h3>
+                        <div id="hash-open"></div>
+                    </div>
+                </div>
+                <div id="hash-annotation" style="font-style: italic; color: #fbbf24; font-size: 0.9rem; min-height: 1.5em;">Ready</div>
+                <pre id="hash-selftest-output" style="white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8;"></pre>
+            </div>
         </div>
     </div>
 
@@ -755,6 +797,364 @@
         }
 
         setTimeout(runDualChecks, 400);
+
+        // 7. TreeCanvas n-ary (trie) fixture --------------------------------
+        const naryOutput = document.getElementById('nary-selftest-output');
+        const naryAnnotation = document.getElementById('nary-annotation');
+        const naryChecks = [];
+        const checkNary = (name, condition, detail) => {
+            naryChecks.push({ name, pass: !!condition, detail: String(detail) });
+        };
+
+        const naryCanvas = new TreeCanvas(document.getElementById('nary-tree'), {
+            layout: 'nary',
+            tweenMs: 0
+        });
+
+        const trieNode = (id, label, parentId, terminal) => ({
+            id, label, parent_id: parentId, side: null,
+            sublabel: null, terminal: !!terminal
+        });
+
+        const trieNodes = [
+            trieNode(0, 'root', null, false),
+            trieNode(1, 'c', 0, false),
+            trieNode(2, 'a', 1, false),
+            trieNode(3, 'r', 2, true)
+        ];
+
+        const narySteps = [
+            {
+                type: 'node_created',
+                snapshot: { nodes: trieNodes.slice(0, 2), root_id: 0 },
+                created: [1],
+                annotation: 'Insert "car": create the c edge.'
+            },
+            {
+                type: 'node_created',
+                snapshot: { nodes: trieNodes.slice(0, 3), root_id: 0 },
+                created: [2],
+                annotation: 'Create the a node under c.'
+            },
+            {
+                type: 'mark_end',
+                snapshot: { nodes: trieNodes.slice(0, 4), root_id: 0 },
+                created: [3],
+                selected: [3],
+                annotation: 'Create r and mark it as the end of a word (double ring).'
+            },
+            {
+                type: 'node_created',
+                snapshot: {
+                    nodes: [...trieNodes, trieNode(4, 'd', 3, true)],
+                    root_id: 0
+                },
+                created: [4],
+                reused: [1, 2, 3],
+                annotation: 'Insert "card": reuse c, a, r and create d.'
+            },
+            {
+                type: 'node_created',
+                snapshot: {
+                    nodes: [...trieNodes, trieNode(4, 'd', 3, true), trieNode(5, 'o', 0, false)],
+                    root_id: 0
+                },
+                created: [5],
+                annotation: 'Add a second branch: o.'
+            },
+            {
+                type: 'mark_end',
+                snapshot: {
+                    nodes: [
+                        ...trieNodes,
+                        trieNode(4, 'd', 3, true),
+                        trieNode(5, 'o', 0, false),
+                        trieNode(6, 'g', 5, true)
+                    ],
+                    root_id: 0
+                },
+                created: [6],
+                selected: [6],
+                annotation: 'Insert "dog": g ends the word.'
+            },
+            {
+                type: 'match',
+                snapshot: {
+                    nodes: [
+                        ...trieNodes,
+                        trieNode(4, 'd', 3, true),
+                        trieNode(5, 'o', 0, false),
+                        trieNode(6, 'g', 5, true)
+                    ],
+                    root_id: 0
+                },
+                matched: [0, 1, 2, 3, 4],
+                payload: { path: [0, 1, 2, 3, 4] },
+                annotation: 'Search "card": every step matches an existing child.'
+            },
+            {
+                type: 'no_match',
+                snapshot: {
+                    nodes: [
+                        ...trieNodes,
+                        trieNode(4, 'd', 3, true),
+                        trieNode(5, 'o', 0, false),
+                        trieNode(6, 'g', 5, true)
+                    ],
+                    root_id: 0
+                },
+                probing: [2],
+                payload: { path: [0, 1, 2] },
+                annotation: 'Search "cat": probing a, no t edge.'
+            },
+            {
+                type: 'no_match',
+                snapshot: {
+                    nodes: [
+                        ...trieNodes,
+                        trieNode(4, 'd', 3, true),
+                        trieNode(5, 'o', 0, false),
+                        trieNode(6, 'g', 5, true),
+                        { ...trieNode(7, 'r', 3, false), duplicate_of: 3 }
+                    ],
+                    root_id: 0
+                },
+                mismatch: [1, 7],
+                annotation: 'Synthetic fixture: a duplicate node carries the dup badge.'
+            }
+        ];
+
+        const naryPc = new PlaybackController({
+            onStep: (step) => naryCanvas.render(step.snapshot, step),
+            onAnnotation: (text) => { naryAnnotation.textContent = text; }
+        });
+
+        naryPc.load(narySteps);
+
+        document.getElementById('nary-prev').addEventListener('click', () => naryPc.prev());
+        document.getElementById('nary-next').addEventListener('click', () => naryPc.next());
+
+        function naryOutputLine(passed, total) {
+            const lines = naryChecks.map((c) => `${c.pass ? 'PASS' : 'FAIL'} — ${c.name} (${c.detail})`);
+            lines.push(`--- ${passed}/${total} n-ary checks passed ---`);
+            naryOutput.textContent = lines.join('\n');
+            naryOutput.setAttribute('data-selftest', passed === total ? 'pass' : 'fail');
+            window.__narySelftest = { passed, total, checks: naryChecks.slice() };
+        }
+
+        function runNaryChecks() {
+            naryChecks.length = 0;
+
+            naryPc.seek(1);
+            checkNary('created role shows the + glyph',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent === '+',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent || 'missing');
+
+            naryPc.seek(2);
+            const nodeEls = [...document.querySelectorAll('#nary-tree .tree-node')];
+            const depthY = (id) => naryCanvas.lastPositions.get(id).y;
+            checkNary('n-ary layout draws one node per snapshot node', nodeEls.length === 4, nodeEls.length);
+            checkNary('child sits below parent (c below root)', depthY(1) > depthY(0), `${depthY(0)} → ${depthY(1)}`);
+            checkNary('grandchild sits below child (a below c)', depthY(2) > depthY(1), `${depthY(1)} → ${depthY(2)}`);
+            checkNary('leaf sits on the deepest row (r below a)', depthY(3) > depthY(2), `${depthY(2)} → ${depthY(3)}`);
+            checkNary('terminal node gets the double ring',
+                document.querySelectorAll('#nary-tree .node-terminal-ring').length === 1,
+                document.querySelectorAll('#nary-tree .node-terminal-ring').length);
+            checkNary('terminal sublabel reads "end"',
+                document.querySelector('#nary-tree .tree-node[data-id="3"] .node-sublabel').textContent === 'end',
+                document.querySelector('#nary-tree .tree-node[data-id="3"] .node-sublabel').textContent);
+
+            naryPc.seek(6);
+            checkNary('matched role shows the check glyph',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent === '\u2713',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent || 'missing');
+            checkNary('path edges are marked from payload.path',
+                document.querySelectorAll('#nary-tree .tree-edge.path').length >= 3,
+                document.querySelectorAll('#nary-tree .tree-edge.path').length);
+
+            naryPc.seek(7);
+            checkNary('probing role shows the ? glyph',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent === '?',
+                document.querySelector('#nary-tree .tree-node[data-id="2"] .node-role-badge')?.textContent || 'missing');
+
+            naryPc.seek(8);
+            checkNary('duplicate node gets the dup badge',
+                document.querySelector('#nary-tree .tree-node[data-id="7"] .node-dup-badge')?.textContent === 'dup',
+                document.querySelector('#nary-tree .tree-node[data-id="7"] .node-dup-badge')?.textContent || 'missing');
+            checkNary('duplicate node aria-label mentions duplicate',
+                (document.querySelector('#nary-tree .tree-node[data-id="7"]').getAttribute('aria-label') || '').includes('duplicate'),
+                document.querySelector('#nary-tree .tree-node[data-id="7"]').getAttribute('aria-label'));
+            checkNary('mismatch role shows the not-equal glyph',
+                document.querySelector('#nary-tree .tree-node[data-id="1"] .node-role-badge')?.textContent === '\u2260',
+                document.querySelector('#nary-tree .tree-node[data-id="1"] .node-role-badge')?.textContent || 'missing');
+
+            const passed = naryChecks.filter((c) => c.pass).length;
+            naryOutputLine(passed, naryChecks.length);
+        }
+
+        setTimeout(runNaryChecks, 200);
+
+        // 8. BucketGrid hash panels ----------------------------------------
+        const hashOutput = document.getElementById('hash-selftest-output');
+        const hashAnnotation = document.getElementById('hash-annotation');
+        const hashChecks = [];
+        const checkHash = (name, condition, detail) => {
+            hashChecks.push({ name, pass: !!condition, detail: String(detail) });
+        };
+
+        const chainGrid = new BucketGrid(document.getElementById('hash-chaining'), { showCaption: true });
+        const openGrid = new BucketGrid(document.getElementById('hash-open'), { showCaption: true });
+
+        const HASH_SIZE = 5;
+        const hashState = ({ buckets, slots }) => ({
+            chaining: {
+                strategy: 'chaining', size: HASH_SIZE,
+                count: buckets.reduce((sum, bucket) => sum + bucket.length, 0),
+                load_factor: buckets.reduce((sum, bucket) => sum + bucket.length, 0) / HASH_SIZE,
+                threshold: 1.0,
+                buckets
+            },
+            open: {
+                strategy: 'open', size: HASH_SIZE,
+                count: slots.filter((cell) => cell && !cell.tombstone).length,
+                tombstones: slots.filter((cell) => cell && cell.tombstone).length,
+                load_factor: slots.filter((cell) => cell && !cell.tombstone).length / HASH_SIZE,
+                threshold: 0.75,
+                slots
+            }
+        });
+
+        const emptyBuckets = () => Array.from({ length: HASH_SIZE }, () => []);
+        const emptySlots = () => Array.from({ length: HASH_SIZE }, () => null);
+
+        const b0 = emptyBuckets();
+        const s0 = emptySlots();
+        b0[0].push({ id: 0, key: 'ab' });
+        s0[0] = { id: 0, key: 'ab' };
+
+        const b1 = emptyBuckets();
+        const s1 = emptySlots();
+        b1[0].push({ id: 0, key: 'ab' }, { id: 1, key: 'ba' });
+        s1[0] = { id: 0, key: 'ab' };
+        s1[1] = { id: 1, key: 'ba' };
+
+        const b2 = emptyBuckets();
+        const s2 = emptySlots();
+        b2[0].push({ id: 1, key: 'ba' });
+        s2[0] = { tombstone: true };
+        s2[1] = { id: 1, key: 'ba' };
+
+        const hashSteps = [
+            {
+                type: 'place', panel: 'open',
+                created_open: [0], created_chaining: [0],
+                created: [0],
+                snapshot: hashState({ buckets: b0, slots: s0 }),
+                annotation: 'Insert ab: sum_mod lands in bucket 0 / slot 0.'
+            },
+            {
+                type: 'probe', panel: 'open',
+                probing_open: [0], probing_chaining: [0],
+                snapshot: hashState({ buckets: b0, slots: s0 }),
+                annotation: 'Insert ba (anagram): bucket 0 is occupied, so probe onward.'
+            },
+            {
+                type: 'place', panel: 'open',
+                created_open: [1], created_chaining: [0],
+                snapshot: hashState({ buckets: b1, slots: s1 }),
+                annotation: 'ba appends to chain 0 and takes open slot 1.'
+            },
+            {
+                type: 'tombstone', panel: 'open',
+                mismatch_open: [0],
+                snapshot: hashState({ buckets: b2, slots: s2 }),
+                annotation: 'Delete ab: chain entry removed, slot 0 becomes a tombstone.'
+            },
+            {
+                type: 'not_found', panel: 'open',
+                probing_open: [4], probing_chaining: [4],
+                snapshot: hashState({ buckets: b2, slots: s2 }),
+                annotation: 'Search cd: absent, so both panels report not found.'
+            }
+        ];
+
+        const hashPc = new PlaybackController({
+            onStep: (step) => {
+                chainGrid.render(step.snapshot.chaining, step);
+                openGrid.render(step.snapshot.open, step);
+            },
+            onAnnotation: (text) => { hashAnnotation.textContent = text; }
+        });
+
+        hashPc.load(hashSteps);
+
+        document.getElementById('hash-prev').addEventListener('click', () => hashPc.prev());
+        document.getElementById('hash-next').addEventListener('click', () => hashPc.next());
+
+        function hashOutputLine(passed, total) {
+            const lines = hashChecks.map((c) => `${c.pass ? 'PASS' : 'FAIL'} — ${c.name} (${c.detail})`);
+            lines.push(`--- ${passed}/${total} hash-panel checks passed ---`);
+            hashOutput.textContent = lines.join('\n');
+            hashOutput.setAttribute('data-selftest', passed === total ? 'pass' : 'fail');
+            window.__hashSelftest = { passed, total, checks: hashChecks.slice() };
+        }
+
+        function runHashChecks() {
+            hashChecks.length = 0;
+            hashPc.seek(0);
+
+            checkHash('chaining renders one cell per bucket',
+                document.querySelectorAll('#hash-chaining .bucket-cell').length === HASH_SIZE,
+                document.querySelectorAll('#hash-chaining .bucket-cell').length);
+            checkHash('open addressing renders one cell per slot',
+                document.querySelectorAll('#hash-open .slot-cell').length === HASH_SIZE,
+                document.querySelectorAll('#hash-open .slot-cell').length);
+            checkHash('open cell carries an aria-label',
+                (document.querySelector('#hash-open .slot-cell[data-index="0"]').getAttribute('aria-label') || '').includes('ab'),
+                document.querySelector('#hash-open .slot-cell[data-index="0"]').getAttribute('aria-label'));
+            const firstOpenCell = document.querySelector('#hash-open .slot-cell[data-index="0"]');
+
+            hashPc.seek(2);
+            checkHash('chaining lists a full chain row',
+                document.querySelectorAll('#hash-chaining .chain-container').length === 1,
+                document.querySelectorAll('#hash-chaining .chain-container').length);
+            const chainRow = document.querySelector('#hash-chaining .chain-container');
+            checkHash('chain row shows both colliding keys',
+                chainRow.textContent.includes('ab') && chainRow.textContent.includes('ba'),
+                chainRow.textContent.trim());
+            checkHash('open slot 1 now holds ba',
+                document.querySelector('#hash-open .slot-cell[data-index="1"]').textContent.includes('ba'),
+                document.querySelector('#hash-open .slot-cell[data-index="1"]').textContent);
+            checkHash('slot DOM identity survives re-render',
+                document.querySelector('#hash-open .slot-cell[data-index="0"]') === firstOpenCell,
+                'same element');
+
+            hashPc.seek(3);
+            const tombstoneCell = document.querySelector('#hash-open .slot-cell[data-index="0"]');
+            checkHash('tombstone slot gets the hatch class',
+                tombstoneCell.classList.contains('slot-tombstone'),
+                tombstoneCell.className);
+            checkHash('tombstone slot is labelled in text, not colour alone',
+                (tombstoneCell.getAttribute('aria-label') || '').includes('tombstone'),
+                tombstoneCell.getAttribute('aria-label'));
+            checkHash('chaining count drops to one entry',
+                document.querySelector('#hash-chaining .chain-container').textContent.trim() === 'Bucket 0:\u2193 ba',
+                document.querySelector('#hash-chaining .chain-container').textContent.trim());
+
+            hashPc.seek(4);
+            checkHash('probing shows the ? glyph on the probed slot',
+                document.querySelector('#hash-open .slot-cell[data-index="4"] .grid-cell-badge')?.textContent === '?',
+                document.querySelector('#hash-open .slot-cell[data-index="4"] .grid-cell-badge')?.textContent || 'missing');
+            checkHash('caption reports the load factor',
+                (document.querySelector('#hash-open .bucket-grid-caption').textContent || '').includes('load factor'),
+                document.querySelector('#hash-open .bucket-grid-caption').textContent);
+
+            const passed = hashChecks.filter((c) => c.pass).length;
+            hashOutputLine(passed, hashChecks.length);
+        }
+
+        setTimeout(runHashChecks, 300);
+
     </script>
 </body>
 </html>
