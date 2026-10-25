@@ -258,14 +258,15 @@ export const bstInsertLesson = {
 - Not browser-verified in B2: touch/pointer interactions on phones, and screen-reader announcement order for checkpoint feedback (the panel is `aria-live="polite"`, but no AT was used).
 
 ### B3. Quiz and progress
-- [ ] Thread `quizId` through `shell/units.js` and the lesson registry (single `"bstQuiz"` string shared by `bstLessons.js` and the quiz registry).
+- [x] Thread `quizId` through `shell/units.js` and the lesson registry (single `"bstQuiz"` string shared by `bstLessons.js` and the quiz registry). `units.js` carries `quizId` + `guidedOrder`; `bst.js` resolves lesson/unit ids through `getQuiz()` and reports misses in the page error banner. Commit `020e504`.
+- [x] Hub progress badges derived generically from `progress.js` (`data-progress-slot`): text + icon (never color alone), full-sentence `aria-label`, refreshed on `pageshow` and `storage`. Commit `74368a7`.
 - [x] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render(container, {questions, onComplete, passThreshold, rng, secondaryAction})` → `{destroy, restart}`. Shuffles options every start and question order on retake; `onComplete` fires once per attempt; results show score, percentage, pass/not-yet text, topic breakdown, missed questions, and a storage-unavailable note. Fixture self-check in `frontend/test.html`: 11/11 checks pass (flow, single `onComplete`, seeded-rng reshuffle, correctness-by-id survives shuffling). Commit `c02fbb5`.
 - [x] `quizzes/bstQuiz.js`: static data, deliberately logic-free. 10 questions (3 traversal, 3 deletion, 2 classification, 2 height vs depth), 4 options each, every answer verified against `backend/trees.py` by a throwaway script (traversal sequences, deletion shapes, classification flags, edge-counted height/depth). Registry: `quizzes/index.js` `getQuiz()` throws on a miss. Commit `aa8261c`; spec in `docs/QUIZ_SPEC.md`.
 - [x] `shell/progress.js`: wraps localStorage (`algolab_progress`), try/catch on every read/write, schema versioned. ✅ Classic script (`window.AlgoLabProgress`) shared by hub and `bst.js`; in-memory fallback on unavailable/corrupt/unknown-version storage; `quizPassed` recomputed from `bestScore/total` on read; unrecognized raw data backed up before the first overwrite.
   - Entry: `{quizPassed, score, total, bestScore, lastAttempt}`.
   - Pass threshold constant: 80%. Store raw score so the bar can change.
-- [ ] Two entry points to the same engine: end of Learn Mode sentinel, and "Test yourself" button on hub cards.
-- [ ] Guided Path wrapper: linear order (basics, sorting, trees, pathfinding, advanced). Soft nudge if `quizPassed` is false, with "continue anyway" always available.
+- [x] Two entry points to the same engine: end of Learn Mode sentinel (enabled "Take the quiz" mounts in the panel; Prev destroys it and steps back) and "Test yourself" on hub cards as `bst.html?quiz=bstQuiz` (unknown ids show the banner error). Commits `020e504` / `74368a7`.
+- [x] Guided Path wrapper: linear registry order via `guidedOrder` (Sorting Duel → Pathfinding → BST & Trees → Heaps & AVL → Tries/Hashing/Merkle → Design & Analysis). Live units are links, coming-soon units are non-linked. Soft nudge when the immediately previous unit has an unpassed quiz, with "Take the quiz" / "Continue anyway" / "Dismiss"; never blocks a navigation. Commit `74368a7`.
 
 ### B4. Glossary hooks
 - [ ] `shell/glossaryTooltip.js`: inline `?` markers that open the glossary entry in a popover. Data comes from the existing glossary source.
