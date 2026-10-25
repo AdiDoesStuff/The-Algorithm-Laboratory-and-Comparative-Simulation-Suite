@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | Merkle Trees</title>
+    <meta name="description" content="Hash data blocks with SHA-256, pair them bottom-up into a Merkle tree, duplicate odd nodes, and watch a single tampered block change only its path to the root.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="stylesheet" href="css/lab.css">
+    <link rel="stylesheet" href="css/quiz.css">
+    <link rel="stylesheet" href="css/glossary.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+    <div class="lab-container">
+        <div class="header-with-nav" style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-direction: column;">
+            <h1>Algorithm Laboratory: Merkle Trees</h1>
+            <div id="algo-nav" data-algo-nav data-current-id="merkle"></div>
+        </div>
+
+        <div class="lab-layout">
+            <!-- Controls -->
+            <div class="side-panel">
+                <div class="mode-tabs" role="tablist" aria-label="Mode">
+                    <button id="btn-mode-play" class="mode-tab active-tab" role="tab" aria-selected="true">Play Mode</button>
+                    <button id="btn-mode-learn" class="mode-tab" role="tab" aria-selected="false">Learn Mode</button>
+                </div>
+
+                <!-- Play Mode -->
+                <div id="play-controls-panel" class="control-group">
+                    <div class="control-group">
+                        <span class="control-label">Build the tree</span>
+                        <div class="input-row">
+                            <button id="btn-build">Build</button>
+                            <button id="btn-reset-leaves" style="background: #475569;">Reset leaves</button>
+                        </div>
+                        <p class="control-hint">Build hashes every block, then pairs hashes bottom-up until one Merkle root remains.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label">Blocks</span>
+                        <div class="input-row">
+                            <button id="btn-add-leaf" type="button">Add block</button>
+                            <button id="btn-remove-leaf" type="button" style="background: #475569;">Remove last</button>
+                        </div>
+                        <p class="control-hint">1–16 blocks, 0–40 characters each. Empty blocks are allowed.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="speed-slider">Speed</label>
+                        <div class="input-row" style="align-items: center;">
+                            <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1" style="flex: 1;" />
+                            <button id="btn-play-pause" style="padding: 6px 14px; min-width: 76px;">Pause</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-top: 4px;">
+                        <span class="control-label">Step through</span>
+                        <div class="step-row">
+                            <button id="btn-step-prev" type="button">&#8592; Prev</button>
+                            <button id="btn-step-next" type="button">Next &#8594;</button>
+                        </div>
+                        <p id="step-counter" class="step-counter" aria-live="polite">No trace yet.</p>
+                    </div>
+
+                    <p class="panel-note" style="margin-top: 8px;">
+                        SHA-256, showing the first 8 of 64 hex characters. Click any tree node for its full hash.
+                    </p>
+                </div>
+
+                <!-- Learn Mode -->
+                <div id="learn-controls-panel" class="control-group hidden">
+                    <p class="control-hint" style="margin: 0;">
+                        Pick a lesson, then step through it with next/prev or reset. Leaf editing is available in Play mode.
+                    </p>
+
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                        <label for="lesson-select" style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap;">Lesson:</label>
+                        <select id="lesson-select" class="algo-selector" style="flex: 1; min-width: 0; min-height: 44px;"></select>
+                    </div>
+                    <p id="lesson-description" class="control-hint" style="margin: 6px 0 0 0;"></p>
+
+                    <div id="learn-pills-row" class="learn-pills-row"></div>
+
+                    <div class="step-row" style="margin-top: 12px;">
+                        <button id="btn-learn-prev" type="button" disabled>&#8592; Prev Step</button>
+                        <button id="btn-learn-next" type="button">Next Step &#8594;</button>
+                    </div>
+                    <button id="btn-learn-reset" style="margin-top: 8px; background: #475569;">Reset Lesson</button>
+
+                    <div id="lesson-narration" class="step-annotation-box" style="margin-top: 10px; min-height: 54px;" aria-live="polite">
+                        Select a lesson and press Reset Lesson to begin.
+                    </div>
+
+                    <div id="checkpoint-panel" class="checkpoint-panel hidden">
+                        <p id="checkpoint-prompt"></p>
+                        <div id="checkpoint-choices" class="checkpoint-choices"></div>
+                        <button id="btn-checkpoint-reveal" type="button" style="margin-top: 8px;">Reveal</button>
+                        <p id="checkpoint-feedback" class="checkpoint-feedback" role="status" aria-live="polite"></p>
+                    </div>
+
+                    <div id="quiz-prompt-panel" class="quiz-prompt-panel hidden">
+                        <p id="quiz-prompt-text">
+                            Lesson complete. This unit quiz covers leaf and parent hashing, odd-node duplication, tamper paths and the Merkle root.
+                        </p>
+                        <button id="btn-lesson-quiz" type="button" disabled>
+                            Take the quiz
+                        </button>
+                        <div id="quiz-mount" class="hidden" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="visualizer-panel">
+                <div id="merkle-error-banner" role="alert" aria-live="polite" class="error-banner hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span id="merkle-error-text"></span>
+                </div>
+
+                <div id="merkle-notice" class="notice-banner hidden" role="status" aria-live="polite"></div>
+
+                <div id="root-banner" class="root-banner">
+                    <strong>Merkle root:</strong> <span id="root-banner-text">not built yet — press Build.</span>
+                </div>
+
+                <section class="panel-card" aria-labelledby="merkle-heading">
+                    <h2 id="merkle-heading" class="panel-heading">Merkle tree (root at the top)</h2>
+                    <p class="legend-row" aria-label="Tree state legend">
+                        <span><span class="legend-badge" aria-hidden="true">+</span> created or hashed in this step</span>
+                        <span><span class="legend-ring reused" aria-hidden="true"></span> matched children reused</span>
+                        <span><span class="legend-badge" aria-hidden="true">dup</span> duplicated odd node</span>
+                        <span><span class="legend-badge" aria-hidden="true">&#8800;</span> hash changed / mismatch</span>
+                    </p>
+                    <div id="merkle-tree" class="merkle-tree-box"></div>
+                </section>
+
+                <section id="leaf-editor-card" class="panel-card" aria-labelledby="leaf-editor-heading">
+                    <h2 id="leaf-editor-heading" class="panel-heading">Blocks</h2>
+                    <p id="leaf-editor-status" class="panel-note" role="status" aria-live="polite">
+                        Edit a block, then press Build to rebuild all hashes or Tamper to test only that block.
+                    </p>
+                    <div id="leaf-editor" class="leaf-editor"></div>
+                </section>
+
+                <section class="panel-card" aria-labelledby="inspector-heading">
+                    <h2 id="inspector-heading" class="panel-heading">Node inspector</h2>
+                    <div id="node-inspector" class="inspector" aria-live="polite">
+                        <p>Click any node to see its full 64-character SHA-256 hash and children.</p>
+                    </div>
+                </section>
+
+                <div id="step-annotation" class="step-annotation-box" aria-live="polite">
+                    Ready. Press Build to hash the four sample blocks.
+                </div>
+
+                <section class="metrics-grid" aria-label="Trace metrics">
+                    <div class="metric-box">
+                        <span class="metric-label">Blocks</span>
+                        <span id="metric-leaves" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Nodes</span>
+                        <span id="metric-nodes" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Levels</span>
+                        <span id="metric-levels" class="metric-value">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Root (first 8)</span>
+                        <span id="metric-root" class="metric-value">—</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Recomputed (tamper)</span>
+                        <span id="metric-recomputed" class="metric-value">—</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/shell/progress.js"></script>
+    <script src="js/shell/glossaryData.js"></script>
+    <script type="module" src="js/merkle.js"></script>
+</body>
+</html>
