@@ -334,3 +334,27 @@ CHECKPOINT_ORACLES["trie-search-vs-prefix"]["trie-search-vs-prefix-cp2"] = conce
 CHECKPOINT_ORACLES["trie-word-as-prefix"] = {}
 CHECKPOINT_ORACLES["trie-word-as-prefix"]["trie-word-as-prefix-cp1"] = conceptual("checkpoint prediction verified against the trace")
 CHECKPOINT_ORACLES["trie-word-as-prefix"]["trie-word-as-prefix-cp2"] = conceptual("checkpoint prediction verified against the trace")
+
+# ---------------------------------------------------------------------------
+# nqueensQuiz (Stage 2)
+# ---------------------------------------------------------------------------
+ORACLES["nqueensQuiz"] = {}
+
+def _nq_count(client, n):
+    res = _post(client, "/nqueens", {"n": n, "mode": "all"})
+    return str(res["final_state"]["count"])
+
+def _nq_first(client, n):
+    res = _post(client, "/nqueens", {"n": n, "mode": "first"})
+    sols = res["final_state"]["solutions"]
+    return str(sols[0]).replace(" ", "") if sols else ""
+
+ORACLES["nqueensQuiz"]["n-q1"] = computed(lambda c: _nq_count(c, 4))
+ORACLES["nqueensQuiz"]["n-q2"] = computed(lambda c: _nq_count(c, 5))
+ORACLES["nqueensQuiz"]["n-q3"] = computed(lambda c: _nq_count(c, 8))
+ORACLES["nqueensQuiz"]["n-q4"] = computed(lambda c: _nq_first(c, 4))
+ORACLES["nqueensQuiz"]["n-q5"] = computed(lambda c: _nq_first(c, 8))
+for qid in ["n-q6","n-q7","n-q8","n-q9","n-q10"]:
+    ORACLES["nqueensQuiz"][qid] = conceptual("N-Queens reasoning; backend produces traces but answer is a statement.")
+
+CHECKPOINT_ORACLES.setdefault('nqueens-lesson-1', {})['nqueens-lesson-1-cp1'] = conceptual('checkpoint prediction; verified against trace')

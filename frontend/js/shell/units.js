@@ -158,20 +158,17 @@
             ]
         },
         {
-            id: "design-analysis",
-            title: "Design & Analysis",
-            page: null,
-            status: "soon",
+            id: "nqueens",
+            title: "N-Queens & Backtracking",
+            page: "nqueens.html",
+            status: "live",
             guidedOrder: 9,
-            blurb: "Growth curves against Big-O, recursion trees, 0/1 Knapsack solved three ways, N-Queens, and branch and bound.",
+            quizId: "nqueensQuiz",
+            blurb: "Backtracking search on the N-Queens board with conflict detection and pruning.",
             glossaryTerms: [
-                "Asymptotic Notation",
-                "Big O Notation (O)",
-                "Dynamic Programming",
-                "Greedy Algorithm",
                 "Backtracking",
-                "Branch and Bound",
-                "Memoization"
+                "N-Queens",
+                "Partial Solution"
             ]
         }
     ];

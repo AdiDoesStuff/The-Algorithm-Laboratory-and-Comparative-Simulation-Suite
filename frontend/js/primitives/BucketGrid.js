@@ -87,6 +87,14 @@ export class BucketGrid {
             this._renderChaining(snapshot, stepRoles);
             return;
         }
+        if (snapshot.n && Array.isArray(snapshot.queens)) {
+            this._renderNQueens(snapshot, stepRoles);
+            return;
+        }
+        if (Array.isArray(snapshot.cells) && (snapshot.row_labels || snapshot.col_labels)) {
+            this._renderMatrix(snapshot, stepRoles);
+            return;
+        }
         this._renderLegacy(snapshot);
     }
 
@@ -236,6 +244,89 @@ export class BucketGrid {
     }
 
     // --- legacy mode -------------------------------------------------------
+
+    _renderMatrix(snapshot, stepRoles) {
+        const rows = Number(snapshot.rows) || 1;
+        const cols = Number(snapshot.cols) || 1;
+        this._switchMode('matrix');
+        this.resize(rows, cols);
+        const cells = Array.isArray(snapshot.cells) ? snapshot.cells : [];
+        const rowLabels = snapshot.row_labels || [];
+        const colLabels = snapshot.col_labels || [];
+        // role sets from stepRoles (indices are flat cell indices)
+        const newNodeIds = new Set((stepRoles?.new_node || []).map(Number));
+        const dpSourceIds = new Set((stepRoles?.dp_source || []).map(Number));
+        const tracebackIds = new Set((stepRoles?.traceback || []).map(Number));
+        const reusedIds = new Set((stepRoles?.reused || []).map(Number));
+        const highlightedIds = new Set((stepRoles?.highlighted || []).map(Number));
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const idx = r * cols + c;
+                const el = this._ensureCellEl(idx);
+                const val = cells[idx];
+                const classes = ['grid-cell', 'matrix-cell'];
+                let display = (val === null || val === undefined) ? '\u00b7' : String(val);
+                if (newNodeIds.has(idx)) classes.push('dp-filled', 'cell-created');
+                if (dpSourceIds.has(idx)) classes.push('dp-source');
+                if (tracebackIds.has(idx)) classes.push('traceback');
+                if (reusedIds.has(idx)) classes.push('cell-reused');
+                if (highlightedIds.has(idx)) classes.push('cell-highlighted');
+                el.className = classes.join(' ');
+                el.setAttribute('role', 'gridcell');
+                const rl = rowLabels[r] || `r${r}`;
+                const cl = colLabels[c] || `c${c}`;
+                el.setAttribute('aria-label', `${rl}, ${cl}: ${display === '\u00b7' ? 'empty' : display}`);
+                this._setCellContent(el, display, '', '');
+            }
+        }
+        this._trimCells(rows * cols);
+        // row/col labels: render as a caption line
+        this.chainsEl.innerHTML = '';
+        this._setCaption(
+            (rowLabels.length ? rowLabels.join(' | ') : '') 
+        );
+    }
+
+    _renderNQueens(snapshot, stepRoles) {
+        const n = Number(snapshot.n) || 1;
+        this._switchMode('matrix');
+        this.resize(n, n);
+        const queens = Array.isArray(snapshot.queens) ? snapshot.queens : [];
+        const currentRow = Number(snapshot.row) || 0;
+        // threatened cells set from stepRoles
+        const threatenedIds = new Set((stepRoles?.threatened || []).map(Number));
+        const conflictIds = new Set((stepRoles?.conflict || []).map(Number));
+        const safeIds = new Set((stepRoles?.safe || []).map(Number));
+        const backtrackIds = new Set((stepRoles?.backtrack || []).map(Number));
+        const queenIds = new Set((stepRoles?.queen || []).map(Number));
+        // fallback queen positions from queens array
+        const queenSet = new Set();
+        for (let r = 0; r < queens.length; r++) {
+            queenSet.add(r * n + queens[r]);
+        }
+        for (let r = 0; r < n; r++) {
+            for (let c = 0; c < n; c++) {
+                const idx = r * n + c;
+                const el = this._ensureCellEl(idx);
+                const classes = ['grid-cell', 'nq-cell'];
+                let display = '';
+                let role = '';
+                if (queenSet.has(idx)) { classes.push('nq-queen'); display = '\u265b'; role = 'queen'; }
+                else if (conflictIds.has(idx)) { classes.push('nq-conflict'); display = '\u2715'; role = 'conflict'; }
+                else if (safeIds.has(idx)) { classes.push('nq-safe'); display = '\u2713'; role = 'safe'; }
+                else if (backtrackIds.has(idx)) { classes.push('nq-backtrack'); display = '\u21b6'; role = 'backtrack'; }
+                else if (threatenedIds.has(idx)) { classes.push('nq-threatened'); display = ''; role = 'threatened'; }
+                el.className = classes.join(' ');
+                el.setAttribute('role', 'gridcell');
+                const label = role ? `Row ${r}, column ${c}: ${role}` : `Row ${r}, column ${c}`;
+                el.setAttribute('aria-label', label);
+                this._setCellContent(el, display, '', '');
+            }
+        }
+        this._trimCells(n * n);
+        this.chainsEl.innerHTML = '';
+        this._setCaption('');
+    }
 
     _renderLegacy(snapshot) {
         this._switchMode('legacy');
