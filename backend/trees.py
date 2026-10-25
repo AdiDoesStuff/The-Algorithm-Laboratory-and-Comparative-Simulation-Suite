@@ -251,7 +251,10 @@ def _build_tree(ops_or_array: Any, tree_type: str = 'bst') -> Tuple[Optional[Nod
 # --- BST Operations Step Generators ---
 
 def bst_insert_steps(ops_or_values: Any, new_value: int) -> Dict[str, Any]:
-    """Generates execution steps for inserting new_value into a BST built from ops_or_values."""
+    """Generates execution steps for inserting new_value into a BST built from ops_or_values.
+    Each compare step carries payload['path']: list of ancestor node ids visited so far (root first).
+    The final insert step carries the full ancestor path so the canvas keeps the route highlighted.
+    """
     if isinstance(ops_or_values, list) and (not ops_or_values or not isinstance(ops_or_values[0], dict)):
         ops = normalize_ops(values=ops_or_values)
     elif isinstance(ops_or_values, list):
@@ -274,18 +277,23 @@ def bst_insert_steps(ops_or_values: Any, new_value: int) -> Dict[str, Any]:
 
     if root is None:
         root = new_node
-        steps.append(make_step('insert', [new_node.id], serialize_tree(root), f"Inserted {new_value} as root node"))
+        steps.append(make_step('insert', [new_node.id], serialize_tree(root),
+                               f"Inserted {new_value} as root node",
+                               payload={'path': []}))
         return {"steps": steps, "final_tree": serialize_tree(root)}
 
     current = root
     parent = None
     side = None
+    path_ids: List[int] = []  # ancestor node IDs visited so far, root first
 
     while current is not None:
+        path_ids.append(current.id)
         direction = "left" if new_value < current.value else "right"
         steps.append(make_step(
             'compare', [current.id], serialize_tree(root),
-            f"Comparing {new_value} with node {current.value}: {new_value} {'<' if new_value < current.value else '>'} {current.value} → go {direction}"
+            f"Comparing {new_value} with node {current.value}: {new_value} {'<' if new_value < current.value else '>'} {current.value} → go {direction}",
+            payload={'path': list(path_ids)}
         ))
         parent = current
         if new_value < current.value:
@@ -300,7 +308,10 @@ def bst_insert_steps(ops_or_values: Any, new_value: int) -> Dict[str, Any]:
     else:
         parent.right = new_node
 
-    steps.append(make_step('insert', [new_node.id], serialize_tree(root), f"Inserted {new_value} as {side} child of {parent.value}"))
+    # Final insert step: full ancestor path highlighted; new node in new_node role
+    steps.append(make_step('insert', [new_node.id], serialize_tree(root),
+                           f"Inserted {new_value} as {side} child of {parent.value}",
+                           payload={'path': list(path_ids)}))
     return {"steps": steps, "final_tree": serialize_tree(root)}
 
 
@@ -427,12 +438,15 @@ def bst_delete_steps(ops_or_values: Any, delete_val: int) -> Dict[str, Any]:
     current = root
     parent = None
     side = None
+    path_ids: List[int] = []  # ancestor IDs visited in search phase, root first
 
     while current:
+        path_ids.append(current.id)
         direction = "match" if current.value == delete_val else ("left" if delete_val < current.value else "right")
         steps.append(make_step(
             'compare', [current.id], serialize_tree(root),
-            f"Searching for {delete_val}: compare with node {current.value} → {'found target' if direction == 'match' else 'go ' + direction}"
+            f"Searching for {delete_val}: compare with node {current.value} → {'found target' if direction == 'match' else 'go ' + direction}",
+            payload={'path': list(path_ids)}
         ))
 
         if current.value == delete_val:
@@ -696,6 +710,151 @@ def bst_height_depth(ops_or_array: Any, target_val: Optional[int] = None, tree_t
     if tree_type == 'binary':
         res['warnings'] = warnings
     return res
+
+
+# --- A4: Tree Mirroring / Structural Comparison ---
+
+def _build_tree_from_spec(spec: Dict[str, Any]) -> Tuple[Optional[Node], List[str]]:
+    """Build a tree from a validated mirror-spec dict: {tree_type, ops} or {tree_type, array}."""
+    tree_type = spec.get('tree_type', 'bst')
+    if tree_type == 'binary':
+        arr = spec.get('array', [])
+        cleaned, warnings = _parse_binary_array(arr)
+        return _build_binary_tree_from_cleaned(cleaned), warnings
+    ops_raw = spec.get('ops', [])
+    if isinstance(ops_raw, list) and ops_raw and not isinstance(ops_raw[0], dict):
+        ops_norm = normalize_ops(values=ops_raw)
+    elif isinstance(ops_raw, list):
+        ops_norm = normalize_ops(ops=ops_raw)
+    else:
+        ops_norm = []
+    return _replay_ops(ops_norm), []
+
+
+def _preorder_with_nulls(node: Optional[Node]) -> List[str]:
+    """Preorder traversal with 'N' markers for null positions."""
+    if node is None:
+        return ['N']
+    return [str(node.value)] + _preorder_with_nulls(node.left) + _preorder_with_nulls(node.right)
+
+
+def _mirror_preorder_with_nulls(node: Optional[Node]) -> List[str]:
+    """Preorder traversal visiting right before left (mirror-reflected order)."""
+    if node is None:
+        return ['N']
+    return [str(node.value)] + _mirror_preorder_with_nulls(node.right) + _mirror_preorder_with_nulls(node.left)
+
+
+def _make_mirror_step(step_type: str, a_ids: List[int], b_ids: List[int],
+                     snapshot_a: Dict, snapshot_b: Dict, note: str, **extra) -> Dict[str, Any]:
+    """Creates a mirror comparison step with dual snapshots and suffixed role arrays."""
+    step: Dict[str, Any] = {
+        'type': step_type,
+        'snapshot_a': snapshot_a,
+        'snapshot_b': snapshot_b,
+        'annotation': note,
+        'comparing_a': a_ids if step_type in ('mirror_compare', 'struct_compare') else [],
+        'comparing_b': b_ids if step_type in ('mirror_compare', 'struct_compare') else [],
+        'matched_a': a_ids if step_type == 'mirror_match' else [],
+        'matched_b': b_ids if step_type == 'mirror_match' else [],
+        'mismatch_a': a_ids if step_type == 'mirror_mismatch' else [],
+        'mismatch_b': b_ids if step_type == 'mirror_mismatch' else [],
+    }
+    step.update(extra)
+    return step
+
+
+def bst_mirror_steps(tree_a_spec: Dict, tree_b_spec: Dict, mode: str = 'mirror') -> Dict[str, Any]:
+    """
+    Compares two trees recursively:
+      mode='mirror'    — A mirrors B iff A.left mirrors B.right and A.right mirrors B.left (values equal).
+      mode='identical' — A equals B iff A.left identical B.left and A.right identical B.right.
+
+    Oracle invariant:
+      A mirrors B  ⟺  _preorder_with_nulls(A) == _mirror_preorder_with_nulls(B)
+      A identical B ⟺  _preorder_with_nulls(A) == _preorder_with_nulls(B)
+
+    Step types: 'mirror_compare' / 'struct_compare', 'mirror_match', 'mirror_mismatch'.
+    Each step carries snapshot_a, snapshot_b and suffixed role arrays (_a / _b).
+    """
+    root_a, warnings_a = _build_tree_from_spec(tree_a_spec)
+    root_b, warnings_b = _build_tree_from_spec(tree_b_spec)
+
+    snap_a = serialize_tree(root_a)
+    snap_b = serialize_tree(root_b)
+    steps: List[Dict[str, Any]] = []
+    first_mismatch: Optional[Dict[str, Any]] = None
+    compare_type = 'struct_compare' if mode == 'identical' else 'mirror_compare'
+
+    def recurse(node_a: Optional[Node], node_b: Optional[Node]) -> bool:
+        nonlocal first_mismatch
+        a_ids = [node_a.id] if node_a else []
+        b_ids = [node_b.id] if node_b else []
+
+        # Both null — structural match
+        if node_a is None and node_b is None:
+            steps.append(_make_mirror_step(
+                'mirror_match', [], [], snap_a, snap_b,
+                f"Both positions are null — match"
+            ))
+            return True
+
+        # One null — structural mismatch
+        if node_a is None or node_b is None:
+            reason = "Tree A has a node where Tree B is null" if node_a else "Tree B has a node where Tree A is null"
+            steps.append(_make_mirror_step(
+                'mirror_mismatch', a_ids, b_ids, snap_a, snap_b,
+                f"{reason} — mismatch"
+            ))
+            if first_mismatch is None:
+                first_mismatch = {
+                    'a_id': node_a.id if node_a else None,
+                    'b_id': node_b.id if node_b else None,
+                    'reason': reason
+                }
+            return False
+
+        # Both non-null: emit a compare step
+        labels_match = (node_a.value == node_b.value)
+        compare_note = (
+            f"Comparing A:{node_a.value}(id={node_a.id}) with B:{node_b.value}(id={node_b.id}) "
+            f"— {'values equal' if labels_match else 'values differ'}"
+        )
+        steps.append(_make_mirror_step(
+            compare_type, a_ids, b_ids, snap_a, snap_b, compare_note
+        ))
+
+        # Recurse based on mode
+        if mode == 'mirror':
+            left_ok = recurse(node_a.left, node_b.right)
+            right_ok = recurse(node_a.right, node_b.left)
+        else:
+            left_ok = recurse(node_a.left, node_b.left)
+            right_ok = recurse(node_a.right, node_b.right)
+
+        result = labels_match and left_ok and right_ok
+
+        if not result and first_mismatch is None and not labels_match:
+            reason = f"Value mismatch: A={node_a.value} vs B={node_b.value}"
+            steps.append(_make_mirror_step(
+                'mirror_mismatch', a_ids, b_ids, snap_a, snap_b, reason
+            ))
+            first_mismatch = {'a_id': node_a.id, 'b_id': node_b.id, 'reason': reason}
+
+        return result
+
+    is_match = recurse(root_a, root_b)
+
+    return {
+        'steps': steps,
+        'final_tree_a': snap_a,
+        'final_tree_b': snap_b,
+        'verdict': {
+            'is_match': is_match,
+            'first_mismatch': first_mismatch
+        },
+        'warnings': warnings_a + warnings_b
+    }
 
 
 # Stub functions for remaining units (unchanged)

@@ -11,6 +11,7 @@ VALID_TREE_ALGORITHMS = {
     'bst_classify',
     'bst_height_depth',
     'array_to_tree',
+    'bst_mirror',
     'heap_insert',
     'avl_insert',
 }
@@ -51,6 +52,30 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
         'algorithm': algo,
         'tree_type': tree_type
     }
+
+    # --- bst_mirror: completely different payload shape, handled up-front ---
+    if algo == 'bst_mirror':
+        mode = data.get('mode', 'mirror')
+        if mode not in ('mirror', 'identical'):
+            return None, (f"Invalid 'mode': '{mode}'; must be 'mirror' or 'identical'", "mode")
+        validated['mode'] = mode
+
+        for key in ('tree_a', 'tree_b'):
+            spec = data.get(key)
+            if not isinstance(spec, dict):
+                return None, (f"Missing or invalid '{key}': must be an object with tree_type and ops/array", key)
+            tt = spec.get('tree_type', 'bst')
+            if tt not in ('bst', 'binary'):
+                return None, (f"Invalid tree_type in {key}: must be 'bst' or 'binary'", key)
+            if tt == 'binary':
+                if 'array' not in spec or not isinstance(spec['array'], list):
+                    return None, (f"{key} with tree_type='binary' requires an 'array' list", key)
+            else:
+                ops_field = spec.get('ops', spec.get('values', []))
+                if not isinstance(ops_field, list):
+                    return None, (f"{key}.ops must be a list", key)
+            validated[key] = spec
+        return validated, None
 
     # Binary mode rule:
     # "The op log cannot represent null holes, so binary mode must take an `array` field, not `ops`.

@@ -176,6 +176,10 @@ def tree_handler():
         return jsonify(trees.bst_height_depth(input_data, validated.get('target_value'), tree_type, validated.get('target_id')))
     elif algo == 'array_to_tree':
         return jsonify(trees.array_to_binary_tree_steps(validated['array']))
+    elif algo == 'bst_mirror':
+        return jsonify(trees.bst_mirror_steps(
+            validated['tree_a'], validated['tree_b'], validated.get('mode', 'mirror')
+        ))
     elif algo == 'heap_insert':
         return jsonify(trees.heap_insert_steps(input_data))
     elif algo == 'avl_insert':

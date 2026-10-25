@@ -19,7 +19,11 @@ from trees import (
     bst_classify,
     bst_height_depth,
     array_to_binary_tree_steps,
-    _parse_binary_array
+    _parse_binary_array,
+    bst_mirror_steps,
+    _preorder_with_nulls,
+    _mirror_preorder_with_nulls,
+    _build_tree_from_spec,
 )
 from tracing import DEFAULT_ROLES
 
@@ -472,3 +476,210 @@ def test_height_depth_target_id_exclusive_search():
     with pytest.raises(trees.ValidationError) as exc_info2:
         bst_height_depth(ops, target_val=999, target_id=None)
     assert exc_info2.value.field == "target_value"
+
+
+# --- 7. Insertion Path Tests ---
+
+def test_insert_path_grows_with_depth():
+    """Each compare step's path has exactly one more id than the previous compare step."""
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 30},
+        {"op": "insert", "value": 70},
+    ]
+    res = bst_insert_steps(ops, 20)  # goes 50 → 30 → left of 30
+    compare_steps = [s for s in res['steps'] if s['type'] == 'compare']
+    insert_steps  = [s for s in res['steps'] if s['type'] == 'insert']
+
+    # path grows by one at each compare step
+    for i, s in enumerate(compare_steps):
+        assert 'payload' in s
+        assert 'path' in s['payload'], f"compare step {i} missing payload.path"
+        assert len(s['payload']['path']) == i + 1, (
+            f"step {i}: expected path len {i+1}, got {len(s['payload']['path'])}"
+        )
+
+    # Final insert step carries the full path
+    assert 'payload' in insert_steps[-1]
+    assert len(insert_steps[-1]['payload']['path']) == len(compare_steps)
+
+
+def test_insert_path_is_ancestor_chain():
+    """Each id in the path has the previous id as its parent in final_tree."""
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 30},
+        {"op": "insert", "value": 70},
+        {"op": "insert", "value": 20},
+    ]
+    res = bst_insert_steps(ops, 10)  # path: 50(0) → 30(1) → 20(3) → insert 10
+    insert_steps = [s for s in res['steps'] if s['type'] == 'insert']
+    full_path = insert_steps[-1]['payload']['path']  # [0, 1, 3]
+
+    nodes = {n['id']: n for n in res['final_tree']['nodes']}
+    # Verify each path[j] has parent_id == path[j-1]
+    for j in range(1, len(full_path)):
+        child_id = full_path[j]
+        expected_parent_id = full_path[j - 1]
+        actual_parent_id = nodes[child_id]['parent_id']
+        assert actual_parent_id == expected_parent_id, (
+            f"path[{j}]={child_id} has parent_id={actual_parent_id}, expected {expected_parent_id}"
+        )
+
+    # The newly inserted node's parent must be the last element in the path
+    new_node_id = 4  # 5th op, idx 4
+    assert nodes[new_node_id]['parent_id'] == full_path[-1]
+
+
+def test_insert_root_path_is_empty():
+    """When tree is empty, root insertion has payload.path = []."""
+    res = bst_insert_steps([], 42)
+    assert res['steps'][0]['payload']['path'] == []
+
+
+def test_delete_search_path_payload():
+    """Delete compare steps in the search phase include payload.path."""
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 30},
+        {"op": "insert", "value": 70},
+    ]
+    res = bst_delete_steps(ops, 30)
+    search_compares = [s for s in res['steps'] if s['type'] == 'compare']
+    # All search compare steps must carry path
+    for i, s in enumerate(search_compares):
+        assert 'payload' in s
+        assert 'path' in s['payload']
+        assert len(s['payload']['path']) == i + 1
+
+
+# --- 8. Mirror / Structural Comparison Tests ---
+
+def _make_bst_spec(values):
+    return {'tree_type': 'bst', 'ops': [{"op": "insert", "value": v} for v in values]}
+
+
+def test_mirror_two_empty_trees():
+    """Two empty trees are a mirror."""
+    res = bst_mirror_steps({'tree_type': 'bst', 'ops': []}, {'tree_type': 'bst', 'ops': []})
+    assert res['verdict']['is_match'] is True
+    assert res['verdict']['first_mismatch'] is None
+
+
+def test_mirror_one_empty_vs_non_empty():
+    """One empty, one non-empty is never a mirror."""
+    res = bst_mirror_steps({'tree_type': 'bst', 'ops': []}, _make_bst_spec([10]))
+    assert res['verdict']['is_match'] is False
+    assert res['verdict']['first_mismatch'] is not None
+
+
+def test_mirror_perfect_tree_is_mirror_of_itself():
+    """A symmetric perfect tree is its own mirror."""
+    #       4
+    #      / \
+    #     2   6
+    #    / \ / \
+    #   1  3 5  7
+    spec_a = _make_bst_spec([4, 2, 6, 1, 3, 5, 7])
+    # Mirror tree: root 4, left 6 (7, 5), right 2 (3, 1)
+    # Level-order array: [4, 6, 2, 7, 5, 3, 1]
+    spec_b = {'tree_type': 'binary', 'array': [4, 6, 2, 7, 5, 3, 1]}
+    res = bst_mirror_steps(spec_a, spec_b)
+    assert res['verdict']['is_match'] is True
+
+
+def test_mirror_one_child_mirror():
+    """Left-only tree mirrors right-only tree."""
+    # A: 10 -> left 5   B: 10 -> right 5
+    spec_a = {'tree_type': 'bst', 'ops': [{"op": "insert", "value": 10}, {"op": "insert", "value": 5}]}
+    spec_b = {'tree_type': 'binary', 'array': [10, None, 5]}
+    res = bst_mirror_steps(spec_a, spec_b)
+    assert res['verdict']['is_match'] is True
+
+
+def test_mirror_not_mirror_due_to_label():
+    """Same shape, different label — not a mirror."""
+    # A: 10 / 5 / 20. Mirror shape has root 10, left 20, right 5.
+    spec_a = _make_bst_spec([10, 5, 20])
+    # Give B the mirror shape, but wrong label (99 instead of 5 on the right)
+    spec_b = {'tree_type': 'binary', 'array': [10, 20, 99]}
+    res = bst_mirror_steps(spec_a, spec_b)
+    assert res['verdict']['is_match'] is False
+    assert res['verdict']['first_mismatch'] is not None
+    assert 'mismatch' in res['verdict']['first_mismatch']['reason'].lower()
+
+
+def test_mirror_not_mirror_due_to_shape():
+    """Different shape — not a mirror."""
+    spec_a = _make_bst_spec([10, 5, 20])      # balanced
+    spec_b = _make_bst_spec([10, 20])          # right-only, no left
+    res = bst_mirror_steps(spec_a, spec_b)
+    assert res['verdict']['is_match'] is False
+
+
+def test_identical_same_trees():
+    """identical mode: same tree is identical to itself."""
+    spec = _make_bst_spec([10, 5, 20])
+    res = bst_mirror_steps(spec, _make_bst_spec([10, 5, 20]), mode='identical')
+    assert res['verdict']['is_match'] is True
+
+
+def test_identical_different_trees():
+    """identical mode: a mirror pair is NOT identical."""
+    spec_a = _make_bst_spec([10, 5, 20])
+    # Tree B is a mirror of A (left=20, right=5), so it is not identical to A
+    spec_b = {'tree_type': 'binary', 'array': [10, 20, 5]}
+    res = bst_mirror_steps(spec_a, spec_b, mode='identical')
+    # They are mirror-compatible but not identical (left/right swapped)
+    assert res['verdict']['is_match'] is False
+
+
+def test_mirror_brute_force_oracle():
+    """
+    Oracle: A mirrors B iff _preorder_with_nulls(A) == _mirror_preorder_with_nulls(B).
+    Test on random small op sequences.
+    """
+    random.seed(42)
+    values_pool = list(range(1, 30))
+
+    for _ in range(40):
+        # Build two random small BSTs (3–8 nodes each)
+        k = random.randint(3, 8)
+        vals_a = random.sample(values_pool, k)
+        vals_b = random.sample(values_pool, k)
+        spec_a = _make_bst_spec(vals_a)
+        spec_b = _make_bst_spec(vals_b)
+
+        root_a, _ = _build_tree_from_spec(spec_a)
+        root_b, _ = _build_tree_from_spec(spec_b)
+
+        # Oracle ground truth
+        oracle_match = (_preorder_with_nulls(root_a) == _mirror_preorder_with_nulls(root_b))
+
+        # Function under test
+        res = bst_mirror_steps(spec_a, spec_b)
+        assert res['verdict']['is_match'] == oracle_match, (
+            f"Oracle mismatch for A={vals_a} B={vals_b}: "
+            f"oracle={oracle_match}, got={res['verdict']['is_match']}"
+        )
+
+
+def test_mirror_step_types_in_default_roles():
+    """All mirror step types must be registered in DEFAULT_ROLES."""
+    for t in ('mirror_compare', 'struct_compare', 'mirror_match', 'mirror_mismatch'):
+        assert t in DEFAULT_ROLES, f"Step type '{t}' missing from DEFAULT_ROLES"
+
+
+def test_mirror_steps_have_dual_snapshots():
+    """Every mirror step must have snapshot_a and snapshot_b (not snapshot)."""
+    spec_a = _make_bst_spec([10, 5, 20])
+    spec_b = {'tree_type': 'bst', 'ops': [
+        {"op": "insert", "value": 10},
+        {"op": "insert", "value": 20},
+        {"op": "insert", "value": 5},
+    ]}
+    res = bst_mirror_steps(spec_a, spec_b)
+    for step in res['steps']:
+        assert 'snapshot_a' in step, f"step type={step['type']} missing snapshot_a"
+        assert 'snapshot_b' in step, f"step type={step['type']} missing snapshot_b"
+        assert 'snapshot' not in step, f"step type={step['type']} should not have 'snapshot'"

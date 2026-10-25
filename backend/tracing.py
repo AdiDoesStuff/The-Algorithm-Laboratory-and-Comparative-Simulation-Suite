@@ -22,6 +22,11 @@ DEFAULT_ROLES = {
     'probe':                {'comparing': lambda ids: ids},
     'dp_fill':              {'new_node': lambda ids: ids},
     'select':               {'selected': lambda ids: ids},
+    # Mirror / structural comparison steps (dual-snapshot; roles are _a/_b suffixed)
+    'mirror_compare':       {},   # roles in comparing_a / comparing_b
+    'struct_compare':       {},   # same shape, identical mode
+    'mirror_match':         {},   # roles in matched_a / matched_b
+    'mirror_mismatch':      {},   # roles in mismatch_a / mismatch_b
 }
 
 

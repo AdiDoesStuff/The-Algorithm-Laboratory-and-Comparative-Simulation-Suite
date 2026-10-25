@@ -317,3 +317,92 @@ def test_api_generic_500_handler(client, monkeypatch):
     assert res.status_code == 500
     data = res.get_json()
     assert data == {"error": "Internal server error", "field": "server"}
+
+
+# --- 10. bst_mirror API Tests ---
+
+def _ops(values):
+    return [{"op": "insert", "value": v} for v in values]
+
+
+def test_api_mirror_happy_path(client):
+    # A = BST [10, 5, 20]: root=10, left=5, right=20
+    # B = binary array [10, 20, 5]: root=10, left=20, right=5  (genuine mirror)
+    payload = {
+        "algorithm": "bst_mirror",
+        "mode": "mirror",
+        "tree_a": {"tree_type": "bst", "ops": _ops([10, 5, 20])},
+        "tree_b": {"tree_type": "binary", "array": [10, 20, 5]},
+    }
+    res = client.post('/tree', json=payload)
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "verdict" in data
+    assert "steps" in data
+    assert "final_tree_a" in data
+    assert "final_tree_b" in data
+    assert "warnings" in data
+    assert data["verdict"]["is_match"] is True
+
+
+def test_api_mirror_identical_mode(client):
+    payload = {
+        "algorithm": "bst_mirror",
+        "mode": "identical",
+        "tree_a": {"tree_type": "bst", "ops": _ops([10, 5, 20])},
+        "tree_b": {"tree_type": "bst", "ops": _ops([10, 5, 20])},
+    }
+    res = client.post('/tree', json=payload)
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["verdict"]["is_match"] is True
+
+
+def test_api_mirror_mismatch_returns_first_mismatch(client):
+    payload = {
+        "algorithm": "bst_mirror",
+        "mode": "mirror",
+        "tree_a": {"tree_type": "bst", "ops": _ops([10, 5, 20])},
+        "tree_b": {"tree_type": "bst", "ops": _ops([10, 5])},
+    }
+    res = client.post('/tree', json=payload)
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["verdict"]["is_match"] is False
+    assert data["verdict"]["first_mismatch"] is not None
+
+
+def test_api_mirror_steps_have_snapshot_a_b(client):
+    payload = {
+        "algorithm": "bst_mirror",
+        "mode": "mirror",
+        "tree_a": {"tree_type": "bst", "ops": _ops([10])},
+        "tree_b": {"tree_type": "bst", "ops": _ops([10])},
+    }
+    res = client.post('/tree', json=payload)
+    data = res.get_json()
+    for step in data["steps"]:
+        assert "snapshot_a" in step
+        assert "snapshot_b" in step
+        assert "snapshot" not in step
+
+
+@pytest.mark.parametrize("payload,expected_field", [
+    ({"algorithm": "bst_mirror", "tree_b": {"tree_type": "bst", "ops": []}}, "tree_a"),
+    ({"algorithm": "bst_mirror", "tree_a": {"tree_type": "bst", "ops": []}}, "tree_b"),
+    ({"algorithm": "bst_mirror", "tree_a": "not_a_dict",
+      "tree_b": {"tree_type": "bst", "ops": []}}, "tree_a"),
+    ({"algorithm": "bst_mirror", "mode": "bad_mode",
+      "tree_a": {"tree_type": "bst", "ops": []},
+      "tree_b": {"tree_type": "bst", "ops": []}}, "mode"),
+    ({"algorithm": "bst_mirror",
+      "tree_a": {"tree_type": "binary"},
+      "tree_b": {"tree_type": "bst", "ops": []}}, "tree_a"),
+])
+def test_api_mirror_bad_payload(client, payload, expected_field):
+    res = client.post('/tree', json=payload)
+    assert res.status_code == 400
+    data = res.get_json()
+    assert "error" in data
+    assert "field" in data
+    assert data["field"] == expected_field
