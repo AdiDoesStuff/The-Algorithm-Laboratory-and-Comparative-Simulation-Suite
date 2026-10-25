@@ -259,3 +259,61 @@ def test_api_bst_delete_steps(client):
     assert data["steps"][-1]["type"] == "delete_done"
     labels = [n['label'] for n in data['final_tree']['nodes']]
     assert "30" not in labels
+
+
+# --- 9. HTTP Error Handling & Precedence Tests ---
+
+def test_api_get_tree_returns_405_json(client):
+    res = client.get('/tree')
+    assert res.status_code == 405
+    data = res.get_json()
+    assert data["field"] == "request"
+    assert "method is not allowed" in data["error"].lower()
+
+
+def test_api_height_depth_target_id_exclusive(client):
+    # Tree with 50 (id 0) and 20 (id 1)
+    payload_valid = {
+        "algorithm": "bst_height_depth",
+        "ops": [
+            {"op": "insert", "value": 50},
+            {"op": "insert", "value": 20}
+        ],
+        "target_id": 1
+    }
+    res_valid = client.post('/tree', json=payload_valid)
+    assert res_valid.status_code == 200
+    assert res_valid.get_json()["target_id"] == 1
+
+    # Absent target_id: must return 400 with field="target_id", NOT fall back to target_value
+    payload_absent_id = {
+        "algorithm": "bst_height_depth",
+        "ops": [
+            {"op": "insert", "value": 50},
+            {"op": "insert", "value": 20}
+        ],
+        "target_id": 999,
+        "target_value": 20
+    }
+    res_absent = client.post('/tree', json=payload_absent_id)
+    assert res_absent.status_code == 400
+    data = res_absent.get_json()
+    assert data["field"] == "target_id"
+    assert "not found in tree" in data["error"]
+
+
+def test_api_generic_500_handler(client, monkeypatch):
+    import trees
+    def broken_insert(*args, **kwargs):
+        raise RuntimeError("Unexpected internal crash")
+
+    monkeypatch.setattr(trees, "bst_insert_steps", broken_insert)
+    payload = {
+        "algorithm": "bst_insert",
+        "ops": [],
+        "new_value": 10
+    }
+    res = client.post('/tree', json=payload)
+    assert res.status_code == 500
+    data = res.get_json()
+    assert data == {"error": "Internal server error", "field": "server"}

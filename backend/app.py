@@ -1,4 +1,6 @@
+import logging
 from pathlib import Path
+from werkzeug.exceptions import HTTPException
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -10,6 +12,7 @@ from validation import ValidationError
 
 app = Flask(__name__)
 CORS(app)
+logger = logging.getLogger(__name__)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -21,21 +24,16 @@ def handle_validation_error(e):
     return jsonify({"error": e.message, "field": e.field}), e.status_code
 
 
-@app.errorhandler(400)
-def handle_bad_request(e):
-    msg = e.description if hasattr(e, 'description') else str(e)
-    field = getattr(e, 'field', 'body')
-    return jsonify({"error": msg, "field": field}), 400
-
-
-@app.errorhandler(404)
-def handle_not_found(e):
-    return jsonify({"error": "Resource not found", "field": "url"}), 404
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    # Preserves HTTPException status code (e.g. 405 Method Not Allowed, 404, 415)
+    return jsonify({"error": e.description, "field": "request"}), e.code
 
 
 @app.errorhandler(Exception)
 def handle_unexpected_exception(e):
-    return jsonify({"error": f"Internal server error: {str(e)}", "field": "server"}), 500
+    logger.exception("Unhandled server exception: %s", e)
+    return jsonify({"error": "Internal server error", "field": "server"}), 500
 
 
 @app.route('/', methods=['GET'])
@@ -146,8 +144,13 @@ def pathfind_handler():
     return jsonify(result)
 
 
-@app.route('/tree', methods=['POST'])
+from werkzeug.exceptions import HTTPException, MethodNotAllowed
+
+@app.route('/tree', methods=['GET', 'POST'])
 def tree_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+
     data = request.get_json(silent=True)
     if data is None:
         raise ValidationError("Request body must be a JSON object", field="body")
@@ -161,36 +164,24 @@ def tree_handler():
     tree_type = validated.get('tree_type', 'bst')
     input_data = validated.get('array') if tree_type == 'binary' else validated.get('ops', [])
 
-    try:
-        if algo == 'bst_insert':
-            return jsonify(trees.bst_insert_steps(input_data, validated['new_value']))
+    if algo == 'bst_insert':
+        return jsonify(trees.bst_insert_steps(input_data, validated['new_value']))
+    elif algo == 'bst_delete':
+        return jsonify(trees.bst_delete_steps(input_data, validated['delete_value']))
+    elif algo == 'bst_traverse':
+        return jsonify(trees.bst_traversal_steps(input_data, validated['order'], tree_type))
+    elif algo == 'bst_classify':
+        return jsonify(trees.bst_classify(input_data, tree_type))
+    elif algo == 'bst_height_depth':
+        return jsonify(trees.bst_height_depth(input_data, validated.get('target_value'), tree_type, validated.get('target_id')))
+    elif algo == 'array_to_tree':
+        return jsonify(trees.array_to_binary_tree_steps(validated['array']))
+    elif algo == 'heap_insert':
+        return jsonify(trees.heap_insert_steps(input_data))
+    elif algo == 'avl_insert':
+        return jsonify(trees.avl_insert_steps(input_data))
 
-        elif algo == 'bst_delete':
-            return jsonify(trees.bst_delete_steps(input_data, validated['delete_value']))
-
-        elif algo == 'bst_traverse':
-            return jsonify(trees.bst_traversal_steps(input_data, validated['order'], tree_type))
-
-        elif algo == 'bst_classify':
-            return jsonify(trees.bst_classify(input_data, tree_type))
-
-        elif algo == 'bst_height_depth':
-            return jsonify(trees.bst_height_depth(input_data, validated['target_value'], tree_type, validated.get('target_id')))
-
-        elif algo == 'array_to_tree':
-            return jsonify(trees.array_to_binary_tree_steps(validated['array']))
-
-        elif algo == 'heap_insert':
-            return jsonify(trees.heap_insert_steps(input_data))
-
-        elif algo == 'avl_insert':
-            return jsonify(trees.avl_insert_steps(input_data))
-
-        raise ValidationError(f"Unknown tree algorithm: {algo}", field="algorithm")
-
-    except ValueError as ve:
-        field = "delete_value" if "delete" in str(ve).lower() else ("new_value" if "duplicate" in str(ve).lower() else "body")
-        raise ValidationError(str(ve), field=field, status_code=400)
+    raise ValidationError(f"Unknown tree algorithm: {algo}", field="algorithm")
 
 
 @app.route('/hash', methods=['POST'])

@@ -148,13 +148,16 @@ def test_delete_two_children_deep_successor_relinking():
     assert res['steps'][-1]['type'] == 'delete_done'
 
 
-def test_delete_absent_value_raises_value_error():
+def test_delete_absent_value_raises_validation_error():
     ops = [{"op": "insert", "value": 10}, {"op": "insert", "value": 5}]
-    with pytest.raises(ValueError, match="not found in tree to delete"):
+    with pytest.raises(trees.ValidationError) as exc_info:
         bst_delete_steps(ops, 999)
+    assert exc_info.value.field == "delete_value"
+    assert "not found in tree" in str(exc_info.value)
 
-    with pytest.raises(ValueError, match="not found in tree to delete"):
+    with pytest.raises(trees.ValidationError) as exc_info2:
         bst_delete_steps([], 10)
+    assert exc_info2.value.field == "delete_value"
 
 
 # --- 2. Traversals Tests ---
@@ -285,19 +288,21 @@ def test_classify_complete_not_full():
 
 # --- 4. Duplicates Tests ---
 
-def test_duplicate_insert_in_ops_raises_value_error():
+def test_duplicate_insert_in_ops_raises_validation_error():
     ops = [
         {"op": "insert", "value": 10},
         {"op": "insert", "value": 10}
     ]
-    with pytest.raises(ValueError, match="Duplicate value"):
+    with pytest.raises(trees.ValidationError) as exc_info:
         _replay_ops(ops)
+    assert exc_info.value.field == "new_value"
 
 
-def test_duplicate_insert_via_new_value_raises_value_error():
+def test_duplicate_insert_via_new_value_raises_validation_error():
     ops = [{"op": "insert", "value": 25}]
-    with pytest.raises(ValueError, match="Duplicate value"):
+    with pytest.raises(trees.ValidationError) as exc_info:
         bst_insert_steps(ops, 25)
+    assert exc_info.value.field == "new_value"
 
 
 def test_reinsert_after_delete_allowed():
@@ -401,3 +406,69 @@ def test_stateless_replay_matches_step_by_step():
     stateless_root = _replay_ops(ops)
     stateless_tree = trees.serialize_tree(stateless_root)
     assert current_tree == stateless_tree
+
+
+def test_replay_property_tree_equals_final_step_snapshot():
+    """
+    Property test: for random op sequences, the tree after replaying ops
+    strictly equals the final snapshot of the last step of the next action.
+    """
+    random.seed(2026)
+    ops = []
+    active_values = set()
+    val_pool = list(range(1, 150))
+    random.shuffle(val_pool)
+
+    # Initial seed
+    for _ in range(5):
+        v = val_pool.pop()
+        ops.append({"op": "insert", "value": v})
+        active_values.add(v)
+
+    for action_idx in range(30):
+        if len(active_values) > 3 and random.random() < 0.4:
+            # Next action is delete
+            del_val = random.choice(list(active_values))
+            step_res = bst_delete_steps(ops, del_val)
+            ops.append({"op": "delete", "value": del_val})
+            active_values.remove(del_val)
+        else:
+            # Next action is insert
+            new_val = val_pool.pop()
+            step_res = bst_insert_steps(ops, new_val)
+            ops.append({"op": "insert", "value": new_val})
+            active_values.add(new_val)
+
+        # Replay ops up to and including this action
+        replayed_root = _replay_ops(ops)
+        replayed_tree = trees.serialize_tree(replayed_root)
+
+        # Check equality with final_tree and the snapshot of the last step
+        assert step_res["final_tree"] == replayed_tree
+        assert step_res["steps"][-1]["snapshot"] == replayed_tree
+
+
+def test_height_depth_target_id_exclusive_search():
+    ops = [
+        {"op": "insert", "value": 50},
+        {"op": "insert", "value": 20},
+        {"op": "insert", "value": 80}
+    ]
+    # Search by valid target_id
+    res = bst_height_depth(ops, target_id=1)
+    assert res['target_id'] == 1
+    assert res['depth'] == 1
+
+    # Absent target_id raises ValidationError with field="target_id", not falling back to target_value
+    with pytest.raises(trees.ValidationError) as exc_info:
+        bst_height_depth(ops, target_val=20, target_id=999)
+    assert exc_info.value.field == "target_id"
+
+    # Absent target_id falls back to target_value
+    res_val = bst_height_depth(ops, target_val=80, target_id=None)
+    assert res_val['target_id'] == 2
+
+    # Absent target_value raises ValidationError with field="target_value"
+    with pytest.raises(trees.ValidationError) as exc_info2:
+        bst_height_depth(ops, target_val=999, target_id=None)
+    assert exc_info2.value.field == "target_value"

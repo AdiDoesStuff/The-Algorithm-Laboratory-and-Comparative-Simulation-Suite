@@ -155,21 +155,30 @@ def validate_tree_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Optional
         validated['order'] = order
 
     elif algo == 'bst_height_depth':
-        t_val = data.get('target_value')
-        if t_val is None or isinstance(t_val, bool):
-            return None, ("Missing or invalid 'target_value': integer required", "target_value")
-        try:
-            validated['target_value'] = int(t_val)
-        except (ValueError, TypeError):
-            return None, (f"Invalid 'target_value': {t_val} is not an integer", "target_value")
-
         t_id = data.get('target_id')
-        if t_id is not None and not isinstance(t_id, bool):
+        t_val = data.get('target_value')
+
+        if t_id is not None:
+            if isinstance(t_id, bool):
+                return None, ("Invalid 'target_id': integer required", "target_id")
             try:
                 validated['target_id'] = int(t_id)
             except (ValueError, TypeError):
-                validated['target_id'] = None
+                return None, (f"Invalid 'target_id': {t_id} is not an integer", "target_id")
+            if t_val is not None and not isinstance(t_val, bool):
+                try:
+                    validated['target_value'] = int(t_val)
+                except (ValueError, TypeError):
+                    validated['target_value'] = None
+            else:
+                validated['target_value'] = None
         else:
+            if t_val is None or isinstance(t_val, bool):
+                return None, ("Missing or invalid 'target_value': integer required", "target_value")
+            try:
+                validated['target_value'] = int(t_val)
+            except (ValueError, TypeError):
+                return None, (f"Invalid 'target_value': {t_val} is not an integer", "target_value")
             validated['target_id'] = None
 
     return validated, None

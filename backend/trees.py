@@ -66,11 +66,11 @@ def normalize_ops(ops: Optional[List[Dict[str, Any]]] = None, values: Optional[L
 
 
 def _insert_node(root: Optional[Node], value: int, node_id: int) -> Node:
-    """Inserts a new node with explicit node_id; raises ValueError on duplicates."""
+    """Inserts a new node with explicit node_id; raises ValidationError on duplicates."""
     if root is None:
         return Node(value, node_id=node_id)
     if value == root.value:
-        raise ValueError(f"Duplicate value: {value} already exists in the tree")
+        raise ValidationError(f"Duplicate value: {value} already exists in the tree", field="new_value", status_code=400)
     if value < root.value:
         root.left = _insert_node(root.left, value, node_id)
     else:
@@ -83,10 +83,10 @@ def _delete_node_relink(root: Optional[Node], delete_val: int) -> Optional[Node]
     Deletes node with delete_val from tree.
     For two-child deletion, relinks the in-order successor node directly into the target position,
     preserving the successor's original node ID.
-    Raises ValueError if delete_val is not found in tree.
+    Raises ValidationError if delete_val is not found in tree.
     """
     if root is None:
-        raise ValueError(f"Value {delete_val} not found in tree to delete")
+        raise ValidationError(f"Value {delete_val} not found in tree to delete", field="delete_value", status_code=400)
 
     parent = None
     side = None
@@ -102,7 +102,7 @@ def _delete_node_relink(root: Optional[Node], delete_val: int) -> Optional[Node]
             current = current.right
 
     if current is None:
-        raise ValueError(f"Value {delete_val} not found in tree to delete")
+        raise ValidationError(f"Value {delete_val} not found in tree to delete", field="delete_value", status_code=400)
 
     # Case 1: Leaf
     if current.left is None and current.right is None:
@@ -266,7 +266,7 @@ def bst_insert_steps(ops_or_values: Any, new_value: int) -> Dict[str, Any]:
     curr_check = root
     while curr_check:
         if curr_check.value == new_value:
-            raise ValueError(f"Duplicate value: {new_value} already exists in the tree")
+            raise ValidationError(f"Duplicate value: {new_value} already exists in the tree", field="new_value", status_code=400)
         curr_check = curr_check.left if new_value < curr_check.value else curr_check.right
 
     new_node_id = len(ops)
@@ -422,7 +422,7 @@ def bst_delete_steps(ops_or_values: Any, delete_val: int) -> Dict[str, Any]:
     steps = []
 
     if not root:
-        raise ValueError(f"Value {delete_val} not found in tree to delete")
+        raise ValidationError(f"Value {delete_val} not found in tree to delete", field="delete_value", status_code=400)
 
     current = root
     parent = None
@@ -447,7 +447,7 @@ def bst_delete_steps(ops_or_values: Any, delete_val: int) -> Dict[str, Any]:
             current = current.right
 
     if not current:
-        raise ValueError(f"Value {delete_val} not found in tree to delete")
+        raise ValidationError(f"Value {delete_val} not found in tree to delete", field="delete_value", status_code=400)
 
     # Case 1: Leaf node (no children)
     if current.left is None and current.right is None:
@@ -639,14 +639,17 @@ def bst_classify(ops_or_array: Any, tree_type: str = 'bst') -> Dict[str, Any]:
     return res
 
 
-def bst_height_depth(ops_or_array: Any, target_val: int, tree_type: str = 'bst', target_id: Optional[int] = None) -> Dict[str, Any]:
-    """Calculates height and depth of a specific node in the tree."""
+def bst_height_depth(ops_or_array: Any, target_val: Optional[int] = None, tree_type: str = 'bst', target_id: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Calculates height and depth of a specific node in the tree.
+    If target_id is provided, searches ONLY by target_id; raises ValidationError(field="target_id") if absent.
+    Falls back to target_val only when target_id is absent; raises ValidationError(field="target_value") if absent.
+    """
     root, warnings = _build_tree(ops_or_array, tree_type=tree_type)
     if not root:
-        res = {'tree': serialize_tree(None), 'target_id': None, 'height': 0, 'depth': 0, 'error': "Tree is empty"}
-        if tree_type == 'binary':
-            res['warnings'] = warnings
-        return res
+        missing_field = "target_id" if target_id is not None else "target_value"
+        ident = target_id if target_id is not None else target_val
+        raise ValidationError(f"Tree is empty; node {ident} not found", field=missing_field, status_code=400)
 
     target_node = None
     target_depth = 0
@@ -662,7 +665,9 @@ def bst_height_depth(ops_or_array: Any, target_val: int, tree_type: str = 'bst',
             if curr.left: q.append((curr.left, d + 1))
             if curr.right: q.append((curr.right, d + 1))
 
-    if not target_node:
+        if not target_node:
+            raise ValidationError(f"Node with id {target_id} not found in tree", field="target_id", status_code=400)
+    else:
         q = deque([(root, 0)])
         while q:
             curr, d = q.popleft()
@@ -673,11 +678,8 @@ def bst_height_depth(ops_or_array: Any, target_val: int, tree_type: str = 'bst',
             if curr.left: q.append((curr.left, d + 1))
             if curr.right: q.append((curr.right, d + 1))
 
-    if not target_node:
-        res = {'tree': serialize_tree(root), 'target_id': None, 'height': 0, 'depth': 0, 'error': f"Node {target_val} not found"}
-        if tree_type == 'binary':
-            res['warnings'] = warnings
-        return res
+        if not target_node:
+            raise ValidationError(f"Node with value {target_val} not found in tree", field="target_value", status_code=400)
 
     def get_height(node: Optional[Node]) -> int:
         if not node: return -1
