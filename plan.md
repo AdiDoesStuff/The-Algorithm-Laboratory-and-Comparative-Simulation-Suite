@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 25 Oct 2026 — Phase B1 implemented on branch `phase-b-shell` (78/78 tests green, shared nav + hub live, hub owns the landing splash; browser smoke checks passed; not merged to `main`).
+**Last updated:** 25 Oct 2026 — Phase B2 implemented on branch `phase-b-shell` (78/78 tests green, lesson engine + two BST lessons wired into Learn mode; browser smoke checks passed; not merged to `main`).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system. Keep it that way.
 
 ---
@@ -18,7 +18,8 @@
 | Backend structure | ✅ `validation.py`, `tracing.py` extracted. Global error handlers (HTTPException + 500). Binary array mode with hole-drop policy. `docs/TRACE_SPEC.md` committed with dual-snapshot spec. |
 | Frontend engine | ✅ `engine/PlaybackController.js` (ES module). `bst.js` uses op-log, busy gate, stale-response guard, error banner, bracket sanitization, auto fit-view. |
 | Primitives | `TreeCanvas` (production with animated fit-view and path highlight), `treeAdapter` (production), `BucketGrid` and `GrowthChart` (fixture-tested only, `test.html`). |
-| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. QuizEngine, progress, lessons still Phase B2-B4. |
+| Hub, shared nav, unit registry | ✅ **B1 shipped.** `shell/units.js` (single source of truth), `shell/nav.js` (classic script, one `<nav>`), `index.html` hub with the landing splash, live/soon cards, empty progress slots, disabled "Test yourself", Guided Path placeholder. |
+| Lesson engine | ✅ **B2 shipped.** `engine/LessonRunner.js` (generic, unit-agnostic), `lessons/bstLessons.js` (two data-only lessons), pinned narration, predict-then-reveal checkpoints, `quiz_prompt` placeholder. QuizEngine and progress are still B3-B4. |
 | Heap / AVL / Trie / Hash / DP / Bench | Empty stubs in `app.py` and `trees.py`. |
 | Tests | ✅ 78/78 pytest tests green (38 API, 40 unit). Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, search/insert path ancestor chains, and B1 static routes. |
 
@@ -229,8 +230,8 @@ All validation failures return `400 {"error": "...", "field": "..."}`. Nothing u
 - [x] Hub splash responsive at 375 px: `.landing-content` 347 px wide, Go button reachable, no horizontal overflow. ✅ Browser-verified via iframe (`scrollWidth == clientWidth == 375`).
 
 ### B2. Lesson engine
-- [ ] `docs/LESSON_SPEC.md` and `engine/LessonRunner.js`.
-- [ ] Lesson format (data only):
+- [x] `docs/LESSON_SPEC.md` and `engine/LessonRunner.js`. ✅ Spec covers the lesson schema, builder contract, anchor resolution, narration order, checkpoint rules, quiz sentinel, and the add-a-lesson checklist. ✅ Runner owns a `PlaybackController`, caches built steps per lesson id, and stale-guards overlapping loads.
+- [x] Lesson format (data only):
 
 ```js
 export const bstInsertLesson = {
@@ -242,9 +243,17 @@ export const bstInsertLesson = {
   quizId: "bstQuiz"
 };
 ```
-- [ ] Runner handles next/prev/reset, narration pinned beside canvas, checkpoint steps (predict, then reveal), and the `quiz_prompt` sentinel as the final step.
-- [ ] Replace hardcoded `learnSequence` in `bst.js` with the lesson registry. Learn state is rebuilt from ops, never inverse operations.
-- [ ] Add at least two BST lessons: insertion basics, deletion (three cases).
+- [x] Runner handles next/prev/reset, narration pinned beside canvas, checkpoint steps (predict, then reveal), and the `quiz_prompt` sentinel as the final step. ✅ `prev()`/`seek()`/`reset()` never trigger a checkpoint; a checkpoint blocks only forward movement. ✅ Browser-verified: both insertion checkpoints fire, correct/incorrect feedback differ, quiz panel appears with forward disabled and hides again on Prev.
+- [x] Replace hardcoded `learnSequence` in `bst.js` with the lesson registry. Learn state is rebuilt from ops, never inverse operations. ✅ `buildLessonSteps` calls `/tree` once per op with the ops replayed so far, so a lesson can span inserts and deletes. ✅ Browser-verified: switching lessons mid-session rebuilds the timeline from scratch (queued through the busy gate instead of being dropped).
+- [x] Add at least two BST lessons: insertion basics, deletion (three cases). ✅ `bstInsertLesson` (7 inserts, 2 checkpoints) and `bstDeleteLesson` (6 inserts, then leaf / one-child / two-child deletes, 3 checkpoints). ✅ Browser-verified: deletion lesson renders 9 pills with `−` markers, all three checkpoints fire, and the final tree is 60 (root) with children 30 and 40.
+- [x] Lessons are data-only: adding one means appending to `frontend/js/lessons/bstLessons.js`. No runner or page-controller edits. ✅ Both registry entries use the same builder and the same runner.
+- [x] Learn panel responsive at 375 px: single-column layout, 322 px panel, tree canvas 360 px, no horizontal overflow. ✅ Browser-verified via iframe (`scrollWidth == clientWidth == 360`). Fixed a pre-existing 2 px border-box overflow on `.tree-canvas-container` that only surfaced once the Learn panel occupied the narrow column.
+
+**B2 notes**
+
+- `frontend/js/bst.js` still owns `buildLessonSteps` because it is unit-specific (it knows `bst_insert` / `bst_delete`). Lesson *content* is data; the *builder* is per-unit plumbing and lives next to the page controller.
+- The quiz sentinel currently opens a placeholder panel with a disabled button. B3 replaces it with `QuizEngine` + `bstQuiz.js`, and wires `quizId` through `shell/units.js`.
+- Not browser-verified in B2: touch/pointer interactions on phones, and screen-reader announcement order for checkpoint feedback (the panel is `aria-live="polite"`, but no AT was used).
 
 ### B3. Quiz and progress
 - [ ] `primitives/QuizEngine.js`: state machine per question (unanswered, answered, revealed, next). `render({questions, onComplete})`. Re-shuffle options on retake.
