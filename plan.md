@@ -2,7 +2,7 @@
 
 **Project:** The Algorithm Laboratory and Comparative Simulation Suite
 **Written:** 25 Oct 2026, from the README, the abstract/roadmap, and the technical audit of the current working tree.
-**Last updated:** 26 Oct 2026 — Phases A, B, C, and D are merged to `main`. Baseline: **360/360 pytest**, **39/39 content checks**, twelve lessons, six 10-question quizzes (BST, heaps, AVL, trie, hash, merkle), live progress and Guided Path, and 110 glossary terms. Phase C landed as `phase-c-heaps-avl` (24 commits, merge `1e938da`). Phase D landed as `phase-d-unit3` (14 commits, merge `_MERGE_HASH_`). Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
+**Last updated:** 26 Oct 2026 — Phases A, B, C, and D are merged to `main`. Baseline: **360/360 pytest**, **39/39 content checks**, twelve lessons, six 10-question quizzes (BST, heaps, AVL, trie, hash, merkle), live progress and Guided Path, and 110 glossary terms. Phase C landed as `phase-c-heaps-avl` (24 commits, merge `1e938da`). Phase D landed as `phase-d-unit3` (14 commits, merge `63f2aa9`). Post-B5 fixes: `181a63e` (glossary spacing), `dac7df8` (side gutter), `510290e` (traversal lesson), `c1ee722` (quiz alignment), `0ef73c6` (plan record).
 **Stack constraint:** Flask + vanilla JS/HTML/CSS, no frontend build system, and no npm dependencies at all. The `dev/` scripts import Node built-ins only, and every frontend module imports its neighbours by relative path, so the browser loads the ES modules directly. Keep it that way.
 **Verification scope:** Everything is measured against **desktop Chromium talking to a locally run Flask server**, which is the environment this project is demonstrated and graded in. Cross-browser, mobile/touch, forced-colors, and screen-reader passes are explicitly **out of scope**. Where a phase note says something is "not verified" in one of those areas, that is a scope decision, not an open defect.
 
@@ -24,7 +24,7 @@
 | Trie / Hash / Merkle | ✅ **Live end to end (D1-D5).** `/trie`, `/hash`, and `/merkle` generators, three laboratory pages with Play and Learn, three lessons and three 10-question quizzes each. |
 | DP / Bench | ⏳ Still stubs in `app.py` and the algorithm modules; Phase E. |
 | Tests | ✅ **360/360 pytest tests green** plus **39/39 content checks**. Covers delete cases, traversals, classify, duplicates, replay property, stability, binary mode, bad-payload validation, structural tree mirroring, path ancestor chains, lesson/quiz wiring, heap/AVL invariants and rotation cases, trie create/reuse and completions, hash chaining/open-addressing/resize/tombstones, and Merkle build/tamper/odd counts. |
-| Repository | ✅ Phases A-D are merged and the `phase-*` branches pruned after merging; `main` (Phase D merge `_MERGE_HASH_`) is the only branch, pushed to `origin` with a clean working tree. |
+| Repository | ✅ Phases A-D are merged and the `phase-*` branches pruned after merging; `main` (Phase D merge `63f2aa9`) is the only branch, pushed to `origin` with a clean working tree. |
 | Post-B5 UI | ✅ Glossary terms stay on one line with their `?` toggle, narration renders as one inline text flow, and lab pages have an 8px side gutter. Browser-verified at 1000px and 375px. (`181a63e`, `dac7df8`, `ad4df81`.) |
 
 ### Audit findings that shape the plan
@@ -367,7 +367,7 @@ rotate_LL step:
 
 ## Phase D: Unit 3, Tries, Hashing, Merkle
 
-**Status:** ✅ **Complete (D1-D5).** Tries, hashing, and Merkle are live end to end: `/trie` + `trie.html`, `/hash` + `hashing.html`, `/merkle` + `merkle.html`, three lessons and a ten-question quiz each, all three units live on the hub and in the Guided Path. Merged to `main` as `_MERGE_HASH_` on a green **360/360 pytest** and **39/39 content-check** run.
+**Status:** ✅ **Complete (D1-D5).** Tries, hashing, and Merkle are live end to end: `/trie` + `trie.html`, `/hash` + `hashing.html`, `/merkle` + `merkle.html`, three lessons and a ten-question quiz each, all three units live on the hub and in the Guided Path. Merged to `main` as `63f2aa9` on a green **360/360 pytest** and **39/39 content-check** run.
 
 ### D1. Trie (`tries.py`)
 - [x] `trie_op_steps` with `trie_insert`: per-letter `node_created` / `node_reused` steps, then `mark_end` for the terminal marker and `insert_done` with created/reused counts. One route, three modes (`trie_insert`, `trie_search`, `trie_prefix`), matching the existing `algorithm`-dispatch style instead of three endpoints. (`7668624`)
