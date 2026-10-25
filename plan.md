@@ -290,7 +290,7 @@ export const bstInsertLesson = {
 - `LessonRunner.play()` still has no UI caller; no autoplay button or debug global was added. F1 owns that decision.
 - Not verified: real screen-reader announcement order, touch/pointer behaviour on phones, and load-time focus into the glossary modal in a focused window (the harness tab reports `document.hasFocus() === false`; click-open, Escape, and focus return were verified).
 - 375px re-check: hub, BST Learn, quiz, and glossary pages have no horizontal overflow; the tooltip popover clamps inside a 375px viewport.
-- Post-B5 UI polish: `.glossary-ref` keeps a term and its `?` toggle on one line with a 6px gap, and `.lab-container` adds an 8px side gutter to the lab pages. Browser-verified at 1000px and 375px.
+- Post-B5 UI polish: `.glossary-ref` keeps a term and its `?` toggle on one line with a 6px gap, `.lab-container` adds an 8px side gutter to the lab pages, and `.step-annotation-box` uses normal block/inline flow so glossary markers do not turn a narration sentence into flex columns. Browser-verified at 1000px and 375px.
 
 ---
 

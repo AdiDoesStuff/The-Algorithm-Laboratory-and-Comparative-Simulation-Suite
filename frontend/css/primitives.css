@@ -269,8 +269,12 @@
   color: var(--node-text);
   font-size: 0.95rem;
   min-height: 2.4em;
-  display: flex;
-  align-items: center;
+  /* Glossary markers split the narration into several inline nodes. A flex
+     container would turn each node into its own flex item and lay the
+     sentence out as columns, so keep normal inline text flow here. */
+  display: block;
+  text-align: center;
+  line-height: 1.5;
   margin-top: 10px;
 }
 
