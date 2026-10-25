@@ -11,6 +11,7 @@ import tries
 import hashing
 import merkle
 import validation
+import design.nqueens as nqueens_mod
 from validation import ValidationError
 
 app = Flask(__name__)
@@ -314,6 +315,26 @@ def dp_handler():
 @app.route('/bench', methods=['POST'])
 def bench_handler():
     return jsonify({"series": [], "metadata": {"benchmark": "growth"}})
+
+
+@app.route('/nqueens.html', methods=['GET'])
+def nqueens_page():
+    return send_from_directory(FRONTEND_DIR, 'nqueens.html')
+
+
+@app.route('/nqueens', methods=['GET', 'POST'])
+def nqueens_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+    validated, err_tuple = validation.validate_nqueens_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+    result = nqueens_mod.run_nqueens(validated["n"], validated["mode"])
+    return jsonify(result)
 
 
 if __name__ == '__main__':

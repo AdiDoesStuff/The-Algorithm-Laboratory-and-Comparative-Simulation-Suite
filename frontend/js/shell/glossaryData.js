@@ -127,6 +127,8 @@
         { term: "Wall / Obstacle", def: "A node in the pathfinding grid that is impassable. The algorithm must route around all wall nodes to find a valid path.", slug: "wall-obstacle" },
         { term: "Weighted Graph", def: "A graph where each edge has a numerical value (weight) representing a cost, distance, or time. Many real-world pathfinding problems use weighted graphs.", slug: "weighted-graph" },
         { term: "Worst Case", def: "The scenario where the algorithm requires the maximum amount of time or space to execute.", slug: "worst-case" },
+        { term: "N-Queens", def: "The problem of placing N queens on an NxN board so that no two queens attack each other.", slug: "n-queens" },
+        { term: "Partial Solution", def: "An incomplete assignment during search that may still be extended into a full solution.", slug: "partial-solution" }
     ];
 
     // Alphabetical, for the glossary page's default order.

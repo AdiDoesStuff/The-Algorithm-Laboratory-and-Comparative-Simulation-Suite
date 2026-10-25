@@ -607,3 +607,126 @@ def validate_merkle_payload(data: Any) -> Tuple[Optional[Dict[str, Any]], Option
         validated["new_data"] = new_data
 
     return validated, None
+# --- Bench endpoint validation (/bench) ---
+
+VALID_BENCH_ALGORITHMS = {"bubble", "selection", "insertion", "quick", "merge", "heap", "counting", "radix"}
+MAX_BENCH_ALGORITHMS = 6
+MAX_BENCH_SIZES = 8
+MIN_BENCH_SIZE = 10
+MAX_BENCH_REPEATS = 9
+VALID_INPUT_KINDS = {"random", "sorted", "reversed"}
+
+def validate_bench_payload(data):
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+    algorithms = data.get("algorithms")
+    if not isinstance(algorithms, list) or not (1 <= len(algorithms) <= MAX_BENCH_ALGORITHMS):
+        return None, ("'algorithms' must be a list of 1-6 unique ids", "algorithms")
+    for a in algorithms:
+        if not isinstance(a, str) or a not in VALID_BENCH_ALGORITHMS:
+            return None, (f"Unknown algorithm: {a}", "algorithms")
+    if len(set(algorithms)) != len(algorithms):
+        return None, ("'algorithms' must be unique", "algorithms")
+    sizes = data.get("sizes", [50, 100, 200, 400, 800])
+    if not isinstance(sizes, list) or not (2 <= len(sizes) <= MAX_BENCH_SIZES):
+        return None, ("'sizes' must be a list of 2-8 ints", "sizes")
+    for s in sizes:
+        if not isinstance(s, int) or isinstance(s, bool) or s < MIN_BENCH_SIZE:
+            return None, ("'sizes' entries must be ints >= 10", "sizes")
+    if sizes != sorted(set(sizes)):
+        return None, ("'sizes' must be strictly increasing", "sizes")
+    # caps
+    for a in algorithms:
+        cap = 1500 if a in ("bubble", "selection", "insertion") else 20000
+        for s in sizes:
+            if s > cap:
+                return None, (f"size {s} exceeds cap {cap} for {a}", "sizes")
+    repeats = data.get("repeats", 5)
+    if not isinstance(repeats, int) or isinstance(repeats, bool) or not (1 <= repeats <= MAX_BENCH_REPEATS):
+        return None, ("'repeats' must be an int 1-9", "repeats")
+    input_kind = data.get("input_kind", "random")
+    if input_kind not in VALID_INPUT_KINDS:
+        return None, ("'input_kind' must be random|sorted|reversed", "input_kind")
+    seed = data.get("seed", 42)
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        return None, ("'seed' must be an int", "seed")
+    validated = {
+        "algorithms": algorithms,
+        "sizes": sizes,
+        "repeats": repeats,
+        "input_kind": input_kind,
+        "seed": seed,
+    }
+    return validated, None
+
+
+# --- Recursion endpoint validation (/recursion) ---
+
+VALID_RECURSION_ALGORITHMS = {"merge_sort", "quick_sort", "fib_naive", "fib_memo"}
+
+def validate_recursion_payload(data):
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+    algo = data.get("algorithm")
+    if not isinstance(algo, str) or algo not in VALID_RECURSION_ALGORITHMS:
+        return None, (f"Unknown recursion algorithm: {algo}", "algorithm")
+    validated = {"algorithm": algo}
+    if algo in ("merge_sort", "quick_sort"):
+        arr = data.get("array")
+        if not isinstance(arr, list) or not (2 <= len(arr) <= 16):
+            return None, ("'array' must be a list of 2-16 ints", "array")
+        for x in arr:
+            if not isinstance(x, int) or isinstance(x, bool) or not (-99 <= x <= 99):
+                return None, ("'array' entries must be ints in [-99,99]", "array")
+        validated["array"] = arr
+    else:
+        n = data.get("n")
+        if not isinstance(n, int) or isinstance(n, bool) or not (0 <= n <= 10):
+            return None, ("'n' must be an int 0-10", "n")
+        validated["n"] = n
+    return validated, None
+
+
+# --- Knapsack endpoint validation (/knapsack) ---
+
+VALID_KNAPSACK_ALGORITHMS = {"knapsack_greedy", "knapsack_dp_bottom_up", "knapsack_dp_top_down", "knapsack_branch_bound"}
+
+def validate_knapsack_payload(data):
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+    algo = data.get("algorithm")
+    if not isinstance(algo, str) or algo not in VALID_KNAPSACK_ALGORITHMS:
+        return None, (f"Unknown knapsack algorithm: {algo}", "algorithm")
+    items = data.get("items")
+    if not isinstance(items, list) or not (1 <= len(items) <= 8):
+        return None, ("'items' must be a list of 1-8 objects", "items")
+    clean = []
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            return None, (f"'items[{i}]' must be an object", "items")
+        w = it.get("weight")
+        v = it.get("value")
+        if not isinstance(w, int) or isinstance(w, bool) or not (1 <= w <= 50):
+            return None, (f"'items[{i}].weight' must be an int 1-50", "items")
+        if not isinstance(v, int) or isinstance(v, bool) or not (1 <= v <= 999):
+            return None, (f"'items[{i}].value' must be an int 1-999", "items")
+        clean.append({"weight": w, "value": v})
+    capacity = data.get("capacity")
+    if not isinstance(capacity, int) or isinstance(capacity, bool) or not (1 <= capacity <= 50):
+        return None, ("'capacity' must be an int 1-50", "capacity")
+    validated = {"algorithm": algo, "items": clean, "capacity": capacity}
+    return validated, None
+
+
+# --- N-Queens endpoint validation (/nqueens) ---
+
+def validate_nqueens_payload(data):
+    if not isinstance(data, dict):
+        return None, ("Request body must be a JSON object", "body")
+    n = data.get("n")
+    if not isinstance(n, int) or isinstance(n, bool) or not (4 <= n <= 8):
+        return None, ("'n' must be an int 4-8", "n")
+    mode = data.get("mode", "first")
+    if mode not in ("first", "all"):
+        return None, ("'mode' must be 'first' or 'all'", "mode")
+    return {"n": n, "mode": mode}, None

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Laboratory | N-Queens & Backtracking</title>
+    <meta name="description" content="Backtracking search on the N-Queens board with conflict detection and pruning.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/primitives.css">
+    <link rel="stylesheet" href="css/lab.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+    <div class="lab-container">
+        <div class="header-with-nav" style="display:flex;justify-content:center;align-items:center;gap:15px;flex-direction:column;">
+            <h1>Algorithm Laboratory: N-Queens & Backtracking</h1>
+            <div id="algo-nav" data-algo-nav data-current-id="nqueens"></div>
+        </div>
+
+        <div class="lab-layout">
+            <div class="side-panel">
+                <div class="control-group">
+                    <span class="control-label">Board size</span>
+                    <select id="n-select" class="algo-selector">
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Mode</span>
+                    <div class="input-row">
+                        <button id="btn-mode-first" class="active-tab">Find first solution</button>
+                        <button id="btn-mode-all">Count all solutions</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <button id="btn-run" style="width:100%">Run</button>
+                    <p id="run-status" class="control-hint" aria-live="polite">Ready.</p>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Step through</span>
+                    <div class="step-row">
+                        <button id="btn-prev" type="button">&#8592; Prev</button>
+                        <button id="btn-next" type="button">Next &#8594;</button>
+                    </div>
+                    <div class="step-row" style="margin-top:6px;">
+                        <button id="btn-play" type="button">Play</button>
+                        <button id="btn-skip" type="button">Skip to end</button>
+                    </div>
+                    <p id="step-counter" class="step-counter" aria-live="polite">No trace yet.</p>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Counters</span>
+                    <div id="counters" class="control-hint" aria-live="polite">trials:0 placements:0 backtracks:0 solutions:0</div>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Stack</span>
+                    <div id="stack-readout" class="control-hint" aria-live="polite">—</div>
+                </div>
+            </div>
+
+            <div class="visualizer-panel">
+                <div id="nq-error-banner" role="alert" aria-live="polite" class="error-banner hidden">
+                    <span id="nq-error-text"></span>
+                </div>
+                <section class="panel-card">
+                    <h2 class="panel-heading">Board</h2>
+                    <div id="board" class="bucket-grid-container"></div>
+                </section>
+                <div id="step-annotation" class="step-annotation-box" aria-live="polite">Ready.</div>
+                <section id="solutions-card" class="panel-card hidden">
+                    <h2 class="panel-heading">Solutions</h2>
+                    <div id="solutions-gallery"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/shell/units.js"></script>
+    <script src="js/shell/nav.js"></script>
+    <script type="module" src="js/nqueens.js"></script>
+</body>
+</html>
