@@ -134,7 +134,7 @@ function visibleSnapshot(snapshot) {
   collapsed.forEach(descendants);
   return { ...snapshot, nodes: snapshot.nodes.filter(n => !hidden.has(n.id)).map(n => collapsed.has(n.id) ? { ...n, sublabel: `+${[...hidden].filter(id => { let cur = snapshot.nodes.find(x => x.id === id); while (cur?.parent_id != null) { if (cur.parent_id === n.id) return true; cur = snapshot.nodes.find(x => x.id === cur.parent_id); } return false; }).length}` } : n) };
 }
-function renderTree(snapshot) { if (!snapshot) return; canvas.render(visibleSnapshot(snapshot), { highlighted: trace[player.state.cursor]?.highlighted || [], reused: trace[player.state.cursor]?.reused || [], selected: trace[player.state.cursor]?.selected || [] }); }
+function renderTree(snapshot) { if (!snapshot) return; canvas.render(visibleSnapshot(snapshot), { highlighted: trace[player.state.cursor]?.highlighted || [], reused: trace[player.state.cursor]?.reused || [], selected: trace[player.state.cursor]?.selected || [] }); canvas.fitView(true); }
 function renderStep(step, index) {
   const metrics = step.metrics || {};
   if (mode === 'curves') chart.render(trace.slice(0, index + 1));
