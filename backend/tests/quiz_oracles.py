@@ -367,3 +367,12 @@ for qid in ["k-q1","k-q2","k-q3","k-q4","k-q5","k-q6","k-q7","k-q8","k-q9","k-q1
     ORACLES["knapsackQuiz"][qid] = conceptual("Knapsack fact; backend produces values but answer is a stated fact.")
 
 CHECKPOINT_ORACLES.setdefault('knapsack-lesson-1', {})['knapsack-lesson-1-cp1'] = conceptual('checkpoint prediction; verified against trace')
+
+# ---------------------------------------------------------------------------
+# growthQuiz (Stage 4)
+# ---------------------------------------------------------------------------
+ORACLES['growthQuiz'] = {}
+for qid in ['g-q1','g-q2','g-q3','g-q4','g-q5','g-q6','g-q7','g-q8','g-q9','g-q10']:
+    ORACLES['growthQuiz'][qid] = conceptual('Growth & recursion fact')
+CHECKPOINT_ORACLES.setdefault('growth-lesson-1', {})['growth-lesson-1-cp1'] = conceptual('checkpoint prediction')
+

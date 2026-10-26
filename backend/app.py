@@ -13,6 +13,8 @@ import merkle
 import validation
 import design.nqueens as nqueens_mod
 import design.knapsack as knapsack_mod
+import design.bench as bench_mod
+import design.recursion_tree as recursion_mod
 from validation import ValidationError
 
 app = Flask(__name__)
@@ -313,11 +315,6 @@ def dp_handler():
     return jsonify({"steps": [], "metadata": {"problem": "dp"}})
 
 
-@app.route('/bench', methods=['POST'])
-def bench_handler():
-    return jsonify({"series": [], "metadata": {"benchmark": "growth"}})
-
-
 @app.route('/nqueens.html', methods=['GET'])
 def nqueens_page():
     return send_from_directory(FRONTEND_DIR, 'nqueens.html')
@@ -356,6 +353,45 @@ def knapsack_handler():
         raise ValidationError(err_msg, field=err_field, status_code=400)
     result = knapsack_mod.run_knapsack(
         validated["algorithm"], validated["items"], validated["capacity"])
+    return jsonify(result)
+
+
+@app.route('/growth.html', methods=['GET'])
+def growth_page():
+    return send_from_directory(FRONTEND_DIR, 'growth.html')
+
+
+@app.route('/bench', methods=['GET', 'POST'])
+def bench_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+    validated, err_tuple = validation.validate_bench_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+    result = bench_mod.run_benchmark(
+        validated["algorithms"], validated["sizes"], validated["repeats"],
+        validated["input_kind"], validated["seed"])
+    return jsonify(result)
+
+
+@app.route('/recursion', methods=['GET', 'POST'])
+def recursion_handler():
+    if request.method != 'POST':
+        raise MethodNotAllowed()
+    data = request.get_json(silent=True)
+    if data is None:
+        raise ValidationError("Request body must be a JSON object", field="body")
+    validated, err_tuple = validation.validate_recursion_payload(data)
+    if err_tuple:
+        err_msg, err_field = err_tuple
+        raise ValidationError(err_msg, field=err_field, status_code=400)
+    result = recursion_mod.run_recursion(
+        validated["algorithm"],
+        array=validated.get("array"), n=validated.get("n"))
     return jsonify(result)
 
 
