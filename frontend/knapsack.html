@@ -16,16 +16,63 @@
             <h1>Algorithm Laboratory: 0/1 Knapsack</h1>
             <div id="algo-nav" data-algo-nav data-current-id="knapsack"></div>
         </div>
-        <div style="max-width:900px;margin:40px auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#e2e8f0;">
-            <h2 style="margin-top:0;">Coming soon</h2>
-            <p>The interactive UI for this unit is under construction. The backend endpoint is live:</p>
-            <ul style="line-height:1.8;">
-                <li><code>POST /knapsack</code> — greedy, DP (bottom-up / top-down), branch &amp; bound</li>
-            </ul>
-            <p>Example: items [{w:4,v:40},{w:7,v:42},{w:5,v:25},{w:3,v:12}], capacity 10 → optimum 65, 9 of 31 nodes expanded.</p>
+
+        <div class="lab-layout">
+            <div class="side-panel">
+                <div class="control-group">
+                    <span class="control-label">Algorithm</span>
+                    <select id="algo-select" class="algo-selector">
+                        <option value="knapsack_dp_bottom_up">DP Bottom-Up</option>
+                        <option value="knapsack_dp_top_down">DP Top-Down</option>
+                        <option value="knapsack_greedy">Greedy</option>
+                        <option value="knapsack_branch_bound">Branch &amp; Bound</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Items (weight,value)</span>
+                    <input id="items-input" type="text" value="4,40 7,42 5,25 3,12" style="width:100%;padding:6px;border:1px solid #334155;border-radius:6px;background:#0f172a;color:#e2e8f0;">
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Capacity</span>
+                    <input id="capacity-input" type="number" value="10" min="1" max="20" style="width:100%;padding:6px;border:1px solid #334155;border-radius:6px;background:#0f172a;color:#e2e8f0;">
+                </div>
+                <div class="control-group">
+                    <button id="btn-run" style="width:100%">Run</button>
+                    <p id="run-status" class="control-hint" aria-live="polite">Ready.</p>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Step through</span>
+                    <div class="step-row">
+                        <button id="btn-prev" type="button">&#8592; Prev</button>
+                        <button id="btn-next" type="button">Next &#8594;</button>
+                    </div>
+                    <div class="step-row" style="margin-top:6px;">
+                        <button id="btn-play" type="button">Play</button>
+                        <button id="btn-skip" type="button">Skip to end</button>
+                    </div>
+                    <p id="step-counter" class="step-counter" aria-live="polite">No trace yet.</p>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Result</span>
+                    <div id="result-readout" class="control-hint" aria-live="polite">—</div>
+                </div>
+            </div>
+
+            <div class="visualizer-panel">
+                <div id="ks-error-banner" role="alert" aria-live="polite" class="error-banner hidden">
+                    <span id="ks-error-text"></span>
+                </div>
+                <section class="panel-card">
+                    <h2 class="panel-heading">DP Table</h2>
+                    <div id="dp-table" class="bucket-grid-container"></div>
+                </section>
+                <div id="step-annotation" class="step-annotation-box" aria-live="polite">Ready.</div>
+            </div>
         </div>
     </div>
+
     <script src="js/shell/units.js"></script>
     <script src="js/shell/nav.js"></script>
+    <script type="module" src="js/knapsack.js"></script>
 </body>
 </html>
