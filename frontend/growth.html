@@ -21,10 +21,14 @@
 
         <main class="lab-layout" id="growth-app">
             <aside class="side-panel">
-                <div class="mode-tabs" role="tablist" aria-label="Growth mode">
-                    <button class="mode-tab active-tab" id="growth-curves" role="tab" aria-selected="true">Growth curves</button>
-                    <button class="mode-tab" id="growth-tree" role="tab" aria-selected="false">Recursion tree</button>
-                    <button class="mode-tab" id="growth-learn" role="tab" aria-selected="false">Learn</button>
+                <div class="mode-tabs" role="tablist" aria-label="Growth mode" style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;gap:8px;">
+                        <button class="mode-tab active-tab" id="growth-curves" role="tab" aria-selected="true" style="flex:1;">Growth curves</button>
+                        <button class="mode-tab" id="growth-tree" role="tab" aria-selected="false" style="flex:1;">Recursion tree</button>
+                    </div>
+                    <div style="display:flex;justify-content:center;">
+                        <button class="mode-tab" id="growth-learn" role="tab" aria-selected="false" style="flex:0 0 auto;min-width:120px;">Learn</button>
+                    </div>
                 </div>
                 <section id="curve-controls">
                     <div class="control-group"><label>Algorithms</label><label><input type="checkbox" value="bubble" checked> Bubble</label><label><input type="checkbox" value="merge" checked> Merge</label><label><input type="checkbox" value="quick" checked> Quick</label><label><input type="checkbox" value="insertion"> Insertion</label></div>
