@@ -1,7 +1,7 @@
 /* Legacy stub retained below for recovery context; the live controller follows.\nimport { BucketGrid } from './primitives/BucketGrid.js';
 import { PlaybackController } from './engine/PlaybackController.js';
 
-let algorithm = 'merge';
+let algorithm = 'merge_sort';
 let grid = null;
 let controller = null;
 let steps = [];
@@ -37,7 +37,7 @@ async function run() {
     const kind = inputType.value || 'random';
     let payload = { algorithm };
 
-    if (algorithm === 'fibonacci') {
+    if (algorithm === 'fib_naive' || algorithm === 'fib_memo') {
         payload.n = size > 10 ? 8 : size;
     } else {
         // generate array
@@ -88,9 +88,9 @@ async function run() {
 
 btnRun.addEventListener('click', run);
 
-btnMerge.addEventListener('click', () => { algorithm = 'merge'; btnMerge.classList.add('active-tab'); btnQuick.classList.remove('active-tab'); btnFibonacci.classList.remove('active-tab'); });
-btnQuick.addEventListener('click', () => { algorithm = 'quick'; btnQuick.classList.add('active-tab'); btnMerge.classList.remove('active-tab'); btnFibonacci.classList.remove('active-tab'); });
-btnFibonacci.addEventListener('click', () => { algorithm = 'fibonacci'; btnFibonacci.classList.add('active-tab'); btnMerge.classList.remove('active-tab'); btnQuick.classList.remove('active-tab'); });
+btnMerge.addEventListener('click', () => { algorithm = 'merge_sort'; btnMerge.classList.add('active-tab'); btnQuick.classList.remove('active-tab'); btnFibonacci.classList.remove('active-tab'); });
+btnQuick.addEventListener('click', () => { algorithm = 'quick_sort'; btnQuick.classList.add('active-tab'); btnMerge.classList.remove('active-tab'); btnFibonacci.classList.remove('active-tab'); });
+btnFibonacci.addEventListener('click', () => { algorithm = 'fib_naive'; btnFibonacci.classList.add('active-tab'); btnMerge.classList.remove('active-tab'); btnQuick.classList.remove('active-tab'); });
 
 btnPrev.addEventListener('click', () => controller && controller.prev());
 btnNext.addEventListener('click', () => controller && controller.next());

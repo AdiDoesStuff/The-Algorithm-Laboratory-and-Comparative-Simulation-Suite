@@ -190,20 +190,6 @@
             ]
         },
         {
-            id: "growth",
-            title: "Growth & Recursion",
-            page: "growth.html",
-            status: "live",
-            guidedOrder: 8,
-            quizId: "growthQuiz",
-            blurb: "Growth curves against Big-O, recursion trees, and Fibonacci: naive vs memoized vs iterative.",
-            glossaryTerms: [
-                "Asymptotic Notation",
-                "Big O Notation (O)",
-                "Memoization"
-            ]
-        },
-        {
             id: "nqueens",
             title: "N-Queens & Backtracking",
             page: "nqueens.html",
