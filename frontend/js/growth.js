@@ -134,10 +134,64 @@ function visibleSnapshot(snapshot) {
   collapsed.forEach(descendants);
   return { ...snapshot, nodes: snapshot.nodes.filter(n => !hidden.has(n.id)).map(n => collapsed.has(n.id) ? { ...n, sublabel: `+${[...hidden].filter(id => { let cur = snapshot.nodes.find(x => x.id === id); while (cur?.parent_id != null) { if (cur.parent_id === n.id) return true; cur = snapshot.nodes.find(x => x.id === cur.parent_id); } return false; }).length}` } : n) };
 }
-function renderTree(snapshot) { if (!snapshot) return; canvas.render(visibleSnapshot(snapshot), { highlighted: trace[player.state.cursor]?.highlighted || [], reused: trace[player.state.cursor]?.reused || [], selected: trace[player.state.cursor]?.selected || [] }); canvas.fitView(true); }
+
+// Colour + display name for every algorithm the /bench endpoint can return.
+const BENCH_ALGORITHM_STYLE = {
+  bubble:    { label: 'Bubble sort',    color: '#f97316' },
+  insertion: { label: 'Insertion sort', color: '#a78bfa' },
+  selection: { label: 'Selection sort', color: '#f472b6' },
+  merge:     { label: 'Merge sort',     color: '#22c55e' },
+  quick:     { label: 'Quicksort',      color: '#38bdf8' },
+  heap:      { label: 'Heapsort',       color: '#facc15' },
+  counting:  { label: 'Counting sort',  color: '#2dd4bf' },
+  radix:     { label: 'Radix sort',     color: '#e879f9' }
+};
+function benchMetric() {
+  const checked = document.querySelector('input[name=metric]:checked');
+  return checked?.value === 'time' ? 'time' : 'comparisons';
+}
+// /bench steps carry snapshot.series: [{ algorithm, points: [{n, median_ms, comparisons, swaps}] }].
+// GrowthChart wants [{ id, label, type, color, points: [{x, y}] }].
+function benchSeries(snapshot) {
+  const metric = benchMetric();
+  const key = metric === 'time' ? 'median_ms' : 'comparisons';
+  const groups = Array.isArray(snapshot?.series) ? snapshot.series : [];
+  return groups.map(group => {
+    const style = BENCH_ALGORITHM_STYLE[group?.algorithm] || {};
+    const points = (Array.isArray(group?.points) ? group.points : [])
+      .filter(p => p && Number.isFinite(Number(p.n)) && Number.isFinite(Number(p[key])))
+      .map(p => ({ x: Number(p.n), y: Number(p[key]) }));
+    return {
+      id: group?.algorithm,
+      label: style.label || String(group?.algorithm || 'Algorithm'),
+      type: 'scatter',
+      color: style.color || '#38bdf8',
+      points
+    };
+  }).filter(series => series.points.length > 0);
+}
+function renderChart() {
+  const step = trace[player.state.cursor];
+  const snapshot = step?.snapshot;
+  const series = benchSeries(snapshot);
+  const metric = benchMetric();
+  chart.render(series, { metric, log: document.getElementById('growth-log').checked });
+  const host = document.getElementById('growth-chart');
+  if (!series.length) {
+    host.setAttribute('aria-label', 'Growth chart: no benchmark data yet.');
+    return;
+  }
+  const summary = series.map(s => `${s.label}: ${s.points.length} points, n up to ${s.points.at(-1).x}`).join('; ');
+  host.setAttribute('aria-label', `Growth chart by ${metric}. ${summary}.`);
+}
+function updateChartMetric() {
+  if (mode === 'curves') {
+    renderChart();
+  }
+}
 function renderStep(step, index) {
   const metrics = step.metrics || {};
-  if (mode === 'curves') chart.render(trace.slice(0, index + 1));
+  if (mode === 'curves') renderChart();
   if (mode === 'tree') { activeSnapshot = step.snapshot; renderTree(activeSnapshot); }
   ['calls','max_depth','cache_hits'].forEach((key, i) => { const ids = ['growth-calls','growth-depth','growth-hits']; if (metrics[key] != null) document.getElementById(ids[i]).textContent = metrics[key]; });
 }
@@ -162,6 +216,6 @@ document.getElementById('growth-curves').addEventListener('click',()=>selectMode
 document.getElementById('growth-run').addEventListener('click',runBenchmark); document.getElementById('recursion-run').addEventListener('click',runRecursion);
 document.getElementById('growth-prev').addEventListener('click',()=>player.prev()); document.getElementById('growth-next').addEventListener('click',()=>player.next()); document.getElementById('growth-play').addEventListener('click',()=>player.state.playing ? player.pause() : player.play()); document.getElementById('growth-skip').addEventListener('click',()=>player.seek(trace.length - 1));
 document.getElementById('tree-collapse').addEventListener('click',()=>{ const id=trace[player.state.cursor]?.highlighted?.[0]; if(id != null) { collapsed.add(id); renderTree(activeSnapshot); } }); document.getElementById('tree-expand').addEventListener('click',()=>{ collapsed.clear(); renderTree(activeSnapshot); });
-document.querySelectorAll('input[name=metric],#growth-log').forEach(el=>el.addEventListener('change',()=>{ chart.options.metric=document.querySelector('input[name=metric]:checked').value === 'time' ? 'time' : 'comparisons'; chart.options.log=document.getElementById('growth-log').checked; chart.render(trace.slice(0, Math.max(0,player.state.cursor+1))); }));
+document.querySelectorAll('input[name=metric],#growth-log').forEach(el=>el.addEventListener('change',updateChartMetric));
 document.getElementById('growth-quiz').addEventListener('click',()=>renderQuiz(document.getElementById('growth-quiz-host'), getQuiz('growthQuiz'), { onClose:()=>{} }));
 initLessons();
