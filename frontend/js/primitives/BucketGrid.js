@@ -294,7 +294,9 @@ export class BucketGrid {
         const queens = Array.isArray(snapshot.queens) ? snapshot.queens : [];
         const currentRow = Number(snapshot.row) || 0;
         // threatened cells set from stepRoles
-        const threatenedIds = new Set((stepRoles?.threatened || []).map(Number));
+        const threatenedRaw = stepRoles?.threatened;
+        const threatenedArr = Array.isArray(threatenedRaw) ? threatenedRaw : [];
+        const threatenedIds = new Set(threatenedArr.map(Number));
         const conflictIds = new Set((stepRoles?.conflict || []).map(Number));
         const safeIds = new Set((stepRoles?.safe || []).map(Number));
         const backtrackIds = new Set((stepRoles?.backtrack || []).map(Number));

@@ -122,13 +122,10 @@ def run_nqueens(n, mode):
         for col in range(n):
             trials[0] += 1
             safe, attackers = _is_safe(queens, row, col)
-            thr = _threatened_cells(queens, n, row)
-            thr_list = thr  # dict
             if not safe:
                 steps.append(make_step("conflict", row, col, snapshot(row),
                                       f"Row {row}, column {col}: conflict",
-                                      attackers=attackers,
-                                      threatened=thr_list))
+                                      attackers=attackers))
             else:
                 steps.append(make_step("safe", row, col, snapshot(row),
                                       f"Row {row}, column {col}: safe"))
